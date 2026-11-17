@@ -20,6 +20,7 @@ import {
   validateDraft
 } from '../core';
 import { getCategoryStyle } from './categoryStyle';
+import { saveErrorMessage } from './errorMessages';
 import { formatMonthDay, formatWeekday } from './format';
 import { Icon } from './Icon';
 import styles from './ScheduleBoard.module.scss';
@@ -42,10 +43,6 @@ export interface IEntryFormProps {
   onClose: (message?: string) => void;
 }
 
-const SAVE_ERROR =
-  '保存できませんでした。通信の状態を確かめて、もう一度お試しください。何度やってもうまくいかないときは、管理者に連絡してください。';
-const DELETE_ERROR =
-  '削除できませんでした。通信の状態を確かめて、もう一度お試しください。何度やってもうまくいかないときは、管理者に連絡してください。';
 
 /** 'M/D(曜)'。今日なら「今日」 */
 function dayText(date: DateKey, today: DateKey): string {
@@ -121,9 +118,9 @@ export const EntryForm: React.FC<IEntryFormProps> = (props) => {
         setSaving(false);
         props.onClose(isEdit ? '予定を変更しました' : '予定を登録しました');
       },
-      () => {
+      (error: unknown) => {
         setSaving(false);
-        setFailure(SAVE_ERROR);
+        setFailure(saveErrorMessage(error, '保存'));
       }
     );
   };
@@ -139,10 +136,10 @@ export const EntryForm: React.FC<IEntryFormProps> = (props) => {
         setSaving(false);
         props.onClose('予定を削除しました');
       },
-      () => {
+      (error: unknown) => {
         setSaving(false);
         setConfirmDelete(false);
-        setFailure(DELETE_ERROR);
+        setFailure(saveErrorMessage(error, '削除'));
       }
     );
   };

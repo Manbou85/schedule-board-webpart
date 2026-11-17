@@ -37,6 +37,7 @@ import { ALL, FilterPopover } from './FilterPopover';
 import { DatePickButton } from './DatePickButton';
 import { DayList } from './DayList';
 import { EntryForm } from './EntryForm';
+import { errorDetail } from './errorMessages';
 import { formatShortDate, formatShortRange } from './format';
 import { getCategoryStyle, HOLIDAY_WORK_STYLE, LEAVE_STYLE } from './categoryStyle';
 import { Icon } from './Icon';
@@ -90,6 +91,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const rangeEnd = view === 'week' ? addDays(weekStart, 6) : date;
   const [range, setRange] = React.useState<IRangeData | undefined>(undefined);
   const [error, setError] = React.useState<string>('');
+  const [errorInfo, setErrorInfo] = React.useState<string>('');
   const [criteria, setCriteria] = React.useState<IFilterCriteria>({});
   const [pinSelf, setPinSelf] = React.useState<boolean>(pinSelfByDefault);
   const [collapsed, setCollapsed] = React.useState<string[]>([]);
@@ -132,7 +134,12 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         const self = findSelf(list, user.account);
         setBase({ workers: list, categories, selfId: self ? self.id : undefined, isAdmin: user.isAdmin });
       })
-      .catch(() => alive && setError('メンバーの一覧を読み込めませんでした。少し時間をおいて、ページを開き直してください。'));
+      .catch((e: unknown) => {
+        if (alive) {
+          setError('メンバーの一覧を読み込めませんでした。少し時間をおいて、ページを開き直してください。');
+          setErrorInfo(errorDetail(e));
+        }
+      });
     return () => {
       alive = false;
     };
@@ -145,7 +152,12 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     service
       .getRange(rangeStart, rangeEnd)
       .then((r) => alive && setRange(r))
-      .catch(() => alive && setError('予定を読み込めませんでした。少し時間をおいて、ページを開き直してください。'));
+      .catch((e: unknown) => {
+        if (alive) {
+          setError('予定を読み込めませんでした。少し時間をおいて、ページを開き直してください。');
+          setErrorInfo(errorDetail(e));
+        }
+      });
     return () => {
       alive = false;
     };
@@ -175,6 +187,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         <p className={styles.message} role="alert">
           {error}
         </p>
+        {errorInfo && <p className={styles.errorDetail}>くわしい内容(管理者向け):{errorInfo}</p>}
       </div>
     );
   }
@@ -309,6 +322,14 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
           </div>
         </div>
       </div>
+
+      {range && range.warnings && range.warnings.length > 0 && (
+        <div className={styles.warning} role="status">
+          {range.warnings.map((w) => (
+            <div key={w}>{w}</div>
+          ))}
+        </div>
+      )}
 
       {/* 絞り込み中だけ出す行:条件の札(× で外せる)と人数 */}
       {!isEmptyCriteria(criteria) && (

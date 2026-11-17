@@ -804,6 +804,22 @@ button.leaveBadge {
 }
 
 // スマホ幅:文字を少しだけ小さく、名前の列をせまく
+.errorDetail {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: $sub;
+  overflow-wrap: anywhere;
+}
+
+.warning {
+  margin-bottom: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: #5c4400;
+  background: #fff4ce;
+  border-radius: 4px;
+}
+
 // ---- 予定の追加・変更 ----
 $danger: #c50f1f;
 
