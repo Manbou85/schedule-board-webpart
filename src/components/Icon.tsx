@@ -21,6 +21,7 @@ export type IconName =
   | 'filter'
   | 'close'
   | 'calendar'
+  | 'plus'
   | 'chevronLeft'
   | 'chevronRight'
   | 'chevronDown';
@@ -80,6 +81,7 @@ const SHAPES: { [name in IconName]: IShape } = {
   calendar: {
     paths: ['M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z', 'M3 10h18', 'M8 3v4M16 3v4']
   },
+  plus: { paths: ['M12 5v14M5 12h14'] },
   chevronLeft: { paths: ['M15 5l-7 7 7 7'] },
   chevronRight: { paths: ['M9 5l7 7-7 7'] },
   chevronDown: { paths: ['M5 9l7 7 7-7'] }

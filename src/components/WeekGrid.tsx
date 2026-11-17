@@ -2,7 +2,7 @@
 // ヘッダー(日付)と名前の列は、スクロールしても固定する。
 
 import * as React from 'react';
-import { DateKey, ICell, IDayInfo, IWorker } from '../core';
+import { DateKey, ICell, IDayInfo, IScheduleEntry, IWorker } from '../core';
 import { formatMonthDay, formatWeekday } from './format';
 import { Icon } from './Icon';
 import { ScheduleCell } from './ScheduleCell';
@@ -27,6 +27,12 @@ export interface IWeekGridProps {
   onToggleGroup: (key: string) => void;
   /** 日付を押したとき(その日の日表示を開く) */
   onSelectDay: (date: DateKey) => void;
+  /** その人の予定を編集できるか */
+  canEdit: (workerId: number) => boolean;
+  /** 編集できる人のマスの空いているところを押したとき(その日の予定を追加) */
+  onAdd: (workerId: number, date: DateKey) => void;
+  /** 予定を押したとき(変更・削除) */
+  onEdit: (entry: IScheduleEntry) => void;
 }
 
 /** 2つのマスが同じ長期の予定(帯をつなげる) */
@@ -37,7 +43,7 @@ function samePeriod(a: ICell | undefined, b: ICell | undefined): boolean {
 }
 
 export const WeekGrid: React.FC<IWeekGridProps> = (props) => {
-  const { days, today, groups, rows, selfId, collapsed, onToggleGroup, onSelectDay } = props;
+  const { days, today, groups, rows, selfId, collapsed, onToggleGroup, onSelectDay, canEdit, onAdd, onEdit } = props;
 
   const dayClass = (d: IDayInfo, base: string): string => {
     const c = [base];
@@ -102,6 +108,7 @@ export const WeekGrid: React.FC<IWeekGridProps> = (props) => {
               {!isCollapsed &&
                 g.workers.map((w) => {
                   const cells = rows.get(w.id) || [];
+                  const editable = canEdit(w.id);
                   return (
                     <tr key={w.id} className={w.id === selfId ? styles.selfRow : undefined}>
                       <th scope="row" className={styles.nameCell}>
@@ -109,8 +116,34 @@ export const WeekGrid: React.FC<IWeekGridProps> = (props) => {
                         {w.id === selfId && <span className={styles.selfMark}>あなた</span>}
                       </th>
                       {cells.map((cell, i) => (
-                        <td key={cell.date} className={dayClass(days[i], styles.cell)}>
-                          <ScheduleCell cell={cell} joinsPrev={samePeriod(cells[i - 1], cell)} joinsNext={samePeriod(cell, cells[i + 1])} />
+                        <td
+                          key={cell.date}
+                          className={dayClass(days[i], styles.cell) + (editable ? ' ' + styles.cellEditable : '')}
+                          onClick={editable ? () => onAdd(w.id, cell.date) : undefined}
+                        >
+                          <div className={styles.cellInner}>
+                            <ScheduleCell
+                              cell={cell}
+                              joinsPrev={samePeriod(cells[i - 1], cell)}
+                              joinsNext={samePeriod(cell, cells[i + 1])}
+                              onEdit={editable ? onEdit : undefined}
+                            />
+                          </div>
+                          {editable && (
+                            // キーボードでも追加できるように(ふだんは薄く、マウスを乗せると見える)
+                            <button
+                              type="button"
+                              className={styles.cellAdd}
+                              aria-label={w.name + ' ' + formatMonthDay(cell.date) + 'に予定を追加'}
+                              title="予定を追加"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onAdd(w.id, cell.date);
+                              }}
+                            >
+                              <Icon name="plus" size={14} />
+                            </button>
+                          )}
                         </td>
                       ))}
                     </tr>

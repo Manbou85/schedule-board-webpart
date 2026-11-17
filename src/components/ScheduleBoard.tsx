@@ -4,6 +4,12 @@
 import * as React from 'react';
 import {
   addDays,
+  canEditWorker,
+  draftFromEntry,
+  IEntryDraft,
+  IScheduleEntry,
+  newDraft,
+  suggestPlaces,
   createHolidayCalendar,
   DateKey,
   DEFAULT_CELL_RULE_OPTIONS,
@@ -30,6 +36,7 @@ import { IRangeData, IScheduleDataService } from '../services/IScheduleDataServi
 import { ALL, FilterPopover } from './FilterPopover';
 import { DatePickButton } from './DatePickButton';
 import { DayList } from './DayList';
+import { EntryForm } from './EntryForm';
 import { formatShortDate, formatShortRange } from './format';
 import { getCategoryStyle, HOLIDAY_WORK_STYLE, LEAVE_STYLE } from './categoryStyle';
 import { Icon } from './Icon';
@@ -61,6 +68,7 @@ interface IBase {
   workers: IWorker[];
   categories: string[];
   selfId?: number;
+  isAdmin: boolean;
 }
 
 const SELF_GROUP = '__self__';
@@ -85,6 +93,32 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const [criteria, setCriteria] = React.useState<IFilterCriteria>({});
   const [pinSelf, setPinSelf] = React.useState<boolean>(pinSelfByDefault);
   const [collapsed, setCollapsed] = React.useState<string[]>([]);
+  // 開いている登録・編集フォーム(閉じているときは undefined)
+  const [formDraft, setFormDraft] = React.useState<IEntryDraft | undefined>(undefined);
+  // 保存のあとに読み直すための番号
+  const [reloadKey, setReloadKey] = React.useState(0);
+  // 「予定を登録しました」などのお知らせ
+  const [toast, setToast] = React.useState('');
+
+  React.useEffect(() => {
+    if (!toast) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setToast(''), 3000);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  const loadPlaces = React.useCallback(
+    (workerId: number): Promise<string[]> =>
+      service.getRecentEntries(workerId, 100).then((list) => suggestPlaces(list, workerId, undefined, 30)),
+    [service]
+  );
+  const saveEntry = React.useCallback(
+    (entry: Omit<IScheduleEntry, 'id'> & { id?: number }): Promise<void> =>
+      (entry.id !== undefined ? service.updateEntry(entry as IScheduleEntry) : service.createEntry(entry)).then(() => undefined),
+    [service]
+  );
+  const deleteEntry = React.useCallback((id: number): Promise<void> => service.deleteEntry(id), [service]);
 
   // 人・区分・ログイン中のユーザーは、ページを開いたときに1回だけ読む
   React.useEffect(() => {
@@ -96,7 +130,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         }
         const list = sortWorkers(excludeDepartments(workers, excludedKey.split('\n')));
         const self = findSelf(list, user.account);
-        setBase({ workers: list, categories, selfId: self ? self.id : undefined });
+        setBase({ workers: list, categories, selfId: self ? self.id : undefined, isAdmin: user.isAdmin });
       })
       .catch(() => alive && setError('メンバーの一覧を読み込めませんでした。少し時間をおいて、ページを開き直してください。'));
     return () => {
@@ -115,7 +149,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     return () => {
       alive = false;
     };
-  }, [service, rangeStart, rangeEnd]);
+  }, [service, rangeStart, rangeEnd, reloadKey]);
 
   const days = React.useMemo(() => {
     const calendar = createHolidayCalendar(range ? range.holidays : []);
@@ -172,6 +206,19 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     setView('day');
   };
   const day = days[0];
+  const canEdit = (workerId: number): boolean => canEditWorker(workerId, base.selfId, base.isAdmin);
+  const canAdd = base.isAdmin || base.selfId !== undefined;
+  // 「予定を追加」ボタンの日付:日表示はその日。週間表示は、今日がその週にあれば今日、なければ週の月曜
+  const addDefaultDate = view === 'day' ? date : today >= weekStart && today <= addDays(weekStart, 6) ? today : weekStart;
+  const openAdd = (workerId: number | undefined, d: DateKey): void => setFormDraft(newDraft(workerId, d));
+  const openEdit = (entry: IScheduleEntry): void => setFormDraft(draftFromEntry(entry));
+  const closeForm = (message?: string): void => {
+    setFormDraft(undefined);
+    if (message) {
+      setToast(message);
+      setReloadKey(reloadKey + 1);
+    }
+  };
   const department = criteria.departments && criteria.departments[0] ? criteria.departments[0] : ALL;
   const category = criteria.categories && criteria.categories[0] ? criteria.categories[0] : ALL;
 
@@ -220,6 +267,16 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
 
         {/* 右:探す・絞り込み・表示の切り替え */}
         <div className={styles.toolGroup}>
+          {canAdd && (
+            <button
+              type="button"
+              className={styles.addButton}
+              onClick={() => openAdd(base.selfId, addDefaultDate)}
+            >
+              <Icon name="plus" size={18} />
+              <span className={styles.toolButtonText}>予定を追加</span>
+            </button>
+          )}
           <label className={styles.searchBox}>
             <Icon name="search" size={18} className={styles.searchIcon} />
             <span className={styles.srOnly}>名前・現場名で探す</span>
@@ -227,7 +284,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
               type="search"
               className={styles.searchInput}
               value={criteria.keyword || ''}
-              placeholder="名前・現場名で探す"
+              placeholder="名前・現場名"
               onChange={(e) => setCriteria({ ...criteria, keyword: e.target.value })}
             />
           </label>
@@ -294,6 +351,9 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
           collapsed={filtering ? [] : collapsed}
           onToggleGroup={toggleGroup}
           onSelectDay={openDay}
+          canEdit={canEdit}
+          onAdd={openAdd}
+          onEdit={openEdit}
         />
       ) : (
         <DayList
@@ -302,8 +362,30 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
           selfId={base.selfId}
           collapsed={filtering ? [] : collapsed}
           onToggleGroup={toggleGroup}
+          canEdit={canEdit}
+          onAdd={(workerId) => openAdd(workerId, date)}
+          onEdit={openEdit}
         />
       )}
+
+      {formDraft && (
+        <EntryForm
+          initial={formDraft}
+          today={today}
+          categories={base.categories}
+          workers={base.workers}
+          isAdmin={base.isAdmin}
+          selfId={base.selfId}
+          loadPlaces={loadPlaces}
+          onSave={saveEntry}
+          onDelete={deleteEntry}
+          onClose={closeForm}
+        />
+      )}
+
+      <div className={styles.toastArea} aria-live="polite">
+        {toast && <div className={styles.toast}>{toast}</div>}
+      </div>
 
       <ul className={styles.legend} aria-label="区分の見かた">
         {base.categories.map((c) => {

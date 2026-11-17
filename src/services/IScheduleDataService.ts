@@ -30,4 +30,12 @@ export interface IScheduleDataService {
   getCurrentUser(): Promise<ICurrentUser>;
   /** 期間(開始日〜終了日)にかかる予定・休暇・休日出勤・会社休日 */
   getRange(start: DateKey, end: DateKey): Promise<IRangeData>;
+  /** その人の最近の予定(行き先の候補に使う。開始日の新しい順に limit 件まで) */
+  getRecentEntries(workerId: number, limit: number): Promise<IScheduleEntry[]>;
+  /** 予定を登録する。保存した予定(ID付き)を返す */
+  createEntry(entry: Omit<IScheduleEntry, 'id'>): Promise<IScheduleEntry>;
+  /** 予定を書き換える */
+  updateEntry(entry: IScheduleEntry): Promise<IScheduleEntry>;
+  /** 予定を削除する */
+  deleteEntry(id: number): Promise<void>;
 }

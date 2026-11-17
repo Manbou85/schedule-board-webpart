@@ -6,7 +6,7 @@ import { formatTimeRange, ICell, IScheduleEntry } from '../core';
 import { getCategoryStyle, HOLIDAY_WORK_STYLE, ICategoryStyle, LEAVE_STYLE } from './categoryStyle';
 import { formatPeriod } from './format';
 import { Icon } from './Icon';
-import { LeaveBadge } from './ScheduleCell';
+import { EntryBox, LeaveBadge } from './ScheduleCell';
 import { IGridGroup } from './WeekGrid';
 import styles from './ScheduleBoard.module.scss';
 
@@ -17,9 +17,15 @@ export interface IDayListProps {
   selfId?: number;
   collapsed: string[];
   onToggleGroup: (key: string) => void;
+  canEdit: (workerId: number) => boolean;
+  onAdd: (workerId: number) => void;
+  onEdit: (entry: IScheduleEntry) => void;
 }
 
 interface IDetailProps {
+  /** 編集できる予定のとき:押すと変更フォーム */
+  entry?: IScheduleEntry;
+  onEdit?: (entry: IScheduleEntry) => void;
   st: ICategoryStyle;
   /** 区分名などの小さい見出し */
   label: React.ReactNode;
@@ -31,11 +37,9 @@ interface IDetailProps {
 }
 
 /** 予定1件分(アイコン+区分+行き先+時刻など) */
-const Detail: React.FC<IDetailProps> = ({ st, label, place, meta, note, dimmed }) => (
-  <div
-    className={styles.dayEntry + (dimmed ? ' ' + styles.dimmed : '')}
-    style={{ borderLeftColor: st.color, background: st.background }}
-  >
+const Detail: React.FC<IDetailProps> = ({ entry, onEdit, st, label, place, meta, note, dimmed }) => {
+  const inner = (
+    <>
     <Icon name={st.icon} color={st.color} size={20} className={styles.icon} />
     <div className={styles.dayEntryText}>
       <span className={styles.categoryLabel}>{label}</span>
@@ -43,14 +47,26 @@ const Detail: React.FC<IDetailProps> = ({ st, label, place, meta, note, dimmed }
       {meta.filter((m) => !!m).length > 0 && <span className={styles.time}>{meta.filter((m) => !!m).join(' ・ ')}</span>}
       {note && <span className={styles.dayNote}>{note}</span>}
     </div>
-  </div>
-);
+    </>
+  );
+  const className = styles.dayEntry + (dimmed ? ' ' + styles.dimmed : '');
+  const style = { borderLeftColor: st.color, background: st.background };
+  return entry ? (
+    <EntryBox entry={entry} onEdit={onEdit} className={className} style={style}>
+      {inner}
+    </EntryBox>
+  ) : (
+    <div className={className} style={style}>
+      {inner}
+    </div>
+  );
+};
 
 function entryMeta(e: IScheduleEntry, withPeriod: boolean): string[] {
   return [formatTimeRange(e.startTime, e.endTime), withPeriod ? '期間 ' + formatPeriod(e.startDate, e.endDate) : ''];
 }
 
-const DayCell: React.FC<{ cell: ICell | undefined }> = ({ cell }) => {
+const DayCell: React.FC<{ cell: ICell | undefined; onEdit?: (entry: IScheduleEntry) => void }> = ({ cell, onEdit }) => {
   if (!cell) {
     return <></>;
   }
@@ -72,12 +88,14 @@ const DayCell: React.FC<{ cell: ICell | undefined }> = ({ cell }) => {
       break;
     case 'single':
       body = c.entries.map((e) => (
-        <Detail key={e.id} st={getCategoryStyle(e.category)} label={e.category} place={e.title} meta={entryMeta(e, false)} note={e.note} />
+        <Detail key={e.id} entry={e} onEdit={onEdit} st={getCategoryStyle(e.category)} label={e.category} place={e.title} meta={entryMeta(e, false)} note={e.note} />
       ));
       break;
     case 'period':
       body = (
         <Detail
+          entry={c.entry}
+          onEdit={onEdit}
           st={getCategoryStyle(c.entry.category)}
           label={c.dimmed ? c.entry.category + '(休日)' : c.entry.category}
           place={c.entry.title}
@@ -104,7 +122,7 @@ const DayCell: React.FC<{ cell: ICell | undefined }> = ({ cell }) => {
   );
 };
 
-export const DayList: React.FC<IDayListProps> = ({ groups, rows, selfId, collapsed, onToggleGroup }) => (
+export const DayList: React.FC<IDayListProps> = ({ groups, rows, selfId, collapsed, onToggleGroup, canEdit, onAdd, onEdit }) => (
   <div className={styles.dayList}>
     {groups.map((g) => {
       const isCollapsed = g.collapsible && collapsed.indexOf(g.key) >= 0;
@@ -130,7 +148,13 @@ export const DayList: React.FC<IDayListProps> = ({ groups, rows, selfId, collaps
                     {w.id === selfId && <span className={styles.selfMark}>あなた</span>}
                   </div>
                   <div className={styles.dayContent}>
-                    <DayCell cell={(rows.get(w.id) || [])[0]} />
+                    <DayCell cell={(rows.get(w.id) || [])[0]} onEdit={canEdit(w.id) ? onEdit : undefined} />
+                    {canEdit(w.id) && (
+                      <button type="button" className={styles.dayAdd} onClick={() => onAdd(w.id)}>
+                        <Icon name="plus" size={14} />
+                        予定を追加
+                      </button>
+                    )}
                   </div>
                 </li>
               ))}

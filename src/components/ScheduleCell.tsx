@@ -14,7 +14,39 @@ export interface IScheduleCellProps {
   joinsPrev: boolean;
   /** 次の日も同じ長期の予定(帯が右につながる) */
   joinsNext: boolean;
+  /** 編集できる人の行のとき:予定を押したら編集フォームを開く */
+  onEdit?: (entry: IScheduleEntry) => void;
 }
+
+interface IEntryBoxProps {
+  entry: IScheduleEntry;
+  onEdit?: (entry: IScheduleEntry) => void;
+  className: string;
+  style: React.CSSProperties;
+  title?: string;
+  children: React.ReactNode;
+}
+
+/** 予定1件の箱。編集できるときはボタンにする(押すと編集フォーム) */
+export const EntryBox: React.FC<IEntryBoxProps> = ({ entry, onEdit, className, style, title, children }) =>
+  onEdit ? (
+    <button
+      type="button"
+      className={className + ' ' + styles.entryButton}
+      style={style}
+      title={(title ? title + '\n' : '') + '押すと変更・削除できます'}
+      onClick={(e) => {
+        e.stopPropagation(); // マスを押したとき(新しく追加)と区別する
+        onEdit(entry);
+      }}
+    >
+      {children}
+    </button>
+  ) : (
+    <div className={className} style={style} title={title}>
+      {children}
+    </div>
+  );
 
 /**
  * 午前休などのバッジ。
@@ -41,7 +73,10 @@ export const LeaveBadge: React.FC<{ badge: ILeaveBadge; showRemarks?: boolean }>
         className={styles.leaveBadge}
         title={badge.remarks}
         aria-expanded={open}
-        onClick={() => setOpen(!open)}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(!open);
+        }}
       >
         {badge.label}
         <Icon name="info" size={13} className={styles.badgeInfo} />
@@ -51,22 +86,28 @@ export const LeaveBadge: React.FC<{ badge: ILeaveBadge; showRemarks?: boolean }>
   );
 };
 
-const SingleEntry: React.FC<{ entry: IScheduleEntry }> = ({ entry }) => {
+const SingleEntry: React.FC<{ entry: IScheduleEntry; onEdit?: (entry: IScheduleEntry) => void }> = ({ entry, onEdit }) => {
   const st = getCategoryStyle(entry.category);
   const time = formatTimeRange(entry.startTime, entry.endTime);
   return (
-    <div className={styles.single} style={{ borderLeftColor: st.color, background: st.background }} title={entry.note || undefined}>
+    <EntryBox
+      entry={entry}
+      onEdit={onEdit}
+      className={styles.single}
+      style={{ borderLeftColor: st.color, background: st.background }}
+      title={entry.note || undefined}
+    >
       <Icon name={st.icon} color={st.color} className={styles.icon} />
       <span className={styles.entryText}>
         <span className={styles.categoryLabel}>{entry.category}</span>
         <span className={styles.place}>{entry.title}</span>
         {time && <span className={styles.time}>{time}</span>}
       </span>
-    </div>
+    </EntryBox>
   );
 };
 
-export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, joinsNext }) => {
+export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, joinsNext, onEdit }) => {
   const c = cell.content;
   let body: React.ReactNode;
 
@@ -92,7 +133,7 @@ export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, jo
       );
       break;
     case 'single':
-      body = c.entries.map((e) => <SingleEntry key={e.id} entry={e} />);
+      body = c.entries.map((e) => <SingleEntry key={e.id} entry={e} onEdit={onEdit} />);
       break;
     case 'period': {
       const st = getCategoryStyle(c.entry.category);
@@ -118,7 +159,9 @@ export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, jo
         </>
       );
       body = (
-        <div
+        <EntryBox
+          entry={c.entry}
+          onEdit={onEdit}
           className={classNames.join(' ')}
           style={{ background: st.background, borderColor: st.color }}
           title={c.entry.category + ':' + c.entry.title + '(' + formatPeriod(c.entry.startDate, c.entry.endDate) + ')'}
@@ -134,7 +177,7 @@ export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, jo
           ) : (
             text
           )}
-        </div>
+        </EntryBox>
       );
       break;
     }

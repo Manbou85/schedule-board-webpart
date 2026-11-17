@@ -6,3 +6,4 @@ export * from './labels';
 export * from './cellRule';
 export * from './workers';
 export * from './search';
+export * from './entryForm';

@@ -9,7 +9,9 @@
 - プレビュー版:`npm run build` → `npm run preview` → `temp/schedule-preview.html`(ダミーデータは `preview/dummyData.js`)
 - 日表示(`src/components/DayList.tsx`):週間表示の日付を押すと開く。スマホ幅では最初から日表示
 - 上部はツールバー1行(スマホ2行)。検索欄は「名前・現場名」の1つ、部署・区分・自分を一番上は「絞り込み」のポップアップ(`FilterPopover.tsx`)
-- まだ:登録フォーム、WEBパーツ本体への組み込み(`src/webparts` は雛形のまま)
+- 登録フォーム(`src/components/EntryForm.tsx`)。入力チェックは `src/core/entryForm.ts`。プレビューでは「管理者として見る」「保存を失敗させる」を切り替えられる
+- 【要確認】ワンタップ登録「在社」の行き先は「本社」(`DEFAULT_QUICK_ACTIONS`)
+- まだ:WEBパーツ本体への組み込み(`src/webparts` は雛形のまま)
 - 区分のアイコンは自作の線画SVG(`src/components/Icon.tsx`)。区分との対応は `src/components/categoryStyle.ts`
 
 ## 1.5 確認用プレビュー(アーティファクト)
