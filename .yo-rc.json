@@ -1,0 +1,22 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "whichFolder": "subdir",
+    "solutionName": "schedule-board-webpart",
+    "environment": "spo",
+    "useGulp": false,
+    "componentType": "webpart",
+    "template": "react",
+    "componentName": "ScheduleBoard",
+    "componentDescription": "行動予定表(デジタル行先ボード)",
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "26.13.1",
+    "sdksVersions": {},
+    "version": "1.24.1",
+    "libraryName": "schedule-board-webpart",
+    "libraryId": "140e03f0-6017-481c-a667-bd0aa3269455",
+    "packageManager": "npm",
+    "solutionShortDescription": "schedule-board-webpart description",
+    "skipFeatureDeployment": true
+  }
+}
