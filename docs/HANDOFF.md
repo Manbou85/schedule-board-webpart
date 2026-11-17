@@ -8,6 +8,7 @@
 - 週間表示の画面(`src/components`)と、プレビュー用のメモリ上のデータ置き場(`src/services/MemoryScheduleService.ts`)
 - プレビュー版:`npm run build` → `npm run preview` → `temp/schedule-preview.html`(ダミーデータは `preview/dummyData.js`)
 - 日表示(`src/components/DayList.tsx`):週間表示の日付を押すと開く。スマホ幅では最初から日表示
+- 上部はツールバー1行(スマホ2行)。検索欄は「名前・現場名」の1つ、部署・区分・自分を一番上は「絞り込み」のポップアップ(`FilterPopover.tsx`)
 - まだ:登録フォーム、WEBパーツ本体への組み込み(`src/webparts` は雛形のまま)
 - 区分のアイコンは自作の線画SVG(`src/components/Icon.tsx`)。区分との対応は `src/components/categoryStyle.ts`
 

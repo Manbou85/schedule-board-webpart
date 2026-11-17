@@ -17,6 +17,10 @@ export type IconName =
   | 'sun' // 休暇
   | 'calendarCheck' // 休日出勤
   | 'info'
+  | 'search'
+  | 'filter'
+  | 'close'
+  | 'calendar'
   | 'chevronLeft'
   | 'chevronRight'
   | 'chevronDown';
@@ -69,6 +73,12 @@ const SHAPES: { [name in IconName]: IShape } = {
   info: {
     paths: ['M12 11v5', 'M12 8h.01'],
     circles: [[12, 12, 9]]
+  },
+  search: { paths: ['M20 20l-4.5-4.5'], circles: [[10.5, 10.5, 6.5]] },
+  filter: { paths: ['M4 6h16', 'M7 12h10', 'M10 18h4'] },
+  close: { paths: ['M6 6l12 12M18 6L6 18'] },
+  calendar: {
+    paths: ['M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z', 'M3 10h18', 'M8 3v4M16 3v4']
   },
   chevronLeft: { paths: ['M15 5l-7 7 7 7'] },
   chevronRight: { paths: ['M9 5l7 7-7 7'] },

@@ -36,67 +36,185 @@ $dayWidth: 8.2em;
   border-radius: 6px;
 }
 
-// ---- 上の帯(タイトル・週の切り替え) ----
+// ---- 上のツールバー ----
+// SharePoint の固定の表示が上にあるので、ここはできるだけ低く(PC は1行、スマホは2行)
+$control: 36px; // ボタン・入力欄の高さ
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
-  margin-bottom: 12px;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: 8px;
+  position: relative; // スマホでポップアップを横いっぱいに出すための基準
 }
 
-.title {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-}
-
-.weekNav {
+.navGroup,
+.toolGroup {
   display: flex;
+  align-items: center;
   gap: 6px;
+  min-width: 0;
 }
 
-.navButton {
+.iconButton,
+.toolButton {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  min-height: 40px;
-  padding: 6px 14px;
-  font-size: 15px;
+  height: $control;
+  font-size: 14px;
+  font-family: inherit;
   color: $text;
   background: #fff;
-  border: 1px solid #b3b3b3;
+  border: 1px solid #c8c8c8;
   border-radius: 4px;
   cursor: pointer;
+  white-space: nowrap;
 
   &:hover:not(:disabled) {
-    background: #f0f0f0;
+    background: #f3f3f3;
   }
 
   &:disabled {
-    color: #a0a0a0;
+    color: #a6a6a6;
     cursor: default;
   }
 }
 
-.weekLabel {
-  font-size: 17px;
-  font-weight: 600;
+.iconButton {
+  width: $control;
+  padding: 0;
 }
 
-// 週間表示/日表示の切り替え(押されている方を塗りつぶす)
+.toolButton {
+  padding: 0 12px;
+}
+
+.toolButtonActive {
+  color: $accent;
+  border-color: $accent;
+  background: #eef5fc;
+}
+
+.countBadge {
+  min-width: 18px;
+  padding: 0 5px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+  color: #fff;
+  background: $accent;
+  border-radius: 9px;
+}
+
+.dateLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.todayChip,
+.holidayChip {
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  border-radius: 10px;
+}
+
+.todayChip {
+  color: #fff;
+  background: $accent;
+}
+
+.holidayChip {
+  color: #c50f1f;
+  background: #fde7e9;
+}
+
+.datePick {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+// 日付の入力欄は、ふだんは見えないようにしてボタンの下に置く(ブラウザの日付画面の位置合わせのため)
+.dateInputHidden {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dateInput {
+  height: $control;
+  padding: 0 6px;
+  font-size: 16px;
+  border: 1px solid #b3b3b3;
+  border-radius: 4px;
+}
+
+// 検索欄(虫めがねのアイコン付き)
+.searchBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 15em;
+  min-width: 0;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 9px;
+  color: $sub;
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  height: $control;
+  padding: 0 8px 0 32px;
+  font-size: 16px; // 16px 未満だと iPhone で入力時に画面が拡大されるため
+  font-family: inherit;
+  color: $text;
+  background: #fff;
+  border: 1px solid #c8c8c8;
+  border-radius: 4px;
+
+  &::placeholder {
+    font-size: 14px;
+    color: #8a8a8a;
+  }
+}
+
+// 週/日 の切り替え(押されている方を塗りつぶす)
 .viewSwitch {
   display: inline-flex;
-  margin-left: auto;
+  height: $control;
   border: 1px solid $accent;
   border-radius: 4px;
   overflow: hidden;
 }
 
 .viewButton {
-  min-height: 40px;
-  padding: 6px 16px;
-  font-size: 15px;
+  min-width: 44px;
+  padding: 0 12px;
+  font-size: 14px;
   font-family: inherit;
   color: $accent;
   background: #fff;
@@ -118,53 +236,54 @@ $dayWidth: 8.2em;
   }
 }
 
-.navRow {
+// ---- 絞り込みのポップアップ ----
+.popoverWrap {
+  position: relative;
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20; // 表の固定ヘッダーより上
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 16px;
-  margin-bottom: 12px;
-}
-
-.weekLabel .todayMark {
-  display: inline-block !important;
-  margin: 0 0 0 8px;
-  vertical-align: 2px;
-}
-
-.holidayChip {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 0 8px;
-  font-size: 12px;
-  font-weight: 600;
-  vertical-align: 2px;
-  color: #c50f1f;
-  background: #fde7e9;
-  border-radius: 10px;
-}
-
-.datePick {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-
-  .input {
-    width: auto;
-  }
-}
-
-// ---- 検索・絞り込み ----
-.filterBar {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 10px 12px;
-  padding: 12px;
-  margin-bottom: 12px;
-  background: #f7f7f7;
-  border: 1px solid #e6e6e6;
+  flex-direction: column;
+  gap: 12px;
+  width: 280px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid #d1d1d1;
   border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+
+.popoverSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+.popoverFoot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.primaryButton {
+  height: $control;
+  padding: 0 16px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #fff;
+  background: $accent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    background: #0c5aa0;
+  }
 }
 
 .field {
@@ -174,14 +293,15 @@ $dayWidth: 8.2em;
 }
 
 .fieldLabel {
-  font-size: 14px;
+  font-size: 13px;
   color: $sub;
 }
 
 .input {
   min-height: 40px;
   padding: 6px 8px;
-  font-size: 16px; // 16px 未満だと iPhone で入力時に画面が拡大されるため
+  font-size: 16px;
+  font-family: inherit;
   color: $text;
   background: #fff;
   border: 1px solid #b3b3b3;
@@ -189,22 +309,10 @@ $dayWidth: 8.2em;
   width: 100%;
 }
 
-.moreToggle {
-  display: none;
-}
-
-.filterFoot {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 20px;
-}
-
 .checkbox {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-height: 32px;
   cursor: pointer;
 
@@ -214,18 +322,62 @@ $dayWidth: 8.2em;
   }
 }
 
+// 絞り込み中だけ出す行
+.activeFilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 8px 0 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: $accent;
+  background: #eef5fc;
+  border: 1px solid #b4d3f2;
+  border-radius: 14px;
+  cursor: pointer;
+
+  &:hover {
+    background: #dcebfa;
+  }
+}
+
 .count {
+  font-size: 13px;
   color: $sub;
 }
 
 .linkButton {
-  padding: 4px 6px;
-  font-size: 15px;
+  padding: 2px 4px;
+  font-size: 13px;
+  font-family: inherit;
   color: $accent;
   background: none;
   border: none;
   text-decoration: underline;
   cursor: pointer;
+}
+
+// キーボードで操作しているときの枠
+.iconButton,
+.toolButton,
+.viewButton,
+.chip,
+.primaryButton,
+.linkButton,
+.searchInput {
+  &:focus-visible {
+    outline: 2px solid $accent;
+    outline-offset: 1px;
+  }
 }
 
 // ---- 表 ----
@@ -418,9 +570,6 @@ span.groupButton {
   margin-left: 3px;
 }
 
-.flipped {
-  transform: rotate(180deg);
-}
 
 .entryText {
   display: flex;
@@ -655,26 +804,48 @@ button.leaveBadge {
 }
 
 // スマホ幅:文字を少しだけ小さく、名前の列をせまく
+// スマホ幅:ツールバーは2行(1行目:日付の移動、2行目:探す・絞り込み・週/日)
 @media (max-width: 640px) {
   .scheduleBoard {
     font-size: 14px;
   }
 
-  .title {
-    font-size: 19px;
+  .navGroup,
+  .toolGroup {
+    width: 100%;
   }
 
-  .weekLabel {
-    width: 100%;
+  .dateLabel {
+    flex: 1;
+    justify-content: center;
+    margin: 0;
     font-size: 15px;
   }
 
-  .navButton {
+  .searchBox {
     flex: 1;
+    width: auto;
   }
 
-  .weekNav {
-    width: 100%;
+  // ポップアップはツールバーの横幅いっぱいに出す
+  .popoverWrap {
+    position: static;
+  }
+
+  .popover {
+    left: 0;
+    right: 0;
+    width: auto;
+  }
+
+  // スマホでは「絞り込み」の文字を見た目だけ省いてアイコンにする(読み上げには残す)
+  .toolButtonText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .nameHead,
@@ -682,17 +853,8 @@ button.leaveBadge {
     width: 6.5em;
   }
 
-  .viewSwitch {
-    width: 100%;
-    margin-left: 0;
-  }
-
-  .viewButton {
-    flex: 1;
-  }
-
-  .datePick {
-    margin-left: 0;
+  .grid {
+    min-width: calc(6.5em + 7 * #{$dayWidth});
   }
 
   .dayRow {
@@ -701,25 +863,5 @@ button.leaveBadge {
 
   .dayName {
     padding: 8px;
-  }
-
-  // スマホでは「くわしい条件」を開いたときだけ、現場名・部署・区分を出す
-  .moreToggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    justify-self: start;
-  }
-
-  .moreField {
-    display: none;
-  }
-
-  .filterBar.moreOpen .moreField {
-    display: flex;
-  }
-
-  .grid {
-    min-width: calc(6.5em + 7 * #{$dayWidth});
   }
 }

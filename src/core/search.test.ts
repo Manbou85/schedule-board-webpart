@@ -75,6 +75,16 @@ describe('絞り込み', () => {
     expect(ids(filterWorkers(workers, dayRows, { categories: ['現場'] }))).toEqual([2, 3]);
   });
 
+  it('検索欄1つで、名前か現場名のどちらかに合う人を探す', () => {
+    expect(isEmptyCriteria({ keyword: ' ' })).toBe(true);
+    expect(ids(filterWorkers(workers, rows, { keyword: '山田' }))).toEqual([1]);
+    expect(ids(filterWorkers(workers, rows, { keyword: 'ビル' }))).toEqual([2, 3]);
+    // 週に出ていない現場名ではヒットしない
+    expect(ids(filterWorkers(workers, rows, { keyword: '橋梁' }))).toEqual([]);
+    // 部署と組み合わせると「かつ」
+    expect(ids(filterWorkers(workers, rows, { keyword: 'ビル', departments: ['総務部'] }))).toEqual([]);
+  });
+
   it('条件を組み合わせると「かつ」になる', () => {
     expect(ids(filterWorkers(workers, rows, { name: '山', departments: ['建築部'], place: 'ビル' }))).toEqual([3]);
   });

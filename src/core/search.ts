@@ -25,6 +25,8 @@ export function matchesText(text: string | undefined, query: string | undefined)
 
 /** 絞り込みの条件。空のものは「条件なし」 */
 export interface IFilterCriteria {
+  /** 名前 または 行き先・現場名 の一部(どちらかに合えばよい。検索欄が1つのとき用) */
+  keyword?: string;
   /** 名前(WorkerName)の一部 */
   name?: string;
   /** 行き先・現場名(休日出勤の出勤先も含む)の一部 */
@@ -38,6 +40,7 @@ export interface IFilterCriteria {
 /** 条件が何も入っていないか */
 export function isEmptyCriteria(c: IFilterCriteria): boolean {
   return (
+    !normalizeForSearch(c.keyword) &&
     !normalizeForSearch(c.name) &&
     !normalizeForSearch(c.place) &&
     !(c.departments && c.departments.length > 0) &&
@@ -71,6 +74,14 @@ export function filterWorkers(
       return false;
     }
     const cells = rows.get(w.id) || [];
+    if (normalizeForSearch(criteria.keyword)) {
+      const keywordHit =
+        matchesText(w.name, criteria.keyword) ||
+        cells.some((c) => cellPlaces(c).some((p) => matchesText(p, criteria.keyword)));
+      if (!keywordHit) {
+        return false;
+      }
+    }
     if (normalizeForSearch(criteria.place)) {
       const placeHit = cells.some((c) => cellPlaces(c).some((p) => matchesText(p, criteria.place)));
       if (!placeHit) {

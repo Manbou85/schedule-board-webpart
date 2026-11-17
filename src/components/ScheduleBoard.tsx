@@ -17,7 +17,7 @@ import {
   ICell,
   ICellRuleOptions,
   IFilterCriteria,
-  isValidDateKey,
+  isEmptyCriteria,
   IWorker,
   LEAVE_CATEGORY,
   resolveRow,
@@ -27,9 +27,10 @@ import {
   weekDates
 } from '../core';
 import { IRangeData, IScheduleDataService } from '../services/IScheduleDataService';
-import { FilterBar } from './FilterBar';
+import { ALL, FilterPopover } from './FilterPopover';
+import { DatePickButton } from './DatePickButton';
 import { DayList } from './DayList';
-import { formatLongDate, formatWeekLabel } from './format';
+import { formatShortDate, formatShortRange } from './format';
 import { getCategoryStyle, HOLIDAY_WORK_STYLE, LEAVE_STYLE } from './categoryStyle';
 import { Icon } from './Icon';
 import { IGridGroup, WeekGrid } from './WeekGrid';
@@ -171,6 +172,8 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     setView('day');
   };
   const day = days[0];
+  const department = criteria.departments && criteria.departments[0] ? criteria.departments[0] : ALL;
+  const category = criteria.categories && criteria.categories[0] ? criteria.categories[0] : ALL;
 
   const toggleGroup = (key: string): void => {
     setCollapsed(collapsed.indexOf(key) >= 0 ? collapsed.filter((k) => k !== key) : collapsed.concat([key]));
@@ -179,79 +182,102 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   return (
     <div className={styles.scheduleBoard}>
       <div className={styles.toolbar}>
-        <h2 className={styles.title}>行動予定表</h2>
-        <div className={styles.viewSwitch} role="group" aria-label="表示の切り替え">
-          <button type="button" className={styles.viewButton} aria-pressed={view === 'week'} onClick={() => setView('week')}>
-            週間表示
+        {/* 左:日付の移動 */}
+        <div className={styles.navGroup} role="group" aria-label={view === 'week' ? '週の切り替え' : '日の切り替え'}>
+          <button
+            type="button"
+            className={styles.iconButton}
+            aria-label={view === 'week' ? '前の週' : '前の日'}
+            title={view === 'week' ? '前の週' : '前の日'}
+            onClick={() => setDate(addDays(date, view === 'week' ? -7 : -1))}
+          >
+            <Icon name="chevronLeft" size={18} />
           </button>
-          <button type="button" className={styles.viewButton} aria-pressed={view === 'day'} onClick={() => setView('day')}>
-            日表示
+          <button
+            type="button"
+            className={styles.toolButton}
+            disabled={view === 'week' ? weekStart === thisWeek : date === today}
+            onClick={() => setDate(today)}
+          >
+            {view === 'week' ? '今週' : '今日'}
           </button>
+          <button
+            type="button"
+            className={styles.iconButton}
+            aria-label={view === 'week' ? '次の週' : '次の日'}
+            title={view === 'week' ? '次の週' : '次の日'}
+            onClick={() => setDate(addDays(date, view === 'week' ? 7 : 1))}
+          >
+            <Icon name="chevronRight" size={18} />
+          </button>
+          <div className={styles.dateLabel} aria-live="polite">
+            {view === 'week' ? formatShortRange(weekStart, addDays(weekStart, 6)) : formatShortDate(date)}
+            {view === 'day' && date === today && <span className={styles.todayChip}>今日</span>}
+            {view === 'day' && range && day && day.isHoliday && <span className={styles.holidayChip}>{day.holidayName || '休日'}</span>}
+          </div>
+          <DatePickButton value={date} onChange={setDate} />
+        </div>
+
+        {/* 右:探す・絞り込み・表示の切り替え */}
+        <div className={styles.toolGroup}>
+          <label className={styles.searchBox}>
+            <Icon name="search" size={18} className={styles.searchIcon} />
+            <span className={styles.srOnly}>名前・現場名で探す</span>
+            <input
+              type="search"
+              className={styles.searchInput}
+              value={criteria.keyword || ''}
+              placeholder="名前・現場名で探す"
+              onChange={(e) => setCriteria({ ...criteria, keyword: e.target.value })}
+            />
+          </label>
+          <FilterPopover
+            department={department}
+            category={category}
+            departments={departments}
+            categories={categoryOptions}
+            pinSelf={pinSelf}
+            hasSelf={base.selfId !== undefined}
+            onDepartmentChange={(v) => setCriteria({ ...criteria, departments: v ? [v] : [] })}
+            onCategoryChange={(v) => setCriteria({ ...criteria, categories: v ? [v] : [] })}
+            onPinSelfChange={setPinSelf}
+          />
+          <div className={styles.viewSwitch} role="group" aria-label="表示の切り替え">
+            <button type="button" className={styles.viewButton} aria-pressed={view === 'week'} onClick={() => setView('week')}>
+              週
+            </button>
+            <button type="button" className={styles.viewButton} aria-pressed={view === 'day'} onClick={() => setView('day')}>
+              日
+            </button>
+          </div>
         </div>
       </div>
 
-      {view === 'week' ? (
-        <div className={styles.navRow}>
-          <div className={styles.weekNav} role="group" aria-label="週の切り替え">
-            <button type="button" className={styles.navButton} onClick={() => setDate(addDays(date, -7))}>
-              <Icon name="chevronLeft" size={16} />
-              前の週
+      {/* 絞り込み中だけ出す行:条件の札(× で外せる)と人数 */}
+      {!isEmptyCriteria(criteria) && (
+        <div className={styles.activeFilters} aria-live="polite">
+          {department !== ALL && (
+            <button type="button" className={styles.chip} onClick={() => setCriteria({ ...criteria, departments: [] })}>
+              部署:{department}
+              <Icon name="close" size={14} />
+              <span className={styles.srOnly}>(外す)</span>
             </button>
-            <button type="button" className={styles.navButton} disabled={weekStart === thisWeek} onClick={() => setDate(today)}>
-              今週
+          )}
+          {category !== ALL && (
+            <button type="button" className={styles.chip} onClick={() => setCriteria({ ...criteria, categories: [] })}>
+              区分:{category}
+              <Icon name="close" size={14} />
+              <span className={styles.srOnly}>(外す)</span>
             </button>
-            <button type="button" className={styles.navButton} onClick={() => setDate(addDays(date, 7))}>
-              次の週
-              <Icon name="chevronRight" size={16} />
-            </button>
-          </div>
-          <div className={styles.weekLabel} aria-live="polite">
-            {formatWeekLabel(weekStart, addDays(weekStart, 6))}
-          </div>
-        </div>
-      ) : (
-        <div className={styles.navRow}>
-          <div className={styles.weekNav} role="group" aria-label="日の切り替え">
-            <button type="button" className={styles.navButton} onClick={() => setDate(addDays(date, -1))}>
-              <Icon name="chevronLeft" size={16} />
-              前の日
-            </button>
-            <button type="button" className={styles.navButton} disabled={date === today} onClick={() => setDate(today)}>
-              今日
-            </button>
-            <button type="button" className={styles.navButton} onClick={() => setDate(addDays(date, 1))}>
-              次の日
-              <Icon name="chevronRight" size={16} />
-            </button>
-          </div>
-          <div className={styles.weekLabel} aria-live="polite">
-            {formatLongDate(date)}
-            {date === today && <span className={styles.todayMark}>今日</span>}
-            {range && day && day.isHoliday && <span className={styles.holidayChip}>{day.holidayName || '休日'}</span>}
-          </div>
-          <label className={styles.datePick}>
-            <span className={styles.fieldLabel}>日付を選ぶ</span>
-            <input
-              type="date"
-              className={styles.input}
-              value={date}
-              onChange={(e) => isValidDateKey(e.target.value) && setDate(e.target.value)}
-            />
-          </label>
+          )}
+          <span className={styles.count}>
+            {base.workers.length}人中 {shown.length}人を表示
+          </span>
+          <button type="button" className={styles.linkButton} onClick={() => setCriteria({})}>
+            すべて解除
+          </button>
         </div>
       )}
-
-      <FilterBar
-        criteria={criteria}
-        departments={departments}
-        categories={categoryOptions}
-        pinSelf={pinSelf}
-        hasSelf={base.selfId !== undefined}
-        shownCount={shown.length}
-        totalCount={base.workers.length}
-        onChange={setCriteria}
-        onPinSelfChange={setPinSelf}
-      />
 
       {!range ? (
         <p className={styles.message}>予定を読み込み中です…</p>

@@ -40,3 +40,19 @@ export function formatPeriod(start: DateKey, end: DateKey): string {
   const endText = start.substring(0, 4) === end.substring(0, 4) ? formatMonthDay(end) : end.substring(0, 4) + '/' + formatMonthDay(end);
   return formatMonthDay(start) + '〜' + endText;
 }
+
+/** ツールバー用の短い書き方:'2026年 11/17(火)' */
+export function formatShortDate(key: DateKey): string {
+  return key.substring(0, 4) + '年 ' + formatMonthDay(key) + '(' + formatWeekday(key) + ')';
+}
+
+/** ツールバー用の短い週の書き方:'2026年 11/16(月)〜11/22(日)'(年をまたぐときは終わりにも年) */
+export function formatShortRange(start: DateKey, end: DateKey): string {
+  const endText =
+    (start.substring(0, 4) === end.substring(0, 4) ? '' : end.substring(0, 4) + '年 ') +
+    formatMonthDay(end) +
+    '(' +
+    formatWeekday(end) +
+    ')';
+  return formatShortDate(start) + '〜' + endText;
+}
