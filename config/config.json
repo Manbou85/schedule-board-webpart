@@ -12,7 +12,5 @@
     }
   },
   "externals": {},
-  "localizedResources": {
-    "ScheduleBoardWebPartStrings": "lib/webparts/scheduleBoard/loc/{locale}.js"
-  }
+  "localizedResources": {}
 }

@@ -8,6 +8,7 @@ const { ScheduleBoard } = require('SB_LIB/components/ScheduleBoard');
 const { MemoryScheduleService } = require('SB_LIB/services/MemoryScheduleService');
 const { DEFAULT_EXCLUDED_DEPARTMENTS, todayKey } = require('SB_LIB/core');
 const { createDummyData } = require('./dummyData');
+const { version } = require('../package.json');
 
 const h = React.createElement;
 const today = todayKey();
@@ -45,7 +46,8 @@ function PreviewControls() {
         service,
         excludedDepartments: DEFAULT_EXCLUDED_DEPARTMENTS,
         pinSelfByDefault: true,
-        today
+        today,
+        version
       })
     )
   );

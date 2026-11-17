@@ -11,6 +11,8 @@ export interface IRangeData {
   leaves: ILeave[];
   holidayWorks: IHolidayWork[];
   holidays: ICompanyHoliday[];
+  /** 一部のリストが読めなかったときのお知らせ(予定表は表示する) */
+  warnings?: string[];
 }
 
 /** ログイン中のユーザー */
