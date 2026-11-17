@@ -3,6 +3,7 @@
 
 import * as React from 'react';
 import { IFilterCriteria } from '../core';
+import { Icon } from './Icon';
 import styles from './ScheduleBoard.module.scss';
 
 export interface IFilterBarProps {
@@ -49,7 +50,8 @@ export const FilterBar: React.FC<IFilterBarProps> = (props) => {
         aria-expanded={moreOpen}
         onClick={() => setMoreOpen(!moreOpen)}
       >
-        {moreOpen ? '▲ くわしい条件を閉じる' : '▼ くわしい条件(現場名・部署・区分)' + (moreActive ? ' ※指定あり' : '')}
+        <Icon name="chevronDown" size={16} className={moreOpen ? styles.flipped : undefined} />
+        {moreOpen ? 'くわしい条件を閉じる' : 'くわしい条件(現場名・部署・区分)' + (moreActive ? ' ※指定あり' : '')}
       </button>
       <label className={styles.field + ' ' + styles.moreField}>
         <span className={styles.fieldLabel}>現場名・行き先で探す</span>

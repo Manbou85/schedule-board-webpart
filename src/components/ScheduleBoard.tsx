@@ -29,6 +29,7 @@ import { IRangeData, IScheduleDataService } from '../services/IScheduleDataServi
 import { FilterBar } from './FilterBar';
 import { formatWeekLabel } from './format';
 import { getCategoryStyle, HOLIDAY_WORK_STYLE, LEAVE_STYLE } from './categoryStyle';
+import { Icon } from './Icon';
 import { IGridGroup, WeekGrid } from './WeekGrid';
 import styles from './ScheduleBoard.module.scss';
 
@@ -158,7 +159,8 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         <h2 className={styles.title}>行動予定表</h2>
         <div className={styles.weekNav} role="group" aria-label="週の切り替え">
           <button type="button" className={styles.navButton} onClick={() => setWeekStart(addDays(weekStart, -7))}>
-            ◀ 前の週
+            <Icon name="chevronLeft" size={16} />
+            前の週
           </button>
           <button
             type="button"
@@ -169,7 +171,8 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
             今週
           </button>
           <button type="button" className={styles.navButton} onClick={() => setWeekStart(addDays(weekStart, 7))}>
-            次の週 ▶
+            次の週
+            <Icon name="chevronRight" size={16} />
           </button>
         </div>
         <div className={styles.weekLabel} aria-live="polite">
@@ -211,15 +214,15 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
           const st = getCategoryStyle(c);
           return (
             <li key={c} style={{ borderLeftColor: st.color, background: st.background }}>
-              <span aria-hidden="true">{st.icon}</span> {c}
+              <Icon name={st.icon} color={st.color} size={16} /> {c}
             </li>
           );
         })}
         <li style={{ borderLeftColor: LEAVE_STYLE.color, background: LEAVE_STYLE.background }}>
-          <span aria-hidden="true">{LEAVE_STYLE.icon}</span> 休暇
+          <Icon name={LEAVE_STYLE.icon} color={LEAVE_STYLE.color} size={16} /> 休暇
         </li>
         <li style={{ borderLeftColor: HOLIDAY_WORK_STYLE.color, background: HOLIDAY_WORK_STYLE.background }}>
-          <span aria-hidden="true">{HOLIDAY_WORK_STYLE.icon}</span> 休日出勤
+          <Icon name={HOLIDAY_WORK_STYLE.icon} color={HOLIDAY_WORK_STYLE.color} size={16} /> 休日出勤
         </li>
       </ul>
     </div>

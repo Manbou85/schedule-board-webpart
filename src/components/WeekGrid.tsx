@@ -4,6 +4,7 @@
 import * as React from 'react';
 import { DateKey, ICell, IDayInfo, IWorker } from '../core';
 import { formatMonthDay, formatWeekday } from './format';
+import { Icon } from './Icon';
 import { ScheduleCell } from './ScheduleCell';
 import styles from './ScheduleBoard.module.scss';
 
@@ -80,7 +81,8 @@ export const WeekGrid: React.FC<IWeekGridProps> = (props) => {
                       aria-expanded={!isCollapsed}
                       onClick={() => onToggleGroup(g.key)}
                     >
-                      <span aria-hidden="true">{isCollapsed ? '▶' : '▼'}</span> {g.label}
+                      <Icon name={isCollapsed ? 'chevronRight' : 'chevronDown'} size={16} />
+                      {g.label}
                       <span className={styles.groupCount}>({g.workers.length}人)</span>
                     </button>
                   ) : (

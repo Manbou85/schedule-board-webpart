@@ -8,7 +8,7 @@
 - 週間表示の画面(`src/components`)と、プレビュー用のメモリ上のデータ置き場(`src/services/MemoryScheduleService.ts`)
 - プレビュー版:`npm run build` → `npm run preview` → `temp/schedule-preview.html`(ダミーデータは `preview/dummyData.js`)
 - まだ:日表示、登録フォーム、WEBパーツ本体への組み込み(`src/webparts` は雛形のまま)
-- 区分のアイコンは絵文字(外部のフォントを読み込まないため)。`src/components/categoryStyle.ts`
+- 区分のアイコンは自作の線画SVG(`src/components/Icon.tsx`)。区分との対応は `src/components/categoryStyle.ts`
 
 ## 1.5 確認用プレビュー(アーティファクト)
 | ページ | URL(開発者だけが見られる) |

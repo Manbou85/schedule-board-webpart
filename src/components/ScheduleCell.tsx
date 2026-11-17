@@ -5,6 +5,7 @@ import * as React from 'react';
 import { formatTimeRange, ICell, ILeaveBadge, IScheduleEntry } from '../core';
 import { getCategoryStyle, HOLIDAY_WORK_STYLE, LEAVE_STYLE } from './categoryStyle';
 import { formatPeriod } from './format';
+import { Icon } from './Icon';
 import styles from './ScheduleBoard.module.scss';
 
 export interface IScheduleCellProps {
@@ -31,7 +32,7 @@ const LeaveBadge: React.FC<{ badge: ILeaveBadge }> = ({ badge }) => {
         onClick={() => setOpen(!open)}
       >
         {badge.label}
-        <span aria-hidden="true"> ⓘ</span>
+        <Icon name="info" size={13} className={styles.badgeInfo} />
       </button>
       {open && <span className={styles.badgeRemarks}>{badge.remarks}</span>}
     </span>
@@ -43,9 +44,7 @@ const SingleEntry: React.FC<{ entry: IScheduleEntry }> = ({ entry }) => {
   const time = formatTimeRange(entry.startTime, entry.endTime);
   return (
     <div className={styles.single} style={{ borderLeftColor: st.color, background: st.background }} title={entry.note || undefined}>
-      <span className={styles.icon} aria-hidden="true">
-        {st.icon}
-      </span>
+      <Icon name={st.icon} color={st.color} className={styles.icon} />
       <span className={styles.entryText}>
         <span className={styles.categoryLabel}>{entry.category}</span>
         <span className={styles.place}>{entry.title}</span>
@@ -63,9 +62,7 @@ export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, jo
     case 'leave':
       body = (
         <div className={styles.leave} style={{ borderLeftColor: LEAVE_STYLE.color, background: LEAVE_STYLE.background }}>
-          <span className={styles.icon} aria-hidden="true">
-            {LEAVE_STYLE.icon}
-          </span>
+          <Icon name={LEAVE_STYLE.icon} color={LEAVE_STYLE.color} className={styles.icon} />
           <span className={styles.place}>休暇</span>
         </div>
       );
@@ -73,9 +70,7 @@ export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, jo
     case 'holidayWork':
       body = (
         <div className={styles.single} style={{ borderLeftColor: HOLIDAY_WORK_STYLE.color, background: HOLIDAY_WORK_STYLE.background }}>
-          <span className={styles.icon} aria-hidden="true">
-            {HOLIDAY_WORK_STYLE.icon}
-          </span>
+          <Icon name={HOLIDAY_WORK_STYLE.icon} color={HOLIDAY_WORK_STYLE.color} className={styles.icon} />
           <span className={styles.entryText}>
             <span className={styles.holidayWorkBadge}>休出</span>
             <span className={styles.place}>{c.holidayWork.workPlace}</span>
@@ -102,9 +97,7 @@ export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, jo
       }
       const text = (
         <>
-          <span className={styles.icon} aria-hidden="true">
-            {st.icon}
-          </span>
+          <Icon name={st.icon} color={st.color} className={styles.icon} />
           <span className={styles.entryText}>
             <span className={styles.categoryLabel}>{c.entry.category}</span>
             <span className={styles.place}>{c.entry.title}</span>
