@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "schedule-board-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/scheduleBoard/ScheduleBoardWebPart.js",
+          "manifest": "./src/webparts/scheduleBoard/ScheduleBoardWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "ScheduleBoardWebPartStrings": "lib/webparts/scheduleBoard/loc/{locale}.js"
+  }
+}
