@@ -38,7 +38,7 @@ import { DatePickButton } from './DatePickButton';
 import { DayList } from './DayList';
 import { EntryForm } from './EntryForm';
 import { errorDetail } from './errorMessages';
-import { formatShortDate, formatShortRange } from './format';
+import { formatShortDate, formatShortRange, formatVersion } from './format';
 import { getCategoryStyle, HOLIDAY_WORK_STYLE, LEAVE_STYLE } from './categoryStyle';
 import { Icon } from './Icon';
 import { IGridGroup, WeekGrid } from './WeekGrid';
@@ -55,6 +55,8 @@ export interface IScheduleBoardProps {
   today?: DateKey;
   /** 最初に出す表示。省略するとスマホ幅は日表示、それ以外は週間表示 */
   initialView?: ViewMode;
+  /** 版(例 '0.2.0')。右下に小さく「ver 0.2.0」と出す。どの版を試しているか確かめるため */
+  version?: string;
 }
 
 /** 週間表示/日表示 */
@@ -424,6 +426,11 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
           <Icon name={HOLIDAY_WORK_STYLE.icon} color={HOLIDAY_WORK_STYLE.color} size={16} /> 休日出勤
         </li>
       </ul>
+      {formatVersion(props.version) && (
+        <p className={styles.versionBadge} title="このWEBパーツの版">
+          {formatVersion(props.version)}
+        </p>
+      )}
     </div>
   );
 };

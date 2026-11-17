@@ -56,3 +56,15 @@ export function formatShortRange(start: DateKey, end: DateKey): string {
     ')';
   return formatShortDate(start) + '〜' + endText;
 }
+
+/**
+ * 版の表示:'0.2.0' や '0.2.0.0' → 'ver 0.2.0'(最初の3つの数字だけ)。
+ * 番号がわからないときは空文字(何も出さない)。
+ */
+export function formatVersion(version: string | undefined): string {
+  const parts = (version || '').trim().split('.');
+  if (parts.length < 2 || !parts.every((p) => /^\d+$/.test(p))) {
+    return '';
+  }
+  return 'ver ' + parts.slice(0, 3).join('.');
+}

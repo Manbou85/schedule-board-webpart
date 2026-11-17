@@ -62,7 +62,9 @@ export default class ScheduleBoardWebPart extends BaseClientSideWebPart<ISchedul
       service,
       excludedDepartments: excluded.length > 0 ? excluded : DEFAULT_EXCLUDED_DEPARTMENTS,
       pinSelfByDefault: p.pinSelfByDefault !== false,
-      cellRuleOptions: { leaveBeforeSingle: p.leaveBeforeSingle !== false }
+      cellRuleOptions: { leaveBeforeSingle: p.leaveBeforeSingle !== false },
+      // manifest の version は "*"(= package.json の version)
+      version: this.manifest.version
     });
 
     if (!this._root) {
