@@ -1,100 +1,80 @@
+// 行動予定表 WEBパーツ本体(組み立てだけ)
+// 画面は src/components、データの読み書きは src/services、計算は src/core にある。
+
 import * as React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { Version } from '@microsoft/sp-core-library';
 import {
   type IPropertyPaneConfiguration,
-  PropertyPaneTextField
+  PropertyPaneTextField,
+  PropertyPaneToggle
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
-import { IReadonlyTheme } from '@microsoft/sp-component-base';
 
-import * as strings from 'ScheduleBoardWebPartStrings';
-import ScheduleBoard from './components/ScheduleBoard';
-import { IScheduleBoardProps } from './components/IScheduleBoardProps';
+import { DEFAULT_CELL_RULE_OPTIONS, DEFAULT_EXCLUDED_DEPARTMENTS } from '../../core';
+import { ScheduleBoard, IScheduleBoardProps } from '../../components/ScheduleBoard';
+import { SharePointScheduleService } from '../../services/SharePointScheduleService';
+import { DEFAULT_LIST_SETTINGS, ISpListSettings } from '../../services/spConfig';
 
-export interface IScheduleBoardWebPartProps {
-  description: string;
+/** WEBパーツの設定(ページの編集画面で変更できる) */
+export interface IScheduleBoardWebPartProps extends Partial<ISpListSettings> {
+  /** 予定表から外す部署(「、」や改行で区切って複数) */
+  excludedDepartments?: string;
+  /** 「自分を一番上に表示」を最初からオンにする */
+  pinSelfByDefault?: boolean;
+  /** 総務の「1日」休暇と本人の単発予定が重なったら、休暇を優先する */
+  leaveBeforeSingle?: boolean;
+}
+
+/** 「、」「,」改行で区切った文字 → 一覧(空は除く) */
+export function splitList(text: string | undefined): string[] {
+  return (text || '')
+    .split(/[,、\n]/)
+    .map((s) => s.trim())
+    .filter((s) => !!s);
 }
 
 export default class ScheduleBoardWebPart extends BaseClientSideWebPart<IScheduleBoardWebPartProps> {
-
-  private _isDarkTheme: boolean = false;
-  private _environmentMessage: string = '';
   private _root: Root | undefined;
 
   public render(): void {
-    const element: React.ReactElement<IScheduleBoardProps> = React.createElement(
-      ScheduleBoard,
-      {
-        description: this.properties.description,
-        isDarkTheme: this._isDarkTheme,
-        environmentMessage: this._environmentMessage,
-        userDisplayName: this.context.pageContext.user.displayName
-      }
-    );
+    const p = this.properties;
+    const pick = (value: string | undefined, fallback: string): string => (value && value.trim()) || fallback;
+    const lists: ISpListSettings = {
+      entriesList: pick(p.entriesList, DEFAULT_LIST_SETTINGS.entriesList),
+      workersList: pick(p.workersList, DEFAULT_LIST_SETTINGS.workersList),
+      holidaysSiteUrl: (p.holidaysSiteUrl || '').trim(),
+      holidaysList: pick(p.holidaysList, DEFAULT_LIST_SETTINGS.holidaysList),
+      leavesList: pick(p.leavesList, DEFAULT_LIST_SETTINGS.leavesList),
+      holidayWorksList: pick(p.holidayWorksList, DEFAULT_LIST_SETTINGS.holidayWorksList),
+      adminGroup: pick(p.adminGroup, DEFAULT_LIST_SETTINGS.adminGroup)
+    };
+    const user = this.context.pageContext.user;
+    const service = new SharePointScheduleService({
+      spHttpClient: this.context.spHttpClient,
+      webUrl: this.context.pageContext.web.absoluteUrl,
+      userEmail: user.email || user.loginName,
+      lists
+    });
+    const excluded = splitList(p.excludedDepartments);
+
+    const element: React.ReactElement<IScheduleBoardProps> = React.createElement(ScheduleBoard, {
+      service,
+      excludedDepartments: excluded.length > 0 ? excluded : DEFAULT_EXCLUDED_DEPARTMENTS,
+      pinSelfByDefault: p.pinSelfByDefault !== false,
+      cellRuleOptions: { leaveBeforeSingle: p.leaveBeforeSingle !== false }
+    });
 
     if (!this._root) {
       this._root = createRoot(this.domElement);
     }
-
     this._root.render(element);
   }
 
-  protected onInit(): Promise<void> {
-    return this._getEnvironmentMessage().then(message => {
-      this._environmentMessage = message;
-    });
-  }
-
-
-
-  private _getEnvironmentMessage(): Promise<string> {
-    if (!!this.context.sdks.microsoftTeams) { // running in Teams, office.com or Outlook
-      return this.context.sdks.microsoftTeams.teamsJs.app.getContext()
-        .then(context => {
-          let environmentMessage: string = '';
-          switch (context.app.host.name) {
-            case 'Office': // running in Office
-              environmentMessage = this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentOffice : strings.AppOfficeEnvironment;
-              break;
-            case 'Outlook': // running in Outlook
-              environmentMessage = this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentOutlook : strings.AppOutlookEnvironment;
-              break;
-            case 'Teams': // running in Teams
-            case 'TeamsModern':
-              environmentMessage = this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentTeams : strings.AppTeamsTabEnvironment;
-              break;
-            default:
-              environmentMessage = strings.UnknownEnvironment;
-          }
-
-          return environmentMessage;
-        });
-    }
-
-    return Promise.resolve(this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentSharePoint : strings.AppSharePointEnvironment);
-  }
-
-  protected onThemeChanged(currentTheme: IReadonlyTheme | undefined): void {
-    if (!currentTheme) {
-      return;
-    }
-
-    this._isDarkTheme = !!currentTheme.isInverted;
-    const {
-      semanticColors
-    } = currentTheme;
-
-    if (semanticColors) {
-      this.domElement.style.setProperty('--bodyText', semanticColors.bodyText || null);
-      this.domElement.style.setProperty('--link', semanticColors.link || null);
-      this.domElement.style.setProperty('--linkHovered', semanticColors.linkHovered || null);
-    }
-
-  }
-
   protected onDispose(): void {
-    this._root?.unmount();
+    if (this._root) {
+      this._root.unmount();
+    }
     this._root = undefined;
   }
 
@@ -102,19 +82,69 @@ export default class ScheduleBoardWebPart extends BaseClientSideWebPart<ISchedul
     return Version.parse('1.0');
   }
 
+  /** 設定の入力中に毎回読み直さないよう、「適用」ボタンで反映する */
+  protected get disableReactivePropertyChanges(): boolean {
+    return true;
+  }
+
   protected getPropertyPaneConfiguration(): IPropertyPaneConfiguration {
+    const d = DEFAULT_LIST_SETTINGS;
+    const listNote = 'リストの名前、または「Lists/〜」の形の URL(空欄なら初期値)';
     return {
       pages: [
         {
-          header: {
-            description: strings.PropertyPaneDescription
-          },
+          header: { description: '行動予定表の設定です。変更したら「適用」を押してください。' },
           groups: [
             {
-              groupName: strings.BasicGroupName,
+              groupName: '表示',
               groupFields: [
-                PropertyPaneTextField('description', {
-                  label: strings.DescriptionFieldLabel
+                PropertyPaneTextField('excludedDepartments', {
+                  label: '予定表に出さない部署',
+                  description: '「、」または改行で区切って複数指定できます(空欄なら「' + DEFAULT_EXCLUDED_DEPARTMENTS.join('、') + '」)',
+                  placeholder: DEFAULT_EXCLUDED_DEPARTMENTS.join('、'),
+                  multiline: true,
+                  rows: 2
+                }),
+                PropertyPaneToggle('pinSelfByDefault', {
+                  label: '「自分を一番上に表示」を最初からオンにする',
+                  onText: 'オン',
+                  offText: 'オフ',
+                  checked: true
+                }),
+                PropertyPaneToggle('leaveBeforeSingle', {
+                  label: '総務の「1日」休暇と本人の単発予定が重なったら、休暇を優先する',
+                  onText: '休暇を優先',
+                  offText: '単発予定を優先',
+                  checked: DEFAULT_CELL_RULE_OPTIONS.leaveBeforeSingle
+                })
+              ]
+            },
+            {
+              groupName: 'リスト',
+              groupFields: [
+                PropertyPaneTextField('entriesList', { label: '行動予定リスト', description: listNote, placeholder: d.entriesList }),
+                PropertyPaneTextField('workersList', { label: '対象者リスト', description: listNote, placeholder: d.workersList }),
+                PropertyPaneTextField('leavesList', { label: '休暇情報共有リスト', description: listNote, placeholder: d.leavesList }),
+                PropertyPaneTextField('holidayWorksList', {
+                  label: '休日出勤情報共有リスト',
+                  description: listNote,
+                  placeholder: d.holidayWorksList
+                }),
+                PropertyPaneTextField('holidaysSiteUrl', {
+                  label: '会社休日リストのあるサイトの URL',
+                  description: '別のサイトのリストを使うときだけ入力(例 https://〜.sharepoint.com/sites/〜)。空欄ならこのサイト',
+                  placeholder: 'https://'
+                }),
+                PropertyPaneTextField('holidaysList', { label: '会社休日リスト', description: listNote, placeholder: d.holidaysList })
+              ]
+            },
+            {
+              groupName: '管理者',
+              groupFields: [
+                PropertyPaneTextField('adminGroup', {
+                  label: '管理者の SharePoint グループ名',
+                  description: 'このグループの人は、全員の予定を編集・代理登録できます',
+                  placeholder: d.adminGroup
                 })
               ]
             }

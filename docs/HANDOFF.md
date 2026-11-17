@@ -1,6 +1,6 @@
 # 引き継ぎメモ(次のセッション向け)
 
-最終更新:2026-11-17(フェーズ1:src/core と、プレビュー版の週間表示まで)
+最終更新:2026-11-17(フェーズ1 完了・main に取り込み済み。フェーズ2・3 のWEBパーツ部分を作成中)
 
 ## 1. いまの状況
 - SPFx 1.24.1(React 18.3.1、TypeScript 5.8)で作成。Node.js は 26 を使う(`.nvmrc`)
@@ -11,7 +11,13 @@
 - 上部はツールバー1行(スマホ2行)。検索欄は「名前・現場名」の1つ、部署・区分・自分を一番上は「絞り込み」のポップアップ(`FilterPopover.tsx`)
 - 登録フォーム(`src/components/EntryForm.tsx`)。入力チェックは `src/core/entryForm.ts`。プレビューでは「管理者として見る」「保存を失敗させる」を切り替えられる
 - 【要確認】ワンタップ登録「在社」の行き先は「本社」(`DEFAULT_QUICK_ACTIONS`)
-- まだ:WEBパーツ本体への組み込み(`src/webparts` は雛形のまま)
+- WEBパーツ版のデータの読み書き:`src/services/SharePointScheduleService.ts`(SPHttpClient)、変換は `spMapping.ts`、列の内部名は `spConfig.ts`
+  - リストの準備・WEBパーツの設定は `docs/LIST_SETUP.md`
+  - 「日付のみ」の列:読むときは +12時間して UTC の日付を取る、書くときは UTC の0時(日本のサイト前提)
+  - 総務のリスト・会社休日が読めないときは予定表を出したまま、黄色いお知らせ(`warnings`)
+  - 版:package.json 0.2.0 / package-solution.json 0.2.0.0
+- 開発者の確認待ち:列の内部名(WorkerNameList・総務の2つ・会社休日)、会社休日を既存参照か新規作成か、総務のリストの実際の名前
+- まだ:SharePoint の実機での動作確認(リストの準備ができてから)。見た目の洗練(`docs/IMPROVEMENT_PLAN.md`)
 - 区分のアイコンは自作の線画SVG(`src/components/Icon.tsx`)。区分との対応は `src/components/categoryStyle.ts`
 
 ## 1.5 確認用プレビュー(アーティファクト)
