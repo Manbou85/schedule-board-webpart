@@ -17,6 +17,7 @@ import {
   ICell,
   ICellRuleOptions,
   IFilterCriteria,
+  isValidDateKey,
   IWorker,
   LEAVE_CATEGORY,
   resolveRow,
@@ -27,7 +28,8 @@ import {
 } from '../core';
 import { IRangeData, IScheduleDataService } from '../services/IScheduleDataService';
 import { FilterBar } from './FilterBar';
-import { formatWeekLabel } from './format';
+import { DayList } from './DayList';
+import { formatLongDate, formatWeekLabel } from './format';
 import { getCategoryStyle, HOLIDAY_WORK_STYLE, LEAVE_STYLE } from './categoryStyle';
 import { Icon } from './Icon';
 import { IGridGroup, WeekGrid } from './WeekGrid';
@@ -42,6 +44,16 @@ export interface IScheduleBoardProps {
   cellRuleOptions?: ICellRuleOptions;
   /** 今日の日付(プレビューで日付を固定したいとき用。ふだんは空) */
   today?: DateKey;
+  /** 最初に出す表示。省略するとスマホ幅は日表示、それ以外は週間表示 */
+  initialView?: ViewMode;
+}
+
+/** 週間表示/日表示 */
+export type ViewMode = 'week' | 'day';
+
+/** スマホ幅かどうか(最初の表示を決めるときだけ使う) */
+function isNarrowScreen(): boolean {
+  return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
 }
 
 interface IBase {
@@ -60,7 +72,13 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const excludedKey = excludedDepartments.join('\n');
 
   const [base, setBase] = React.useState<IBase | undefined>(undefined);
-  const [weekStart, setWeekStart] = React.useState<DateKey>(startOfWeek(today));
+  const [view, setView] = React.useState<ViewMode>(props.initialView || (isNarrowScreen() ? 'day' : 'week'));
+  // 選んでいる日。週間表示では、この日を含む週を出す
+  const [date, setDate] = React.useState<DateKey>(today);
+  const weekStart = startOfWeek(date);
+  // 表示中の範囲(週間表示は7日、日表示は1日)だけを読み込む
+  const rangeStart = view === 'week' ? weekStart : date;
+  const rangeEnd = view === 'week' ? addDays(weekStart, 6) : date;
   const [range, setRange] = React.useState<IRangeData | undefined>(undefined);
   const [error, setError] = React.useState<string>('');
   const [criteria, setCriteria] = React.useState<IFilterCriteria>({});
@@ -85,23 +103,23 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     };
   }, [service, excludedKey]);
 
-  // 表示している週のデータを読む(週を切り替えるたび)
+  // 表示している範囲のデータを読む(週・日を切り替えるたび)
   React.useEffect(() => {
     let alive = true;
     setRange(undefined);
     service
-      .getRange(weekStart, addDays(weekStart, 6))
+      .getRange(rangeStart, rangeEnd)
       .then((r) => alive && setRange(r))
       .catch(() => alive && setError('予定を読み込めませんでした。少し時間をおいて、ページを開き直してください。'));
     return () => {
       alive = false;
     };
-  }, [service, weekStart]);
+  }, [service, rangeStart, rangeEnd]);
 
   const days = React.useMemo(() => {
     const calendar = createHolidayCalendar(range ? range.holidays : []);
-    return weekDates(weekStart).map(calendar);
-  }, [weekStart, range]);
+    return (view === 'week' ? weekDates(rangeStart) : [rangeStart]).map(calendar);
+  }, [view, rangeStart, range]);
 
   // 全員ぶんのマスを作る(表示ルールは core の resolveRow)
   const rows = React.useMemo(() => {
@@ -148,6 +166,11 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const departments = groupByDepartment(base.workers).map((g) => g.department);
   const categoryOptions = base.categories.concat([LEAVE_CATEGORY, HOLIDAY_WORK_CATEGORY]);
   const thisWeek = startOfWeek(today);
+  const openDay = (d: DateKey): void => {
+    setDate(d);
+    setView('day');
+  };
+  const day = days[0];
 
   const toggleGroup = (key: string): void => {
     setCollapsed(collapsed.indexOf(key) >= 0 ? collapsed.filter((k) => k !== key) : collapsed.concat([key]));
@@ -157,28 +180,66 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     <div className={styles.scheduleBoard}>
       <div className={styles.toolbar}>
         <h2 className={styles.title}>行動予定表</h2>
-        <div className={styles.weekNav} role="group" aria-label="週の切り替え">
-          <button type="button" className={styles.navButton} onClick={() => setWeekStart(addDays(weekStart, -7))}>
-            <Icon name="chevronLeft" size={16} />
-            前の週
+        <div className={styles.viewSwitch} role="group" aria-label="表示の切り替え">
+          <button type="button" className={styles.viewButton} aria-pressed={view === 'week'} onClick={() => setView('week')}>
+            週間表示
           </button>
-          <button
-            type="button"
-            className={styles.navButton}
-            disabled={weekStart === thisWeek}
-            onClick={() => setWeekStart(thisWeek)}
-          >
-            今週
+          <button type="button" className={styles.viewButton} aria-pressed={view === 'day'} onClick={() => setView('day')}>
+            日表示
           </button>
-          <button type="button" className={styles.navButton} onClick={() => setWeekStart(addDays(weekStart, 7))}>
-            次の週
-            <Icon name="chevronRight" size={16} />
-          </button>
-        </div>
-        <div className={styles.weekLabel} aria-live="polite">
-          {formatWeekLabel(weekStart, addDays(weekStart, 6))}
         </div>
       </div>
+
+      {view === 'week' ? (
+        <div className={styles.navRow}>
+          <div className={styles.weekNav} role="group" aria-label="週の切り替え">
+            <button type="button" className={styles.navButton} onClick={() => setDate(addDays(date, -7))}>
+              <Icon name="chevronLeft" size={16} />
+              前の週
+            </button>
+            <button type="button" className={styles.navButton} disabled={weekStart === thisWeek} onClick={() => setDate(today)}>
+              今週
+            </button>
+            <button type="button" className={styles.navButton} onClick={() => setDate(addDays(date, 7))}>
+              次の週
+              <Icon name="chevronRight" size={16} />
+            </button>
+          </div>
+          <div className={styles.weekLabel} aria-live="polite">
+            {formatWeekLabel(weekStart, addDays(weekStart, 6))}
+          </div>
+        </div>
+      ) : (
+        <div className={styles.navRow}>
+          <div className={styles.weekNav} role="group" aria-label="日の切り替え">
+            <button type="button" className={styles.navButton} onClick={() => setDate(addDays(date, -1))}>
+              <Icon name="chevronLeft" size={16} />
+              前の日
+            </button>
+            <button type="button" className={styles.navButton} disabled={date === today} onClick={() => setDate(today)}>
+              今日
+            </button>
+            <button type="button" className={styles.navButton} onClick={() => setDate(addDays(date, 1))}>
+              次の日
+              <Icon name="chevronRight" size={16} />
+            </button>
+          </div>
+          <div className={styles.weekLabel} aria-live="polite">
+            {formatLongDate(date)}
+            {date === today && <span className={styles.todayMark}>今日</span>}
+            {range && day && day.isHoliday && <span className={styles.holidayChip}>{day.holidayName || '休日'}</span>}
+          </div>
+          <label className={styles.datePick}>
+            <span className={styles.fieldLabel}>日付を選ぶ</span>
+            <input
+              type="date"
+              className={styles.input}
+              value={date}
+              onChange={(e) => isValidDateKey(e.target.value) && setDate(e.target.value)}
+            />
+          </label>
+        </div>
+      )}
 
       <FilterBar
         criteria={criteria}
@@ -196,7 +257,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         <p className={styles.message}>予定を読み込み中です…</p>
       ) : shown.length === 0 ? (
         <p className={styles.message}>条件に合う人がいません。条件を変えてみてください。</p>
-      ) : (
+      ) : view === 'week' ? (
         <WeekGrid
           days={days}
           today={today}
@@ -204,6 +265,15 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
           rows={rows}
           selfId={base.selfId}
           // 絞り込み中は、見落とさないようにすべて開いて表示する
+          collapsed={filtering ? [] : collapsed}
+          onToggleGroup={toggleGroup}
+          onSelectDay={openDay}
+        />
+      ) : (
+        <DayList
+          groups={groups}
+          rows={rows}
+          selfId={base.selfId}
           collapsed={filtering ? [] : collapsed}
           onToggleGroup={toggleGroup}
         />

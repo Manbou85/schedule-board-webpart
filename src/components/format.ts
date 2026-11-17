@@ -32,7 +32,11 @@ export function formatWeekLabel(start: DateKey, end: DateKey): string {
   return formatLongDate(start) + '〜' + endText;
 }
 
-/** 期間の説明:'11/1〜11/30' */
+/** 期間の説明:'11/1〜11/30'(年をまたぐときは終わりに年を付ける:'12/1〜2027/2/14') */
 export function formatPeriod(start: DateKey, end: DateKey): string {
-  return start === end ? formatMonthDay(start) : formatMonthDay(start) + '〜' + formatMonthDay(end);
+  if (start === end) {
+    return formatMonthDay(start);
+  }
+  const endText = start.substring(0, 4) === end.substring(0, 4) ? formatMonthDay(end) : end.substring(0, 4) + '/' + formatMonthDay(end);
+  return formatMonthDay(start) + '〜' + endText;
 }

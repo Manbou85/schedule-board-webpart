@@ -25,6 +25,8 @@ export interface IWeekGridProps {
   selfId?: number;
   collapsed: string[];
   onToggleGroup: (key: string) => void;
+  /** 日付を押したとき(その日の日表示を開く) */
+  onSelectDay: (date: DateKey) => void;
 }
 
 /** 2つのマスが同じ長期の予定(帯をつなげる) */
@@ -35,7 +37,7 @@ function samePeriod(a: ICell | undefined, b: ICell | undefined): boolean {
 }
 
 export const WeekGrid: React.FC<IWeekGridProps> = (props) => {
-  const { days, today, groups, rows, selfId, collapsed, onToggleGroup } = props;
+  const { days, today, groups, rows, selfId, collapsed, onToggleGroup, onSelectDay } = props;
 
   const dayClass = (d: IDayInfo, base: string): string => {
     const c = [base];
@@ -58,12 +60,19 @@ export const WeekGrid: React.FC<IWeekGridProps> = (props) => {
             </th>
             {days.map((d) => (
               <th key={d.date} scope="col" className={dayClass(d, styles.dayHead)}>
-                <span className={styles.dayDate}>{formatMonthDay(d.date)}</span>
-                <span className={d.dayOfWeek === 0 ? styles.sunday : d.dayOfWeek === 6 ? styles.saturday : ''}>
-                  ({formatWeekday(d.date)})
-                </span>
-                {d.date === today && <span className={styles.todayMark}>今日</span>}
-                {d.holidayName && <span className={styles.holidayName}>{d.holidayName}</span>}
+                <button
+                  type="button"
+                  className={styles.dayHeadButton}
+                  title={'この日の予定をくわしく見る'}
+                  onClick={() => onSelectDay(d.date)}
+                >
+                  <span className={styles.dayDate}>{formatMonthDay(d.date)}</span>
+                  <span className={d.dayOfWeek === 0 ? styles.sunday : d.dayOfWeek === 6 ? styles.saturday : ''}>
+                    ({formatWeekday(d.date)})
+                  </span>
+                  {d.date === today && <span className={styles.todayMark}>今日</span>}
+                  {d.holidayName && <span className={styles.holidayName}>{d.holidayName}</span>}
+                </button>
               </th>
             ))}
           </tr>

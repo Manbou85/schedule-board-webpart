@@ -7,7 +7,8 @@
 - `src/core` に表示ルール・期間判定・休日判定・検索/絞り込み+テスト(Jest)
 - 週間表示の画面(`src/components`)と、プレビュー用のメモリ上のデータ置き場(`src/services/MemoryScheduleService.ts`)
 - プレビュー版:`npm run build` → `npm run preview` → `temp/schedule-preview.html`(ダミーデータは `preview/dummyData.js`)
-- まだ:日表示、登録フォーム、WEBパーツ本体への組み込み(`src/webparts` は雛形のまま)
+- 日表示(`src/components/DayList.tsx`):週間表示の日付を押すと開く。スマホ幅では最初から日表示
+- まだ:登録フォーム、WEBパーツ本体への組み込み(`src/webparts` は雛形のまま)
 - 区分のアイコンは自作の線画SVG(`src/components/Icon.tsx`)。区分との対応は `src/components/categoryStyle.ts`
 
 ## 1.5 確認用プレビュー(アーティファクト)

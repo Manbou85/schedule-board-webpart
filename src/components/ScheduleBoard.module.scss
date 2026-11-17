@@ -84,6 +84,77 @@ $dayWidth: 8.2em;
   font-weight: 600;
 }
 
+// 週間表示/日表示の切り替え(押されている方を塗りつぶす)
+.viewSwitch {
+  display: inline-flex;
+  margin-left: auto;
+  border: 1px solid $accent;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.viewButton {
+  min-height: 40px;
+  padding: 6px 16px;
+  font-size: 15px;
+  font-family: inherit;
+  color: $accent;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+
+  & + & {
+    border-left: 1px solid $accent;
+  }
+
+  &[aria-pressed='true'] {
+    color: #fff;
+    background: $accent;
+    font-weight: 600;
+  }
+
+  &:hover:not([aria-pressed='true']) {
+    background: #eef5fc;
+  }
+}
+
+.navRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+
+.weekLabel .todayMark {
+  display: inline-block !important;
+  margin: 0 0 0 8px;
+  vertical-align: 2px;
+}
+
+.holidayChip {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: 2px;
+  color: #c50f1f;
+  background: #fde7e9;
+  border-radius: 10px;
+}
+
+.datePick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+
+  .input {
+    width: auto;
+  }
+}
+
 // ---- 検索・絞り込み ----
 .filterBar {
   display: grid;
@@ -202,6 +273,21 @@ $dayWidth: 8.2em;
 
   span {
     display: inline-block;
+  }
+}
+
+.dayHeadButton {
+  display: block;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+
+  &:hover .dayDate {
+    text-decoration: underline;
   }
 }
 
@@ -463,6 +549,91 @@ button.leaveBadge {
   border-radius: 4px;
 }
 
+// 日表示の、補足を常に出すバッジ
+.badgeInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.badgeRemarksInline {
+  font-size: 13px;
+  color: $sub;
+}
+
+// ---- 日表示 ----
+.dayList {
+  border: 1px solid $line;
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.dayGroupHead {
+  margin: 0;
+  background: #eef2f6;
+  border-bottom: 1px solid $line;
+}
+
+.dayRows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dayRow {
+  display: grid;
+  grid-template-columns: 10em minmax(0, 1fr);
+  min-height: 52px;
+  border-bottom: 1px solid $line;
+}
+
+.dayName {
+  padding: 10px 12px;
+  border-right: 1px solid $line;
+}
+
+.dayRow.selfRow .dayName {
+  background: #f1f8ec;
+  box-shadow: inset 4px 0 0 #3b7d23;
+}
+
+.dayContent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px;
+  min-width: 0;
+}
+
+.dayEntry {
+  display: flex;
+  gap: 8px;
+  padding: 6px 10px;
+  border-left: 4px solid;
+  border-radius: 3px;
+  max-width: 40em;
+}
+
+.dayEntryText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dayPlace {
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.dayNote {
+  margin-top: 2px;
+  font-size: 13px;
+  color: $text;
+  white-space: pre-wrap;
+}
+
 // ---- 凡例 ----
 .legend {
   display: flex;
@@ -509,6 +680,27 @@ button.leaveBadge {
   .nameHead,
   .nameCell {
     width: 6.5em;
+  }
+
+  .viewSwitch {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .viewButton {
+    flex: 1;
+  }
+
+  .datePick {
+    margin-left: 0;
+  }
+
+  .dayRow {
+    grid-template-columns: 6.5em minmax(0, 1fr);
+  }
+
+  .dayName {
+    padding: 8px;
   }
 
   // スマホでは「くわしい条件」を開いたときだけ、現場名・部署・区分を出す

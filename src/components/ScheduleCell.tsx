@@ -16,11 +16,23 @@ export interface IScheduleCellProps {
   joinsNext: boolean;
 }
 
-/** 午前休などのバッジ。補足(時刻など)はマウスを乗せる/タップすると出る */
-const LeaveBadge: React.FC<{ badge: ILeaveBadge }> = ({ badge }) => {
+/**
+ * 午前休などのバッジ。
+ * 週間表示:補足(時刻など)はマウスを乗せる/タップすると出る
+ * 日表示(showRemarks):補足を常に出す
+ */
+export const LeaveBadge: React.FC<{ badge: ILeaveBadge; showRemarks?: boolean }> = ({ badge, showRemarks }) => {
   const [open, setOpen] = React.useState(false);
   if (!badge.remarks) {
     return <span className={styles.leaveBadge}>{badge.label}</span>;
+  }
+  if (showRemarks) {
+    return (
+      <span className={styles.badgeInline}>
+        <span className={styles.leaveBadge}>{badge.label}</span>
+        <span className={styles.badgeRemarksInline}>{badge.remarks}</span>
+      </span>
+    );
   }
   return (
     <span className={styles.leaveBadgeWrap}>
