@@ -16,6 +16,8 @@
   - 「日付のみ」の列:読むときは +12時間して UTC の日付を取る、書くときは UTC の0時(日本のサイト前提)
   - 総務のリスト・会社休日が読めないときは予定表を出したまま、黄色いお知らせ(`warnings`)
   - 版:package.json 0.2.0 / package-solution.json 0.2.0.0
+- 登録・展開の手順書 `docs/DEPLOY.md`、実機テストのチェックリスト `docs/test-checklist.html`(ブラウザで開いて使う。31項目、印刷できる)
+- 画面の右下に版(ver 0.2.0)を表示。版を上げたら、チェックリストの「ver 0.2.0」の例(2か所)も直す
 - 開発者の確認待ち:列の内部名(WorkerNameList・総務の2つ・会社休日)、会社休日を既存参照か新規作成か、総務のリストの実際の名前
 - まだ:SharePoint の実機での動作確認(リストの準備ができてから)。見た目の洗練(`docs/IMPROVEMENT_PLAN.md`)
 - 区分のアイコンは自作の線画SVG(`src/components/Icon.tsx`)。区分との対応は `src/components/categoryStyle.ts`

@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>行動予定表 実機テストチェックリスト</title>
+<!--
+  行動予定表 WEBパーツの、実機テスト用チェックリストです(開発者・テストに協力してくれる方向け)。
+  ・Edge などのブラウザでこのファイルを開くだけで使えます(インターネット接続は不要)。
+  ・入力した内容は、このパソコンのブラウザに自動で残ります。
+  ・「印刷する」ボタンで、結果とメモを印刷できます(「PDFに保存」も選べます)。
+-->
+<style>
+  :root {
+    --bg: #f4f7fb; --surface: #ffffff; --ink: #1b2838; --muted: #586678; --line: #d6dee8;
+    --accent: #1d5bb8; --accent-ink: #ffffff; --accent-soft: #e4edfa; --helmet: #f1b400; --stripe-dark: #1b2838;
+    --ok: #17703f; --ok-bg: #e3f3ea; --ng: #b0281f; --ng-bg: #fbe8e6; --skip: #586678; --skip-bg: #eef1f5;
+    --note-bg: #fff3d3; --note: #7a4f00;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; } /* display を指定した部品でも、hidden を優先する */
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: 'BIZ UDPGothic', 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo', sans-serif;
+    font-size: 16px; line-height: 1.75;
+  }
+  .stripe { height: 10px; background: repeating-linear-gradient(-45deg, var(--helmet) 0 14px, var(--stripe-dark) 14px 28px); }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 20px 16px 56px; display: grid; gap: 18px; }
+  h1 { margin: 0; font-size: 1.6rem; line-height: 1.4; }
+  h2 { margin: 0; font-size: 1.2rem; line-height: 1.45; }
+  p { margin: 0; }
+  .eyebrow { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; color: var(--muted); }
+  .lead { color: var(--muted); }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; display: grid; gap: 12px; }
+  ol.prep { margin: 0; padding-left: 1.4em; display: grid; gap: 4px; }
+  button { font-family: inherit; }
+  button:focus-visible, textarea:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--helmet); outline-offset: 2px; }
+  .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  label.f { display: grid; gap: 2px; font-size: 0.85rem; font-weight: 700; }
+  input[type=text], input[type=date], textarea {
+    font: inherit; font-weight: 400; width: 100%; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: 8px; background: #ffffff; color: var(--ink);
+  }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .btn {
+    min-height: 48px; padding: 8px 20px; border-radius: 12px; border: 2px solid var(--accent);
+    background: var(--accent); color: var(--accent-ink); font-size: 1rem; font-weight: 700; cursor: pointer;
+  }
+  .btn.sub { background: var(--surface); color: var(--accent); }
+  .btn.danger { background: var(--surface); color: var(--ng); border-color: var(--ng); }
+  .counts { display: flex; flex-wrap: wrap; gap: 6px 14px; font-variant-numeric: tabular-nums; }
+  .tag { display: inline-block; font-size: 0.85rem; font-weight: 700; border-radius: 999px; padding: 1px 12px; }
+  .tag-ok { background: var(--ok-bg); color: var(--ok); }
+  .tag-ng { background: var(--ng-bg); color: var(--ng); }
+  .tag-skip { background: var(--skip-bg); color: var(--skip); }
+  .tag-none { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+  .confirm { background: var(--ng-bg); color: var(--ng); border-radius: 10px; padding: 10px 14px; display: grid; gap: 8px; }
+
+  details.group { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+  details.group > summary { cursor: pointer; list-style: none; padding: 16px 20px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  details.group > summary::-webkit-details-marker { display: none; }
+  details.group > summary::after { content: "＋"; color: var(--accent); font-weight: 700; }
+  details.group[open] > summary::after { content: "－"; }
+  .group-body { padding: 0 20px 18px; display: grid; gap: 14px; }
+  .progress { font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .note { background: var(--note-bg); color: var(--note); border-radius: 10px; padding: 10px 14px; font-size: 0.95rem; }
+  .item { border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 8px; }
+  .item:first-child { border-top: 0; padding-top: 0; }
+  .item-head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .item-id { font-size: 0.8rem; font-weight: 700; color: var(--muted); }
+  .item h3 { margin: 0; font-size: 1.05rem; line-height: 1.5; }
+  .how { margin: 0; padding-left: 1.3em; font-size: 0.95rem; }
+  .expect { font-size: 0.95rem; background: var(--accent-soft); border-radius: 8px; padding: 6px 10px; }
+  .expect b { color: var(--accent); }
+  .choices { display: flex; flex-wrap: wrap; gap: 8px; }
+  .choice { min-height: 46px; padding: 8px 16px; border-radius: 10px; border: 2px solid var(--line); background: var(--surface); color: var(--ink); font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .choice:hover { border-color: var(--accent); }
+  .choice[aria-pressed="true"].c-ok { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+  .choice[aria-pressed="true"].c-ng { background: var(--ng-bg); border-color: var(--ng); color: var(--ng); }
+  .choice[aria-pressed="true"].c-skip { background: var(--skip-bg); border-color: var(--skip); color: var(--skip); }
+  textarea { min-height: 64px; resize: vertical; font-size: 0.95rem; }
+  .print-only { display: none; }
+  .footer { font-size: 0.8rem; color: var(--muted); }
+
+  /* 印刷するとき:入力用の部品は隠し、結果とメモを文字で出す */
+  @media print {
+    @page { size: A4; margin: 14mm 12mm; }
+    body { background: #ffffff; font-size: 10.5pt; line-height: 1.6; }
+    .stripe, .no-print, .fields, .choices, textarea, details.group > summary::after { display: none !important; }
+    .print-only { display: block; }
+    .wrap { max-width: none; padding: 0; gap: 10px; }
+    .panel, details.group { border: 1px solid #999; border-radius: 6px; padding: 0; box-shadow: none; }
+    .panel { padding: 8px 10px; }
+    details.group > summary { padding: 8px 10px; }
+    .group-body { padding: 0 10px 8px; gap: 8px; }
+    .item { break-inside: avoid; padding-top: 8px; gap: 3px; }
+    .expect, .note { background: none; padding: 0; color: #000; }
+    .tag { border: 1px solid #666; background: none !important; color: #000 !important; }
+    .memo-print { border: 1px solid #bbb; border-radius: 4px; padding: 4px 8px; min-height: 2.2em; white-space: pre-wrap; }
+  }
+</style>
+</head>
+<body>
+<div class="stripe" aria-hidden="true"></div>
+<div class="wrap">
+  <header style="display:grid;gap:6px">
+    <p class="eyebrow">行動予定表(デジタル行先ボード)</p>
+    <h1>行動予定表 実機テストチェックリスト</h1>
+    <p class="lead no-print">SharePoint のテスト用ページで実際に操作して、1つずつ「OK」「気になる」「試していない」を選んでください。気になったことはメモに書いてください。エラーが出たときは、画面の「くわしい内容(管理者向け)」の文字もメモに写してください。</p>
+  </header>
+
+  <section class="panel">
+    <div class="fields">
+      <label class="f" for="tester">テストした人<input id="tester" type="text" placeholder="例:企画室 山田"></label>
+      <label class="f" for="date">テストした日<input id="date" type="date"></label>
+      <label class="f" for="ver">テストした版(WEBパーツの右下の「ver」)<input id="ver" type="text" placeholder="例:ver 0.2.0"></label>
+    </div>
+    <p class="print-only" id="print-meta"></p>
+    <div class="counts" id="counts"></div>
+    <div class="toolbar no-print">
+      <button type="button" class="btn" id="print">印刷する</button>
+      <button type="button" class="btn sub" id="open-all">すべての項目を開く</button>
+      <button type="button" class="btn danger" id="clear">入力を消す</button>
+    </div>
+    <div class="confirm no-print" id="confirm" hidden>
+      <p>入力した結果とメモを、すべて消します。よろしいですか？</p>
+      <div class="toolbar">
+        <button type="button" class="btn danger" id="clear-yes">消す</button>
+        <button type="button" class="btn sub" id="clear-no">やめる</button>
+      </div>
+    </div>
+    <p class="footer no-print" id="storage-note">入力した内容は、このパソコンのブラウザに自動で残ります。</p>
+  </section>
+
+  <section class="panel no-print">
+    <h2>はじめる前に</h2>
+    <ol class="prep">
+      <li><code>docs/LIST_SETUP.md</code> の手順で<strong>行動予定リスト</strong>(と会社休日リスト)を作り、<code>docs/DEPLOY.md</code> の手順で WEBパーツをテスト用ページに置きます。</li>
+      <li>予定表の右下に小さく出ている<strong>「ver 0.2.0」</strong>のような番号を、上の「テストした版」に書いてください。</li>
+      <li>「B. 予定の表示ルール」は、テスト用の予定を自分で登録して確かめます。休暇・休日出勤は<strong>総務のリストにテスト用の行</strong>が必要です(総務の方にお願いするか、試していないでOK)。</li>
+      <li>「E. 権限」は、<strong>一般社員のアカウント</strong>と<strong>管理者グループの人</strong>の2人で確かめます。</li>
+      <li>確認が終わったら、テスト用に登録した予定・総務のリストの行は削除してください。</li>
+      <li>エラーや気になる表示は、画面の写真をとって、メモに「何をしたら何が起きたか」を書いてください。</li>
+    </ol>
+  </section>
+
+  <div id="groups" style="display:grid;gap:14px"></div>
+</div>
+
+<script>
+const GROUPS = [
+  {
+    id: 'prep', title: 'A. 準備と表示のはじまり',
+    items: [
+      { id: 'A1', title: 'ページを開くと、予定表が表示される',
+        how: ['テスト用ページを開く'],
+        expect: 'エラーの文字が出ず、今週の予定表(名前と7日分)が出る。右下に「ver」が出る' },
+      { id: 'A2', title: '黄色いお知らせが出ていない',
+        how: ['予定表の上を見る'],
+        expect: '「〜を読み込めなかったため、表示していません」が出ていない(出ていたら文字をメモに写す)' },
+      { id: 'A3', title: '退職者が出ず、No. の順・部署ごとに並ぶ',
+        how: ['名前の列を上から見る', '部署の見出しの ▼ を押して、たたむ・開く'],
+        expect: 'Department が「退職者」の人がいない。WorkerNameList の No. の順に並び、部署ごとにまとまる' },
+      { id: 'A4', title: '自分の行が一番上に「あなた」で出る',
+        how: ['一番上の「あなた」の行を見る', '「絞り込み」→「自分を一番上に表示」のチェックを外す'],
+        expect: '自分の名前と「あなた」の印が出る。チェックを外すと、自分の部署の中に戻る' },
+      { id: 'A5', title: '今日・休日の列が見分けられる',
+        how: ['今日の列と、土日の列を見る'],
+        expect: '今日の列は青い枠と「今日」の印。土日は背景の色がちがう' },
+      { id: 'A6', title: '週の切り替えと、日表示への切り替え',
+        how: ['「<」「>」で前の週・次の週へ。「今週」で戻る', '日付(例 11/19(木))を押す', '「週」「日」のボタンで切り替える'],
+        expect: '週が切り替わる。日付を押すとその日の日表示になる。日表示では「<」「>」で1日ずつ動く' },
+    ]
+  },
+  {
+    id: 'rule', title: 'B. 予定の表示ルール',
+    note: 'テスト用の予定を自分で登録して確かめます(登録のしかたは「D.」)。休暇・休日出勤は総務のリストにテスト用の行が必要です。',
+    items: [
+      { id: 'B1', title: '長期の予定(期間)が、横につながった帯で出る',
+        how: ['「期間」で、今週をまたぐ予定を登録する(例 月曜〜来週の水曜、区分「現場」)'],
+        expect: '帯がつながって見える。土日はうすく出る。名前の文字は帯の最初のマスだけ' },
+      { id: 'B2', title: '単発の予定が、長期の予定より優先される',
+        how: ['B1 の期間の中の1日に「1日だけ」の予定を登録する'],
+        expect: 'その日だけ、単発の予定が出る' },
+      { id: 'B3', title: '総務の休暇「1日」が、何より優先される',
+        how: ['休暇情報共有リストに、自分の「1日」の行を作る(B2 と同じ日)'],
+        expect: 'その日は「休暇」と出る(単発の予定より優先)' },
+      { id: 'B4', title: '休暇の「午前・午後・遅刻・早退」がバッジで出る',
+        how: ['休暇情報共有リストに、自分の「午後」の行を作る。Remarks に「13:00から」と入れる', 'バッジ(午後休 ⓘ)を押す', '日表示でも見る'],
+        expect: '予定の下に「午後休」のバッジ。押すと「13:00から」が出る。日表示では最初から出ている' },
+      { id: 'B5', title: '休日出勤が「休出」で出る',
+        how: ['休日出勤情報共有リストに、自分の土曜の行を作る(WorkPlace・時刻を入れる)'],
+        expect: '土曜のマスに「休出」+出勤先+時刻(例 08:00-17:30)。長期の予定より優先' },
+      { id: 'B6', title: '会社休日が反映される',
+        how: ['会社休日リストに、平日の「休日」(例 祝日)と、土曜の「出勤日」を登録する'],
+        expect: '平日の休日は休日の色と名前(例 勤労感謝の日)。出勤日の土曜は平日と同じ色' },
+      { id: 'B7', title: '日付が1日ずれていない',
+        how: ['登録した予定と、SharePoint のリストの「開始日」「終了日」を見比べる', '総務のリストの日付と、予定表の位置を見比べる'],
+        expect: 'すべて同じ日付になっている(1日前・1日後にずれていない)' },
+    ]
+  },
+  {
+    id: 'search', title: 'C. 探す・絞り込む',
+    items: [
+      { id: 'C1', title: '名前で探せる(名字だけ・名前だけでも)',
+        how: ['右上の「名前・現場名」の欄に、だれかの名字だけを入れる'],
+        expect: '入力するそばから、合う人だけになる。「〇人中 〇人を表示」が出る' },
+      { id: 'C2', title: '現場名で「この現場に誰がいる?」を探せる',
+        how: ['同じ欄に、現場名の一部を入れる'],
+        expect: 'その週(日表示ならその日)に、その現場の予定がある人だけになる' },
+      { id: 'C3', title: '部署・区分で絞り込める',
+        how: ['「絞り込み」を押して、部署や区分を選ぶ', '札の × や「すべて解除」で戻す'],
+        expect: '合う人だけになり、表の上に「部署:〇〇 ×」の札が出る。× で外せる' },
+    ]
+  },
+  {
+    id: 'edit', title: 'D. 予定の登録・変更・削除',
+    items: [
+      { id: 'D1', title: '「予定を追加」から1日の予定を登録できる',
+        how: ['「+ 予定を追加」を押す', '区分・行き先・日付・時刻を入れて「保存」'],
+        expect: '「予定を登録しました」と出て、予定表に出る。行動予定リストにも1行増え、担当者が自分になっている' },
+      { id: 'D2', title: '期間の予定を登録できる',
+        how: ['「期間(長期の現場など)」を選び、開始日・終了日を入れて保存'],
+        expect: '帯で表示される。終了日を開始日より前にすると、赤い文字で知らせる' },
+      { id: 'D3', title: '自分の行のマスを押すと、その日付で追加できる',
+        how: ['自分の行の空いているところを押す'],
+        expect: '押した日付が入った状態でフォームが開く' },
+      { id: 'D4', title: '自分の予定を押すと変更できる',
+        how: ['自分の予定を押す', '行き先を変えて「保存」'],
+        expect: '「予定を変更」のフォームが開く。保存すると「予定を変更しました」と出て表示が変わる' },
+      { id: 'D5', title: '削除は確認してから消える',
+        how: ['自分の予定を押して「削除」', '「この予定を削除しますか?」で「削除する」'],
+        expect: '確認が出て、「削除する」で消える。行動予定リストからも消える' },
+      { id: 'D6', title: 'ワンタップ登録・行き先の候補',
+        how: ['「予定を追加」を開き、「今日は在社」を押す', 'もう一度「予定を追加」を開き、「最近の行き先」を見る'],
+        expect: 'ワンタップで「在社・本社」の予定が保存される。最近の行き先に、自分が入力した名前が出て、押すと入る' },
+      { id: 'D7', title: 'フォームの項目・文言がわかりやすい',
+        how: ['フォームを見て、わかりにくい言葉があればメモに書く'],
+        expect: 'ITが苦手な人でも迷わない' },
+    ]
+  },
+  {
+    id: 'perm', title: 'E. 権限(一般社員と管理者)',
+    note: '一般社員のアカウントと、「行動予定表管理者」グループの人の2人で確かめます。',
+    items: [
+      { id: 'E1', title: '一般社員は、ほかの人の予定を編集できない(画面)',
+        how: ['一般社員でページを開く', 'ほかの人のマスや予定を押す'],
+        expect: '何も開かない。ほかの人の行には「+」が出ない' },
+      { id: 'E2', title: '一般社員は、ほかの人の予定を編集できない(リスト)',
+        how: ['一般社員で、行動予定リストを直接開く', 'ほかの人が作った行を編集しようとする'],
+        expect: '編集できない(リストの権限で守られている)' },
+      { id: 'E3', title: '管理者は、ほかの人の予定を変更・削除できる',
+        how: ['管理者グループの人でページを開く', 'ほかの人の予定を押して変更・削除する'],
+        expect: 'フォームが開き、保存・削除できる' },
+      { id: 'E4', title: '管理者は、PCのない人の予定を代理登録できる',
+        how: ['管理者で「予定を追加」→「担当者」で「(PCなし)」の人を選んで保存'],
+        expect: 'その人の行に予定が出る' },
+      { id: 'E5', title: '権限がないときの文言',
+        how: ['(わかる人だけ)リストの権限を一時的に外した状態で保存してみる'],
+        expect: '「この予定を保存する権限がありません」とやさしい文言で出る(試さなくてもOK)' },
+    ]
+  },
+  {
+    id: 'mobile', title: 'F. スマホ',
+    items: [
+      { id: 'F1', title: 'スマホで開くと、日表示で見やすく出る',
+        how: ['同じページを会社のスマホ(SharePoint アプリ、またはブラウザ)で開く'],
+        expect: '最初から日表示。上のボタンは2行で、文字が切れたり重なったりしない' },
+      { id: 'F2', title: 'スマホで予定を登録できる',
+        how: ['「+」を押して予定を登録する'],
+        expect: 'フォームが画面いっぱいに開き、入力しやすい。保存できる' },
+      { id: 'F3', title: 'スマホで週間表示も見られる',
+        how: ['「週」を押す', '表を横にスクロールする'],
+        expect: '名前の列は固定されたまま、日付が横にスクロールする' },
+    ]
+  },
+];
+
+const ALL = GROUPS.flatMap((g) => g.items);
+const STATUS = { ok: { label: 'OK', cls: 'ok' }, ng: { label: '気になる', cls: 'ng' }, skip: { label: '試していない', cls: 'skip' } };
+const KEY = 'schedule-board-test-checklist-v1';
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/* 保存(このパソコンのブラウザに残す。使えない環境でも画面は動く) */
+let state = { tester: '', date: '', ver: '', items: {} };
+try {
+  const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+  if (saved && typeof saved === 'object') state = { tester: '', date: '', ver: '', items: {}, ...saved };
+} catch (e) { /* 読めなくても続ける */ }
+function persist() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch (e) { $('#storage-note').textContent = 'このブラウザでは入力を残せません。閉じる前に印刷してください。'; }
+}
+
+/* 画面をつくる */
+$('#groups').innerHTML = GROUPS.map((g, gi) => `
+  <details class="group" ${gi === 0 ? 'open' : ''}>
+    <summary><h2>${esc(g.title)}</h2><span class="progress" data-progress="${g.id}"></span></summary>
+    <div class="group-body">
+      ${g.note ? `<p class="note">${esc(g.note)}</p>` : ''}
+      ${g.items.map((it) => `
+        <article class="item" data-item="${it.id}">
+          <div class="item-head"><span class="item-id">${it.id}</span><h3>${esc(it.title)}</h3>
+            <span class="print-only" data-print-status="${it.id}"></span></div>
+          <ol class="how">${it.how.map((h) => `<li>${esc(h)}</li>`).join('')}</ol>
+          <p class="expect"><b>こうなればOK:</b>${esc(it.expect)}</p>
+          <div class="choices" role="group" aria-label="${it.id} の結果">
+            ${Object.entries(STATUS).map(([k, v]) => `<button type="button" class="choice c-${v.cls}" data-status="${k}" aria-pressed="false">${v.label}</button>`).join('')}
+          </div>
+          <label class="f no-print" for="memo-${it.id}">メモ(気になったこと・直したい文言)</label>
+          <textarea id="memo-${it.id}" data-memo="${it.id}" placeholder="例:2問目の「〜」がわかりにくい"></textarea>
+          <div class="print-only"><span class="item-id">メモ</span><div class="memo-print" data-print-memo="${it.id}"></div></div>
+        </article>`).join('')}
+    </div>
+  </details>`).join('');
+
+function paint() {
+  $('#tester').value = state.tester || '';
+  $('#date').value = state.date || '';
+  $('#ver').value = state.ver || '';
+  $('#print-meta').textContent = `テストした人:${state.tester || '(未記入)'}  テストした日:${state.date || '(未記入)'}  テストした版:${state.ver || '(未記入)'}`;
+  ALL.forEach((it) => {
+    const v = state.items[it.id] || {};
+    const el = $(`[data-item="${it.id}"]`);
+    el.querySelectorAll('.choice').forEach((b) => b.setAttribute('aria-pressed', String(v.status === b.dataset.status)));
+    const t = el.querySelector('textarea');
+    if (document.activeElement !== t) t.value = v.comment || '';
+    const s = STATUS[v.status];
+    $(`[data-print-status="${it.id}"]`).innerHTML = s ? `<span class="tag tag-${s.cls}">結果:${s.label}</span>` : '<span class="tag tag-none">結果:未入力</span>';
+    $(`[data-print-memo="${it.id}"]`).textContent = v.comment || '';
+  });
+  GROUPS.forEach((g) => {
+    const done = g.items.filter((it) => state.items[it.id]?.status).length;
+    $(`[data-progress="${g.id}"]`).textContent = `${done} / ${g.items.length} 項目`;
+  });
+  const c = { ok: 0, ng: 0, skip: 0 };
+  ALL.forEach((it) => { const s = state.items[it.id]?.status; if (c[s] !== undefined) c[s]++; });
+  const none = ALL.length - c.ok - c.ng - c.skip;
+  $('#counts').innerHTML = `<span>全 ${ALL.length} 項目</span>
+    <span class="tag tag-ok">OK ${c.ok}</span><span class="tag tag-ng">気になる ${c.ng}</span>
+    <span class="tag tag-skip">試していない ${c.skip}</span><span class="tag tag-none">未入力 ${none}</span>`;
+}
+
+/* 入力 */
+document.querySelectorAll('.choice').forEach((b) => b.addEventListener('click', () => {
+  const id = b.closest('[data-item]').dataset.item;
+  const cur = state.items[id] || {};
+  state.items[id] = { ...cur, status: cur.status === b.dataset.status ? '' : b.dataset.status };
+  persist(); paint();
+}));
+document.querySelectorAll('textarea').forEach((t) => t.addEventListener('input', () => {
+  const id = t.dataset.memo;
+  state.items[id] = { ...(state.items[id] || {}), comment: t.value };
+  persist(); paint();
+}));
+$('#tester').addEventListener('input', (e) => { state.tester = e.target.value; persist(); paint(); });
+$('#date').addEventListener('input', (e) => { state.date = e.target.value; persist(); paint(); });
+$('#ver').addEventListener('input', (e) => { state.ver = e.target.value; persist(); paint(); });
+
+/* ボタン */
+const openAll = () => document.querySelectorAll('details.group').forEach((d) => (d.open = true));
+$('#open-all').addEventListener('click', openAll);
+$('#print').addEventListener('click', () => { openAll(); window.print(); });
+window.addEventListener('beforeprint', openAll);
+$('#clear').addEventListener('click', () => { $('#confirm').hidden = false; });
+$('#clear-no').addEventListener('click', () => { $('#confirm').hidden = true; });
+$('#clear-yes').addEventListener('click', () => {
+  state = { tester: '', date: '', ver: '', items: {} };
+  persist(); paint(); $('#confirm').hidden = true;
+});
+
+if (!state.date) state.date = new Date().toISOString().slice(0, 10);
+paint();
+</script>
+</body>
+</html>
