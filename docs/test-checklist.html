@@ -114,7 +114,7 @@
     <div class="fields">
       <label class="f" for="tester">テストした人<input id="tester" type="text" placeholder="例:企画室 山田"></label>
       <label class="f" for="date">テストした日<input id="date" type="date"></label>
-      <label class="f" for="ver">テストした版(WEBパーツの右下の「ver」)<input id="ver" type="text" placeholder="例:ver 0.3.3"></label>
+      <label class="f" for="ver">テストした版(WEBパーツの右下の「ver」)<input id="ver" type="text" placeholder="例:ver 0.4.0"></label>
     </div>
     <p class="print-only" id="print-meta"></p>
     <div class="counts" id="counts"></div>
@@ -137,7 +137,7 @@
     <h2>はじめる前に</h2>
     <ol class="prep">
       <li><code>docs/LIST_SETUP.md</code> の手順で<strong>行動予定リスト</strong>(と会社休日リスト)を作り、<code>docs/DEPLOY.md</code> の手順で WEBパーツをテスト用ページに置きます。</li>
-      <li>予定表の右下に小さく出ている<strong>「ver 0.3.3」</strong>のような番号を、上の「テストした版」に書いてください。</li>
+      <li>予定表の右下に小さく出ている<strong>「ver 0.4.0」</strong>のような番号を、上の「テストした版」に書いてください。</li>
       <li>「B. 予定の表示ルール」は、テスト用の予定を自分で登録して確かめます。休暇・休日出勤は<strong>総務のリストにテスト用の行</strong>が必要です(総務の方にお願いするか、試していないでOK)。</li>
       <li>「E. 権限」は、<strong>一般社員のアカウント</strong>と<strong>管理者グループの人</strong>の2人で確かめます。</li>
       <li>確認が終わったら、テスト用に登録した予定・総務のリストの行は削除してください。</li>
@@ -308,6 +308,12 @@ const GROUPS = [
       { id: 'G9', title: '部署の並び順',
         how: ['WEBパーツの設定の「部署の並び順」に、2つの部署を1行ずつ書いて「適用」'],
         expect: '書いた部署が上から順に並び、書かなかった部署はそのうしろに今までの順で並ぶ。絞り込みの部署の選択肢も同じ順' },
+      { id: 'G10', title: '行の高さ(ふつう/コンパクト)が切り替わり、記憶される',
+        how: ['「絞り込み」を押し、「行の高さ」を「コンパクト」にする', 'ページを開き直す(F5)', '別のブラウザやスマホで開く'],
+        expect: 'コンパクトにすると1マスが低くなり、行き先と時刻が1行になる。開き直してもコンパクトのまま。別のブラウザやスマホでは「ふつう」から始まる' },
+      { id: 'G11', title: '見た目(案A)が SharePoint になじむ',
+        how: ['ポータルのほかの部品と並べて見る'],
+        expect: '書体がポータルと同じ。予定は淡い色の面で、左端に区分の色の線がある。線や色がうるさくない' },
     ]
   },
 ];

@@ -12,7 +12,7 @@ import {
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 
 import { DEFAULT_CELL_RULE_OPTIONS, DEFAULT_EXCLUDED_DEPARTMENTS } from '../../core';
-import { ScheduleBoard, IScheduleBoardProps } from '../../components/ScheduleBoard';
+import { ScheduleBoard, IScheduleBoardProps, IViewPrefsStore } from '../../components/ScheduleBoard';
 import { SharePointScheduleService } from '../../services/SharePointScheduleService';
 import { DEFAULT_LIST_SETTINGS, ISpListSettings } from '../../services/spConfig';
 
@@ -31,6 +31,29 @@ export interface IScheduleBoardWebPartProps extends Partial<ISpListSettings> {
   /** 総務の「1日」休暇と本人の単発予定が重なったら、休暇を優先する */
   leaveBeforeSingle?: boolean;
 }
+
+/**
+ * 表示の設定(行の高さ)を、このブラウザに覚えておく。
+ * 使えないブラウザ(保存が禁止されている など)では、覚えずに「ふつう」で表示する。
+ */
+const COMPACT_KEY = 'scheduleBoard.compact';
+export const browserPrefsStore: IViewPrefsStore = {
+  loadCompact: (): boolean | undefined => {
+    try {
+      const v = window.localStorage.getItem(COMPACT_KEY);
+      return v === null ? undefined : v === '1';
+    } catch {
+      return undefined;
+    }
+  },
+  saveCompact: (compact: boolean): void => {
+    try {
+      window.localStorage.setItem(COMPACT_KEY, compact ? '1' : '0');
+    } catch {
+      // 覚えられなくても表示は切り替わるので、何もしない
+    }
+  }
+};
 
 /** タイトルの初期値 */
 export const DEFAULT_TITLE = '行動予定表';
@@ -76,7 +99,8 @@ export default class ScheduleBoardWebPart extends BaseClientSideWebPart<ISchedul
       version: this.manifest.version,
       title: p.title === undefined ? DEFAULT_TITLE : p.title,
       helpContact: p.helpContact,
-      departmentOrder: splitList(p.departmentOrder)
+      departmentOrder: splitList(p.departmentOrder),
+      prefsStore: browserPrefsStore
     });
 
     if (!this._root) {

@@ -19,7 +19,6 @@ const selfAccount = data.currentUser.account;
 function PreviewControls() {
   const [admin, setAdmin] = React.useState(false);
   const [fail, setFail] = React.useState(false);
-  const [theme, setTheme] = React.useState('');
   const toggleAdmin = (on) => {
     service.setCurrentUser({ account: selfAccount, isAdmin: on });
     setAdmin(on);
@@ -40,19 +39,6 @@ function PreviewControls() {
     ),
     h(
       'div',
-      { className: 'pv-controls', role: 'radiogroup', 'aria-label': '見た目の案' },
-      h('span', { className: 'pv-controls-title' }, '見た目の案:'),
-      [
-        ['', 'いまの見た目'],
-        ['a', 'A やわらか(色の面で見せる)'],
-        ['b', 'B すっきり(線と文字で見せる)'],
-        ['c', 'C コンパクト(一度にたくさん見る)']
-      ].map(([key, label]) =>
-        h('label', { key: key || 'now' }, h('input', { type: 'radio', name: 'pv-theme', checked: theme === key, onChange: () => setTheme(key) }), ' ' + label)
-      )
-    ),
-    h(
-      'div',
       { className: 'pv-card' },
       // 管理者の切り替えでは、部品を作り直してユーザー情報を読み直す
       h(ScheduleBoard, {
@@ -62,7 +48,6 @@ function PreviewControls() {
         pinSelfByDefault: true,
         today,
         version,
-        theme: theme || undefined,
         title: '行動予定表',
         helpContact: '例:システム担当 ◯◯(内線 123)\nプレビューでは、WEBパーツの設定に書いた文字がここに出ます。'
       })

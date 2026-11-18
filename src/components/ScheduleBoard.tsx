@@ -73,8 +73,8 @@ export interface IScheduleBoardProps {
   helpContact?: string;
   /** 部署の並び順(書いた部署から順に。空なら No. 順のまま) */
   departmentOrder?: string[];
-  /** 見た目の案(見た目の改修の検討用。プレビューで切り替えて比べる)。省略すると今の見た目 */
-  theme?: BoardTheme;
+  /** 「行の高さ」などの表示の設定を覚えておく場所。省略すると覚えない(開き直すと「ふつう」に戻る) */
+  prefsStore?: IViewPrefsStore;
 }
 
 /** 自動で読み直す間隔(5分) */
@@ -88,14 +88,11 @@ function isPageHidden(): boolean {
   return typeof document !== 'undefined' && document.visibilityState === 'hidden';
 }
 
-/** 見た目の案:a=やわらか(色の面) b=すっきり(線) c=コンパクト(一覧性) */
-export type BoardTheme = 'a' | 'b' | 'c';
-
-const THEME_CLASS: { [key in BoardTheme]: string } = {
-  a: styles.themeA,
-  b: styles.themeB,
-  c: styles.themeC
-};
+/** 表示の設定を覚えておく場所(WEBパーツではブラウザ、プレビューでは覚えない) */
+export interface IViewPrefsStore {
+  loadCompact(): boolean | undefined;
+  saveCompact(compact: boolean): void;
+}
 
 /** 週間表示/日表示 */
 export type ViewMode = 'week' | 'day';
@@ -136,6 +133,17 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const [errorInfo, setErrorInfo] = React.useState<string>('');
   const [criteria, setCriteria] = React.useState<IFilterCriteria>({});
   const [pinSelf, setPinSelf] = React.useState<boolean>(pinSelfByDefault);
+  // 行の高さ(社員がそれぞれ選ぶ。初期値は「ふつう」。WEBパーツではブラウザに覚えておく)
+  const [compact, setCompactState] = React.useState<boolean>(() => {
+    const saved = props.prefsStore ? props.prefsStore.loadCompact() : undefined;
+    return saved === true;
+  });
+  const setCompact = (value: boolean): void => {
+    setCompactState(value);
+    if (props.prefsStore) {
+      props.prefsStore.saveCompact(value);
+    }
+  };
   const [collapsed, setCollapsed] = React.useState<string[]>([]);
   // 開いている登録・編集フォーム(閉じているときは undefined)
   const [formDraft, setFormDraft] = React.useState<IEntryDraft | undefined>(undefined);
@@ -441,7 +449,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     );
   };
 
-  const rootClass = styles.scheduleBoard + (props.theme ? ' ' + THEME_CLASS[props.theme] : '');
+  const rootClass = styles.scheduleBoard + (compact ? ' ' + styles.compact : '');
 
   return (
     <div className={rootClass}>
@@ -566,6 +574,8 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
             onDepartmentChange={(v) => setCriteria({ ...criteria, departments: v ? [v] : [] })}
             onCategoryChange={(v) => setCriteria({ ...criteria, categories: v ? [v] : [] })}
             onPinSelfChange={setPinSelf}
+            compact={compact}
+            onCompactChange={setCompact}
           />
           <button
             type="button"

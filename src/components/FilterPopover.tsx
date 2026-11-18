@@ -1,6 +1,6 @@
 // 「絞り込み」ボタンと、押すと開く小さな画面(ポップアップ)
 // ふだんは閉じておき、予定表の上の場所を取らないようにする。
-// 中身:部署・区分の絞り込み、「自分を一番上に表示」の設定
+// 中身:部署・区分の絞り込み、「自分を一番上に表示」と「行の高さ」の設定
 
 import * as React from 'react';
 import { Icon } from './Icon';
@@ -17,6 +17,9 @@ export interface IFilterPopoverProps {
   onDepartmentChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
   onPinSelfChange: (pin: boolean) => void;
+  /** 行の高さ(ふつう/コンパクト) */
+  compact: boolean;
+  onCompactChange: (compact: boolean) => void;
 }
 
 /** 「すべて」を表す値 */
@@ -103,15 +106,38 @@ export const FilterPopover: React.FC<IFilterPopoverProps> = (props) => {
               ))}
             </select>
           </label>
-          {props.hasSelf && (
-            <div className={styles.popoverSection}>
-              <span className={styles.fieldLabel}>表示の設定</span>
+          <div className={styles.popoverSection}>
+            <span className={styles.fieldLabel}>表示の設定</span>
+            {props.hasSelf && (
               <label className={styles.checkbox}>
                 <input type="checkbox" checked={props.pinSelf} onChange={(e) => props.onPinSelfChange(e.target.checked)} />
                 自分を一番上に表示
               </label>
+            )}
+            <div className={styles.densityRow} role="radiogroup" aria-label="行の高さ">
+              <span className={styles.densityLabel}>行の高さ</span>
+              <div className={styles.segment}>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={!props.compact}
+                  className={styles.segmentButton}
+                  onClick={() => props.onCompactChange(false)}
+                >
+                  ふつう
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={props.compact}
+                  className={styles.segmentButton}
+                  onClick={() => props.onCompactChange(true)}
+                >
+                  コンパクト
+                </button>
+              </div>
             </div>
-          )}
+          </div>
           <div className={styles.popoverFoot}>
             <button type="button" className={styles.primaryButton} onClick={() => setOpen(false)}>
               閉じる
