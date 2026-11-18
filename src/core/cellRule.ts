@@ -4,8 +4,9 @@
 //   1. 休暇リストで「1日」          → 「休暇」
 //   2. 休日出勤リストに登録あり     → 「休出」+出勤先+時刻
 //   3. 単発の予定あり               → 単発の予定
-//   4. 休日(出勤なし)             → 長期の予定を薄く表示。なければ空欄
+//   4. 休日(出勤なし)             → 長期の予定(作業員の行き先を含む)を薄く表示。なければ空欄
 //   5. 平日で長期の予定あり         → 長期の予定を通常表示
+//      ※ 作業員の行き先リスト(別サイト)に登録があれば、行動予定表の長期の予定より優先する
 //   6. 何もなし                     → 空欄
 // 休暇の「午前」「午後」「遅刻」「早退」は、上の表示にバッジとして重ねる。
 //
@@ -35,6 +36,8 @@ export interface IWorkerDayData {
   entries: IScheduleEntry[];
   leaves: ILeave[];
   holidayWorks: IHolidayWork[];
+  /** 作業員の行き先(crewToEntries で予定の形にしたもの)。なければ省略してよい */
+  crew?: IScheduleEntry[];
 }
 
 /** バッジの並び順(1日の時間の流れに合わせる) */
@@ -103,7 +106,11 @@ export function resolveCell(
     (e) => e.workerId === workerId && isDateInPeriod(date, e.startDate, e.endDate)
   );
   const singles = todays.filter((e) => e.entryType === 'single').sort(compareSingle);
-  const period = pickPeriod(todays.filter((e) => e.entryType === 'period'));
+  const crew = pickPeriod(
+    (data.crew || []).filter((e) => e.workerId === workerId && isDateInPeriod(date, e.startDate, e.endDate))
+  );
+  // 長期の予定:作業員の行き先があればそちらを優先
+  const period = crew || pickPeriod(todays.filter((e) => e.entryType === 'period'));
 
   let fullDayLeave: ILeave | undefined;
   for (let i = 0; i < leaves.length; i++) {
@@ -184,19 +191,20 @@ export function groupByWorker(data: IWorkerDayData): Map<number, IWorkerDayData>
   const get = (workerId: number): IWorkerDayData => {
     let d = map.get(workerId);
     if (!d) {
-      d = { entries: [], leaves: [], holidayWorks: [] };
+      d = { entries: [], leaves: [], holidayWorks: [], crew: [] };
       map.set(workerId, d);
     }
     return d;
   };
   data.entries.forEach((e) => get(e.workerId).entries.push(e));
+  (data.crew || []).forEach((e) => (get(e.workerId).crew as IScheduleEntry[]).push(e));
   data.leaves.forEach((l) => get(l.workerId).leaves.push(l));
   data.holidayWorks.forEach((h) => get(h.workerId).holidayWorks.push(h));
   return map;
 }
 
 /** その人のデータがないときに使う空のデータ */
-export const EMPTY_WORKER_DATA: IWorkerDayData = { entries: [], leaves: [], holidayWorks: [] };
+export const EMPTY_WORKER_DATA: IWorkerDayData = { entries: [], leaves: [], holidayWorks: [], crew: [] };
 
 /** 検索・絞り込みで使う、マスに表示されている文字(行き先・現場名、出勤先) */
 export function cellPlaces(cell: ICell): string[] {

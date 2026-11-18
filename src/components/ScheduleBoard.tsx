@@ -5,6 +5,7 @@ import * as React from 'react';
 import {
   addDays,
   canEditWorker,
+  crewToEntries,
   draftFromEntry,
   findActiveOuting,
   IEntryDraft,
@@ -73,6 +74,8 @@ export interface IScheduleBoardProps {
   helpContact?: string;
   /** 部署の並び順(書いた部署から順に。空なら No. 順のまま) */
   departmentOrder?: string[];
+  /** 「行の高さ」などの表示の設定を覚えておく場所。省略すると覚えない(開き直すと「ふつう」に戻る) */
+  prefsStore?: IViewPrefsStore;
 }
 
 /** 自動で読み直す間隔(5分) */
@@ -84,6 +87,12 @@ const REFRESH_ON_RETURN_MS = 60 * 1000;
 
 function isPageHidden(): boolean {
   return typeof document !== 'undefined' && document.visibilityState === 'hidden';
+}
+
+/** 表示の設定を覚えておく場所(WEBパーツではブラウザ、プレビューでは覚えない) */
+export interface IViewPrefsStore {
+  loadCompact(): boolean | undefined;
+  saveCompact(compact: boolean): void;
 }
 
 /** 週間表示/日表示 */
@@ -125,6 +134,17 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const [errorInfo, setErrorInfo] = React.useState<string>('');
   const [criteria, setCriteria] = React.useState<IFilterCriteria>({});
   const [pinSelf, setPinSelf] = React.useState<boolean>(pinSelfByDefault);
+  // 行の高さ(社員がそれぞれ選ぶ。初期値は「ふつう」。WEBパーツではブラウザに覚えておく)
+  const [compact, setCompactState] = React.useState<boolean>(() => {
+    const saved = props.prefsStore ? props.prefsStore.loadCompact() : undefined;
+    return saved === true;
+  });
+  const setCompact = (value: boolean): void => {
+    setCompactState(value);
+    if (props.prefsStore) {
+      props.prefsStore.saveCompact(value);
+    }
+  };
   const [collapsed, setCollapsed] = React.useState<string[]>([]);
   // 開いている登録・編集フォーム(閉じているときは undefined)
   const [formDraft, setFormDraft] = React.useState<IEntryDraft | undefined>(undefined);
@@ -295,18 +315,24 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     return (view === 'week' ? weekDates(rangeStart) : [rangeStart]).map(calendar);
   }, [view, rangeStart, range]);
 
+  // 作業員の行き先(別サイトのリスト)を、名前で WorkerNameList の人に結びつける
+  const crew = React.useMemo(
+    () => (base && range ? crewToEntries(range.crewAssignments || [], base.workers) : { entries: [], unmatched: [] }),
+    [base, range]
+  );
+
   // 全員ぶんのマスを作る(表示ルールは core の resolveRow)
   const rows = React.useMemo(() => {
     const map = new Map<number, ICell[]>();
     if (!base || !range) {
       return map;
     }
-    const byWorker = groupByWorker(range);
+    const byWorker = groupByWorker({ entries: range.entries, leaves: range.leaves, holidayWorks: range.holidayWorks, crew: crew.entries });
     base.workers.forEach((w) => {
       map.set(w.id, resolveRow(days, w.id, byWorker.get(w.id) || EMPTY_WORKER_DATA, cellRuleOptions, nowInfo));
     });
     return map;
-  }, [base, range, days, cellRuleOptions, nowInfo]);
+  }, [base, range, crew, days, cellRuleOptions, nowInfo]);
 
   if (error) {
     return (
@@ -354,6 +380,9 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const openAdd = (workerId: number | undefined, d: DateKey): void => setFormDraft(newDraft(workerId, d));
   // 長期の予定(帯)を押したら、「この日だけ別の予定を追加」か「期間の予定を変更」かを選んでもらう
   const openEdit = (entry: IScheduleEntry, d?: DateKey): void => {
+    if (entry.readOnly && !d) {
+      return; // 作業員の行き先リストの予定は、この画面では変更しない
+    }
     if (entry.entryType === 'period' && d) {
       setPeriodChoice({ entry, date: d });
     } else {
@@ -375,6 +404,12 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   };
 
   const title = (props.title || '').trim();
+  // お知らせ:読めなかったリスト。管理者には、作業員の行き先で名前が合わない人も知らせる(設定の確認用)
+  const warnings = (range && range.warnings ? range.warnings : []).concat(
+    base.isAdmin && crew.unmatched.length > 0
+      ? ['(管理者向け)作業員の行き先リストに、WorkerNameList と名前が合わない人がいます:' + crew.unmatched.join('、')]
+      : []
+  );
   const dateText = view === 'week' ? formatShortRange(weekStart, addDays(weekStart, 6)) : formatShortDate(date);
 
   // 「ちょっと外出」:自分の行があり、区分に「外出」があるときだけ使える
@@ -430,8 +465,10 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     );
   };
 
+  const rootClass = styles.scheduleBoard + (compact ? ' ' + styles.compact : '');
+
   return (
-    <div className={styles.scheduleBoard}>
+    <div className={rootClass}>
       <div className={styles.titleRow}>
         {title ? <h2 className={styles.boardTitle}>{title}</h2> : <span />}
         <div className={styles.titleTools}>
@@ -553,6 +590,8 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
             onDepartmentChange={(v) => setCriteria({ ...criteria, departments: v ? [v] : [] })}
             onCategoryChange={(v) => setCriteria({ ...criteria, categories: v ? [v] : [] })}
             onPinSelfChange={setPinSelf}
+            compact={compact}
+            onCompactChange={setCompact}
           />
           <button
             type="button"
@@ -567,9 +606,9 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         </div>
       </div>
 
-      {range && range.warnings && range.warnings.length > 0 && (
+      {warnings.length > 0 && (
         <div className={styles.warning} role="status">
-          {range.warnings.map((w) => (
+          {warnings.map((w) => (
             <div key={w}>{w}</div>
           ))}
         </div>

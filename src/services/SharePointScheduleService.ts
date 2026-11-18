@@ -13,6 +13,7 @@ import {
   lookupIdField,
   mapEntry,
   mapHoliday,
+  mapCrew,
   mapHolidayWork,
   mapLeave,
   mapRows,
@@ -178,11 +179,30 @@ export class SharePointScheduleService implements IScheduleDataService {
       '休日出勤の情報'
     );
 
-    const [entryList, holidayList, leaveList, holidayWorkList] = await Promise.all([
+    // 作業員の行き先(別サイト):設定でリストを入れたときだけ読む
+    const c = this._f.crew;
+    const crewWeb = (this._lists.crewSiteUrl || this._webUrl).replace(/\/+$/, '');
+    const crew = this._lists.crewList
+      ? optional(
+          this._getAll(
+            listApiUrl(crewWeb, this._lists.crewList) +
+              '/items?$select=' +
+              ['Id', c.worker, c.title, c.startDate, c.endDate].join(',') +
+              '&$filter=' +
+              encodeURIComponent(c.startDate + " le datetime'" + b.to + "' and " + c.endDate + " ge datetime'" + b.from + "'") +
+              '&$top=' +
+              PAGE_SIZE
+          ).then((rows) => mapRows(rows, (r) => mapCrew(r, c))),
+          '作業員の行き先'
+        )
+      : Promise.resolve([]);
+
+    const [entryList, holidayList, leaveList, holidayWorkList, crewList] = await Promise.all([
       entryRows.then((rows) => mapRows(rows, (r) => mapEntry(r, e))),
       holidays,
       leaves,
-      holidayWorks
+      holidayWorks,
+      crew
     ]);
 
     // 時差を見込んで広めに取り出したので、ここで表示範囲ぴったりに絞る
@@ -192,6 +212,7 @@ export class SharePointScheduleService implements IScheduleDataService {
       leaves: leaveList.filter((x) => inRange(x.date)),
       holidayWorks: holidayWorkList.filter((x) => inRange(x.date)),
       holidays: holidayList.filter((x) => inRange(x.date)),
+      crewAssignments: crewList.filter((x) => overlapsRange(x.startDate, x.endDate, start, end)),
       warnings
     };
   }

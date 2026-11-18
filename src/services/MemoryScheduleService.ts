@@ -56,7 +56,8 @@ export class MemoryScheduleService implements IScheduleDataService {
       entries: d.entries.filter((e) => overlapsRange(e.startDate, e.endDate, start, end)).map((e) => ({ ...e })),
       leaves: d.leaves.filter((l) => inRange(l.date)),
       holidayWorks: d.holidayWorks.filter((h) => inRange(h.date)),
-      holidays: d.holidays.filter((h) => inRange(h.date))
+      holidays: d.holidays.filter((h) => inRange(h.date)),
+      crewAssignments: (d.crewAssignments || []).filter((c) => overlapsRange(c.startDate, c.endDate, start, end))
     });
   }
 

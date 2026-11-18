@@ -5,6 +5,7 @@ import {
   DateKey,
   ENTRY_TYPE_LABELS,
   ICompanyHoliday,
+  ICrewAssignment,
   IHolidayWork,
   ILeave,
   IScheduleEntry,
@@ -13,7 +14,7 @@ import {
   parseEntryType,
   parseLeaveKind
 } from '../core';
-import { IEntryFields, IHolidayFields, IHolidayWorkFields, ILeaveFields, IWorkerFields } from './spConfig';
+import { ICrewFields, IEntryFields, IHolidayFields, IHolidayWorkFields, ILeaveFields, IWorkerFields } from './spConfig';
 
 /** SharePoint から返ってくる1行(列名 → 値) */
 export interface ISpRow {
@@ -210,6 +211,23 @@ export function mapHolidayWork(row: ISpRow, f: IHolidayWorkFields): IHolidayWork
     hw.endTime = endTime;
   }
   return hw;
+}
+
+/** 作業員の行き先リストの1行 → 作業員の行き先。作業員・開始日が読めない行は undefined */
+export function mapCrew(row: ISpRow, f: ICrewFields): ICrewAssignment | undefined {
+  const id = num(row.Id);
+  const workerName = text(row[f.worker]).trim();
+  const startDate = spDateToKey(row[f.startDate]);
+  if (id === undefined || !workerName || !startDate) {
+    return undefined;
+  }
+  return {
+    id,
+    workerName,
+    title: text(row[f.title]).trim(),
+    startDate,
+    endDate: spDateToKey(row[f.endDate]) || startDate
+  };
 }
 
 /** 行を変換して、変換できなかった行(undefined)を除く */

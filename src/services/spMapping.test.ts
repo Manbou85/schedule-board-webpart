@@ -5,6 +5,7 @@ import {
   escapeOData,
   listApiUrl,
   mapEntry,
+  mapCrew,
   mapHoliday,
   mapHolidayWork,
   mapLeave,
@@ -126,6 +127,24 @@ describe('リストの行 → 予定表のデータ', () => {
       { Id: 4, WorkerId: 1, EntryType: '単発' }
     ];
     expect(mapRows(rows, (r) => mapEntry(r, f)).map((e) => e.id)).toEqual([1]);
+  });
+
+  it('作業員の行き先(別サイトのリスト)', () => {
+    expect(
+      mapCrew(
+        { Id: 9, WorkerName: ' 山田 太郎 ', SiteName: '〇〇新築工事', Start: '2026-11-15T15:00:00Z', End: '2026-11-19T15:00:00Z' },
+        SP_FIELDS.crew
+      )
+    ).toEqual({ id: 9, workerName: '山田 太郎', title: '〇〇新築工事', startDate: '2026-11-16', endDate: '2026-11-20' });
+    // 終了日がなければ開始日と同じ。作業員か開始日がない行は使わない
+    expect(mapCrew({ Id: 1, WorkerName: '山田 太郎', SiteName: 'x', Start: '2026-11-15T15:00:00Z', End: null }, SP_FIELDS.crew)).toEqual({
+      id: 1,
+      workerName: '山田 太郎',
+      title: 'x',
+      startDate: '2026-11-16',
+      endDate: '2026-11-16'
+    });
+    expect(mapCrew({ Id: 1, WorkerName: '', SiteName: 'x', Start: '2026-11-15T15:00:00Z' }, SP_FIELDS.crew)).toBeUndefined();
   });
 
   it('会社休日・休暇・休日出勤', () => {

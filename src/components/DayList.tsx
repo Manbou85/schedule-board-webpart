@@ -114,7 +114,7 @@ const DayCell: React.FC<{ cell: ICell | undefined; onEdit?: (entry: IScheduleEnt
           entry={c.entry}
           onEdit={onEdit ? (e) => onEdit(e, cell.date) : undefined}
           st={getCategoryStyle(c.entry.category)}
-          label={c.dimmed ? c.entry.category + '(休日)' : c.entry.category}
+          label={c.entry.category + (c.entry.readOnly ? '(作業員の行き先)' : '') + (c.dimmed ? '(休日)' : '')}
           place={c.entry.title}
           meta={entryMeta(c.entry, true)}
           note={c.entry.note}
