@@ -114,7 +114,7 @@
     <div class="fields">
       <label class="f" for="tester">テストした人<input id="tester" type="text" placeholder="例:企画室 山田"></label>
       <label class="f" for="date">テストした日<input id="date" type="date"></label>
-      <label class="f" for="ver">テストした版(WEBパーツの右下の「ver」)<input id="ver" type="text" placeholder="例:ver 0.5.4"></label>
+      <label class="f" for="ver">テストした版(WEBパーツの右下の「ver」)<input id="ver" type="text" placeholder="例:ver 0.5.5"></label>
     </div>
     <p class="print-only" id="print-meta"></p>
     <div class="counts" id="counts"></div>
@@ -137,7 +137,7 @@
     <h2>はじめる前に</h2>
     <ol class="prep">
       <li><code>docs/LIST_SETUP.md</code> の手順で<strong>行動予定リスト</strong>(と会社休日リスト)を作り、<code>docs/DEPLOY.md</code> の手順で WEBパーツをテスト用ページに置きます。</li>
-      <li>予定表の右下に小さく出ている<strong>「ver 0.5.4」</strong>のような番号を、上の「テストした版」に書いてください。</li>
+      <li>予定表の右下に小さく出ている<strong>「ver 0.5.5」</strong>のような番号を、上の「テストした版」に書いてください。</li>
       <li>「B. 予定の表示ルール」は、テスト用の予定を自分で登録して確かめます。休暇・休日出勤は<strong>総務のリストにテスト用の行</strong>が必要です(総務の方にお願いするか、試していないでOK)。</li>
       <li>「E. 権限」は、<strong>一般社員のアカウント</strong>と<strong>管理者グループの人</strong>の2人で確かめます。</li>
       <li>確認が終わったら、テスト用に登録した予定・総務のリストの行は削除してください。</li>
@@ -323,6 +323,9 @@ const GROUPS = [
       { id: 'G14', title: '作業員の行き先は「作業員」の部署の人だけ',
         how: ['作業員の行き先リストに行き先が入っている、作業員以外の社員の行を見る'],
         expect: 'その人には作業員の行き先リストの内容が出ない(行動予定表に登録した予定が出る)。作業員の人には出る' },
+      { id: 'G15', title: '週・日を切り替えても、スクロールの位置が残る',
+        how: ['表を下のほうへスクロールして、だれか1人を見る', '「>」「<」で週を切り替える。日表示でも「>」「<」を押す'],
+        expect: '読み込み中は表が少し薄くなり、終わると同じあたりの人が見えたまま新しい週(日)が出る。一番上に戻らない' },
     ]
   },
 ];

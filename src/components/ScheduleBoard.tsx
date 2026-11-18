@@ -106,6 +106,14 @@ function isNarrowScreen(): boolean {
   return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
 }
 
+interface ILoadedRange {
+  key: string;
+  view: ViewMode;
+  start: DateKey;
+  end: DateKey;
+  data: IRangeData;
+}
+
 interface IBase {
   workers: IWorker[];
   categories: string[];
@@ -150,7 +158,16 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   // 表示中の範囲(週間表示は7日、日表示は1日)だけを読み込む
   const rangeStart = view === 'week' ? weekStart : date;
   const rangeEnd = view === 'week' ? addDays(weekStart, 6) : date;
-  const [range, setRange] = React.useState<IRangeData | undefined>(undefined);
+  // 読み込み済みのデータと、その範囲・表示。週や日を切り替えたときは、新しいデータが届くまで前の表を出したままにする
+  // (表を消さないので、スクロールの位置がそのまま残り、同じ人を続けて見やすい)
+  const [loaded, setLoaded] = React.useState<ILoadedRange | undefined>(undefined);
+  const rangeKey = view + ':' + rangeStart + '/' + rangeEnd;
+  const range = loaded ? loaded.data : undefined;
+  const shownView: ViewMode = loaded ? loaded.view : view;
+  const shownStart = loaded ? loaded.start : rangeStart;
+  const shownEnd = loaded ? loaded.end : rangeEnd;
+  // 新しい範囲を読み込み中(前の表を薄く出している)
+  const loading = !!loaded && loaded.key !== rangeKey;
   const [error, setError] = React.useState<string>('');
   const [errorInfo, setErrorInfo] = React.useState<string>('');
   const [criteria, setCriteria] = React.useState<IFilterCriteria>({});
@@ -272,12 +289,9 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   // 表示している範囲のデータを読む(週・日を切り替えるたび、読み直しのたび)
   React.useEffect(() => {
     let alive = true;
-    const rangeKey = rangeStart + '/' + rangeEnd;
-    // 同じ範囲の読み直しは、今の表示を残したまま裏で読む(画面がちらつかないように)
+    // 同じ範囲の読み直しは裏で読み、失敗しても今の表示を残す(画面がちらつかないように)
     const silent = loadedRangeRef.current === rangeKey;
-    if (!silent) {
-      setRange(undefined);
-    }
+    const requested = { key: rangeKey, view, start: rangeStart, end: rangeEnd };
     service
       .getRange(rangeStart, rangeEnd)
       .then((r) => {
@@ -286,7 +300,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         }
         loadedRangeRef.current = rangeKey;
         lastLoadRef.current = Date.now();
-        setRange(r);
+        setLoaded({ ...requested, data: r });
         setUpdatedAt(new Date());
         setRefreshFailed(false);
       })
@@ -305,14 +319,15 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     return () => {
       alive = false;
     };
-  }, [service, rangeStart, rangeEnd, reloadKey]);
+    // rangeKey は view・rangeStart・rangeEnd から作るので、これだけ見ればよい
+  }, [service, rangeKey, reloadKey]);
 
   // 今の日時(終わった今日の予定を薄くする・外出中かどうかの判定に使う)
   const nowTime = timeOf(now);
   const nowInfo = React.useMemo<INow>(() => ({ date: today, time: nowTime }), [today, nowTime]);
 
   // 今日が表示中の範囲に入っていないとき(ほかの週を見ているとき)は、今日の分を別に読む
-  const coversToday = today >= rangeStart && today <= rangeEnd;
+  const coversToday = today >= shownStart && today <= shownEnd;
   const selfId = base ? base.selfId : undefined;
   React.useEffect(() => {
     if (coversToday || selfId === undefined) {
@@ -333,8 +348,8 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
 
   const days = React.useMemo(() => {
     const calendar = createHolidayCalendar(range ? range.holidays : []);
-    return (view === 'week' ? weekDates(rangeStart) : [rangeStart]).map(calendar);
-  }, [view, rangeStart, range]);
+    return (shownView === 'week' ? weekDates(shownStart) : [shownStart]).map(calendar);
+  }, [shownView, shownStart, range]);
 
   // 作業員の行き先(別サイトのリスト)を、名前で WorkerNameList の人に結びつける
   const crewDeptKey = (props.crewDepartments || DEFAULT_CREW_DEPARTMENTS).join('\n');
@@ -551,7 +566,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
             <span className={styles.yearText}>{dateText.substring(0, 6)}</span>
             {dateText.substring(6)}
             {view === 'day' && date === today && <span className={styles.todayChip}>今日</span>}
-            {view === 'day' && range && day && day.isHoliday && <span className={styles.holidayChip}>{day.holidayName || '休日'}</span>}
+            {view === 'day' && range && !loading && day && day.isHoliday && <span className={styles.holidayChip}>{day.holidayName || '休日'}</span>}
           </div>
           <DatePickButton value={date} onChange={setDate} />
         </div>
@@ -670,11 +685,12 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         </div>
       )}
 
+      <div className={styles.tableArea + (loading ? ' ' + styles.tableLoading : '')} aria-busy={loading}>
       {!range ? (
         <p className={styles.message}>予定を読み込み中です…</p>
       ) : shown.length === 0 ? (
         <p className={styles.message}>条件に合う人がいません。条件を変えてみてください。</p>
-      ) : view === 'week' ? (
+      ) : shownView === 'week' ? (
         <WeekGrid
           days={days}
           today={today}
@@ -697,10 +713,11 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
           collapsed={filtering ? [] : collapsed}
           onToggleGroup={toggleGroup}
           canEdit={canEdit}
-          onAdd={(workerId) => openAdd(workerId, date)}
+          onAdd={(workerId) => openAdd(workerId, shownStart)}
           onEdit={openEdit}
         />
       )}
+      </div>
 
       {formDraft && (
         <EntryForm
