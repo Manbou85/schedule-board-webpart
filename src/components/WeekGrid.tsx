@@ -37,6 +37,20 @@ export interface IWeekGridProps {
 }
 
 /** 2つのマスが同じ長期の予定(帯をつなげる) */
+/** 休日で薄く出している長期の予定のマスか */
+function isDimmedPeriod(c: ICell | undefined): boolean {
+  return !!c && c.content.kind === 'period' && c.content.dimmed;
+}
+
+/**
+ * 帯の続きでも、行き先の文字をもう一度出すか。
+ * 薄い休日(月曜の祝日など)のあとに、ふつうの日が続くとき。
+ * 週のはじめが休日だと、文字が薄いマスにしか出ず読みにくいため(開発者の実機確認)。
+ */
+function labelAgain(prev: ICell | undefined, cell: ICell): boolean {
+  return isDimmedPeriod(prev) && !isDimmedPeriod(cell);
+}
+
 function samePeriod(a: ICell | undefined, b: ICell | undefined): boolean {
   return (
     !!a && !!b && a.content.kind === 'period' && b.content.kind === 'period' && a.content.entry.id === b.content.entry.id
@@ -131,6 +145,7 @@ export const WeekGrid: React.FC<IWeekGridProps> = (props) => {
                               cell={cell}
                               joinsPrev={samePeriod(cells[i - 1], cell)}
                               joinsNext={samePeriod(cell, cells[i + 1])}
+                              labelAgain={labelAgain(cells[i - 1], cell)}
                               onEdit={editable ? onEdit : undefined}
                             />
                           </div>

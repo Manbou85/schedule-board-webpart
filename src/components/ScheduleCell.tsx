@@ -14,6 +14,8 @@ export interface IScheduleCellProps {
   joinsPrev: boolean;
   /** 次の日も同じ長期の予定(帯が右につながる) */
   joinsNext: boolean;
+  /** 帯の続きでも、行き先の文字をもう一度出す(薄い休日のあとのふつうの日) */
+  labelAgain?: boolean;
   /** 編集できる人の行のとき:予定を押したら編集フォームを開く(長期の予定は、押した日も渡す) */
   onEdit?: (entry: IScheduleEntry, date?: DateKey) => void;
 }
@@ -111,7 +113,7 @@ const SingleEntry: React.FC<{ entry: IScheduleEntry; onEdit?: (entry: IScheduleE
   );
 };
 
-export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, joinsNext, onEdit }) => {
+export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, joinsNext, labelAgain, onEdit }) => {
   const c = cell.content;
   let body: React.ReactNode;
 
@@ -173,7 +175,7 @@ export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, jo
           style={{ background: st.background, borderColor: st.color }}
           title={c.entry.category + ':' + c.entry.title + '(' + formatPeriod(c.entry.startDate, c.entry.endDate) + ')'}
         >
-          {joinsPrev ? (
+          {joinsPrev && !labelAgain ? (
             // 帯の続き:文字は見えなくする(高さをそろえるため場所は取る)。読み上げ用には残す
             <>
               <span className={styles.srOnly}>{c.entry.category + ' ' + c.entry.title}</span>
