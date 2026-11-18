@@ -57,16 +57,26 @@ describe('人数のまとめ', () => {
     [4, [cell({ kind: 'empty' })]]
   ]);
 
-  it('区分の選択肢の順に並べ、休暇・休日出勤・予定なしはうしろ。0人の区分は出さない', () => {
+  it('区分の選択肢の順に並べ、休日出勤・予定なしはうしろ。0人の区分は出さない。総務の休暇は「休み」として数える', () => {
     expect(summarizeStatus(workers, rows, 0, ['在社', '外出', '現場'], now)).toEqual([
       { status: '在社', count: 1, workerIds: [2] },
       { status: '現場', count: 1, workerIds: [1] },
-      { status: '休暇', count: 1, workerIds: [3] },
+      { status: '休み', count: 1, workerIds: [3] },
       { status: '予定なし', count: 1, workerIds: [4] }
     ]);
   });
 
+  it('総務の「休暇」と本人の区分「休み」は、あわせて「休み」(選択肢の「休み」の位置に)', () => {
+    const r = new Map<number, ICell[]>(rows);
+    r.set(4, [cell({ kind: 'single', entries: [entry('休み')], finishedIds: [] })]);
+    expect(summarizeStatus(workers, r, 0, ['在社', '休み', '現場'], now)).toEqual([
+      { status: '在社', count: 1, workerIds: [2] },
+      { status: '休み', count: 2, workerIds: [3, 4] },
+      { status: '現場', count: 1, workerIds: [1] }
+    ]);
+  });
+
   it('選択肢にない区分も数える(作業員の行き先の「現場」など)', () => {
-    expect(summarizeStatus(workers, rows, 0, ['在社'], now).map((s) => s.status)).toEqual(['在社', '休暇', '現場', '予定なし']);
+    expect(summarizeStatus(workers, rows, 0, ['在社'], now).map((s) => s.status)).toEqual(['在社', '休み', '現場', '予定なし']);
   });
 });

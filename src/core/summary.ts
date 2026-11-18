@@ -9,6 +9,13 @@ import { ICell, IWorker } from './types';
 export const NO_ENTRY_STATUS = '予定なし';
 
 /**
+ * 人数のまとめで「休み」としてまとめて数えるもの(開発者回答:案A)。
+ * 総務の「休暇」(申請の登録)と、本人が入れた区分「休み」は、どちらも「いない人」なので1つにする。
+ * 表のマスの表示は分けたまま(総務の登録済みかどうかは見ればわかるように)。
+ */
+export const DAY_OFF_STATUS = '休み';
+
+/**
  * 1マスを、その人の「状態」(区分)1つにまとめる。
  * - 休暇・休日出勤はそのまま
  * - 単発の予定:今日なら「今の時刻に始まっていて、まだ終わっていない予定」。なければ長期の予定、それもなければ予定なし
@@ -49,7 +56,7 @@ export interface IStatusCount {
 /**
  * 人数のまとめを作る。
  * @param dayIndex 表示中のマスの何番目の日を数えるか(週間表示の今日の列など)
- * @param order 並べる順(区分の選択肢の順)。休暇・休日出勤・予定なしはうしろに付ける
+ * @param order 並べる順(区分の選択肢の順)。休日出勤・予定なしはうしろに付ける。総務の休暇は「休み」として数える
  * 数が0の区分は出さない。
  */
 export function summarizeStatus(
@@ -62,12 +69,14 @@ export function summarizeStatus(
   const byStatus = new Map<string, number[]>();
   workers.forEach((w) => {
     const cell = (rows.get(w.id) || [])[dayIndex];
-    const status = cell ? cellStatus(cell, now) : NO_ENTRY_STATUS;
+    const raw = cell ? cellStatus(cell, now) : NO_ENTRY_STATUS;
+    const status = raw === LEAVE_CATEGORY ? DAY_OFF_STATUS : raw;
     const list = byStatus.get(status) || [];
     list.push(w.id);
     byStatus.set(status, list);
   });
-  const fullOrder = order.concat([LEAVE_CATEGORY, HOLIDAY_WORK_CATEGORY]);
+  // 「休み」は区分の選択肢の位置に(選択肢になければ、休日出勤の前に)
+  const fullOrder = order.concat(order.indexOf(DAY_OFF_STATUS) >= 0 ? [] : [DAY_OFF_STATUS]).concat([HOLIDAY_WORK_CATEGORY]);
   byStatus.forEach((_, status) => {
     if (fullOrder.indexOf(status) < 0 && status !== NO_ENTRY_STATUS) {
       fullOrder.push(status); // 選択肢にない区分(作業員の「現場」など)
