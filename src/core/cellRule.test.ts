@@ -79,9 +79,9 @@ describe('1マスの表示ルール(6-2)', () => {
     expect(cell.content).toEqual({ kind: 'period', entry: longSite, dimmed: false, finished: [] });
   });
 
-  it('4. 休日は長期の予定を薄く表示', () => {
+  it('4. 休日(休日出勤なし)は、長期の予定があっても空欄', () => {
     const cell = resolveCell(SAT, W, data({ entries: [longSite] }));
-    expect(cell.content).toEqual({ kind: 'period', entry: longSite, dimmed: true, finished: [] });
+    expect(cell.content).toEqual({ kind: 'empty' });
     expect(cell.isHoliday).toBe(true);
   });
 
@@ -98,11 +98,11 @@ describe('1マスの表示ルール(6-2)', () => {
 
   it('3. 休日の単発予定もそのまま表示', () => {
     const s = single('2026-11-21', '研修会', { category: '研修' });
+    // 休日は長期の予定を使わないので、隠れた長期の予定も持たない
     expect(resolveCell(SAT, W, data({ entries: [longSite, s] })).content).toEqual({
       kind: 'single',
       entries: [s],
-      finishedIds: [],
-      underlying: longSite
+      finishedIds: []
     });
   });
 
@@ -181,7 +181,7 @@ describe('1マスの表示ルール(6-2)', () => {
 });
 
 describe('1人ぶんの行(1週間)', () => {
-  it('長期の予定が週をまたいで帯のように並び、休日は薄く、単発・休暇で上書きされる', () => {
+  it('長期の予定が週をまたいで帯のように並び、休日は空欄、単発・休暇で上書きされる', () => {
     const site = period('2026-11-01', '2026-11-30', 'A現場');
     const days = weekDates('2026-11-17').map(calendar);
     const row = resolveRow(
@@ -196,7 +196,7 @@ describe('1人ぶんの行(1週間)', () => {
       const x = c.content;
       return x.kind === 'period' ? (x.dimmed ? '薄:' : '') + x.entry.title : x.kind;
     });
-    expect(summary).toEqual(['A現場', 'A現場', 'single', 'A現場', 'leave', '薄:A現場', '薄:A現場']);
+    expect(summary).toEqual(['A現場', 'A現場', 'single', 'A現場', 'leave', 'empty', 'empty']);
     expect(MON.isHoliday).toBe(false);
   });
 });
@@ -220,9 +220,9 @@ describe('作業員の行き先リスト(別サイト)', () => {
     ).toBe('holidayWork');
   });
 
-  it('休日は作業員の行き先も薄く出す。期間の外は出さない', () => {
+  it('休日は作業員の行き先も出さない。期間の外も出さない', () => {
     const satCrew: IScheduleEntry = { ...crewSite, endDate: '2026-11-22' };
-    expect(resolveCell(SAT, W, data({ crew: [satCrew] })).content).toEqual({ kind: 'period', entry: satCrew, dimmed: true, finished: [] });
+    expect(resolveCell(SAT, W, data({ crew: [satCrew] })).content).toEqual({ kind: 'empty' });
     expect(resolveCell(MON, W, data({ crew: [{ ...crewSite, startDate: '2026-11-17' }] })).content).toEqual({ kind: 'empty' });
   });
 });
