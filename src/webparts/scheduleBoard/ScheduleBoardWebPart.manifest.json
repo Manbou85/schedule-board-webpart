@@ -24,7 +24,8 @@
     "properties": {
       "title": "行動予定表",
       "pinSelfByDefault": true,
-      "leaveBeforeSingle": true
+      "leaveBeforeSingle": true,
+      "crewDepartments": "作業員"
     }
   }]
 }

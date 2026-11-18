@@ -11,7 +11,7 @@ import {
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 
-import { DEFAULT_CELL_RULE_OPTIONS, DEFAULT_EXCLUDED_DEPARTMENTS } from '../../core';
+import { DEFAULT_CELL_RULE_OPTIONS, DEFAULT_CREW_DEPARTMENTS, DEFAULT_EXCLUDED_DEPARTMENTS } from '../../core';
 import { ScheduleBoard, IScheduleBoardProps, IViewPrefsStore } from '../../components/ScheduleBoard';
 import { SharePointScheduleService } from '../../services/SharePointScheduleService';
 import { DEFAULT_LIST_SETTINGS, ISpListSettings } from '../../services/spConfig';
@@ -20,6 +20,8 @@ import { DEFAULT_LIST_SETTINGS, ISpListSettings } from '../../services/spConfig'
 export interface IScheduleBoardWebPartProps extends Partial<ISpListSettings> {
   /** 上に小さく出すタイトル。空欄にすると出さない(一度も設定していなければ「行動予定表」) */
   title?: string;
+  /** 作業員の行き先リストを反映する部署(「、」や改行で区切る。一度も設定していなければ「作業員」) */
+  crewDepartments?: string;
   /** ヘルプの「困ったとき」に出す連絡先 */
   helpContact?: string;
   /** 部署の並び順(「、」や改行で区切る。空欄なら No. 順) */
@@ -102,7 +104,9 @@ export default class ScheduleBoardWebPart extends BaseClientSideWebPart<ISchedul
       title: p.title === undefined ? DEFAULT_TITLE : p.title,
       helpContact: p.helpContact,
       departmentOrder: splitList(p.departmentOrder),
-      prefsStore: browserPrefsStore
+      prefsStore: browserPrefsStore,
+      // 一度も設定していなければ「作業員」。空欄にしたら全員
+      crewDepartments: p.crewDepartments === undefined ? DEFAULT_CREW_DEPARTMENTS : splitList(p.crewDepartments)
     });
 
     if (!this._root) {
@@ -209,6 +213,12 @@ export default class ScheduleBoardWebPart extends BaseClientSideWebPart<ISchedul
                   label: '作業員の行き先リスト',
                   description: 'リストの名前、または「Lists/〜」の形の URL。空欄なら作業員の行き先は表示しません',
                   placeholder: 'Lists/List'
+                }),
+                PropertyPaneTextField('crewDepartments', {
+                  label: '作業員の行き先を反映する部署',
+                  description:
+                    'この部署の人だけ、作業員の行き先リストの内容を出します(「、」や改行で区切って複数)。空欄にすると全員に反映します',
+                  placeholder: DEFAULT_CREW_DEPARTMENTS.join('、')
                 })
               ]
             },
