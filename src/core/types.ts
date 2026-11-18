@@ -105,8 +105,10 @@ export interface ILeaveBadge {
 export type CellContent =
   | { kind: 'leave'; leave: ILeave }
   | { kind: 'holidayWork'; holidayWork: IHolidayWork; timeText: string }
-  | { kind: 'single'; entries: IScheduleEntry[] }
-  | { kind: 'period'; entry: IScheduleEntry; dimmed: boolean }
+  /** finishedIds:戻り(終了)の時刻を過ぎた今日の予定。薄く表示する */
+  | { kind: 'single'; entries: IScheduleEntry[]; finishedIds: number[] }
+  /** finished:今日の単発予定がすべて終わったとき、長期の予定の下に薄く出す終わった予定 */
+  | { kind: 'period'; entry: IScheduleEntry; dimmed: boolean; finished: IScheduleEntry[] }
   | { kind: 'empty' };
 
 /** 1マスの表示内容(中身+重ねて出すバッジ) */

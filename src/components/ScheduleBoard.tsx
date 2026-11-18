@@ -6,7 +6,14 @@ import {
   addDays,
   canEditWorker,
   draftFromEntry,
+  findActiveOuting,
   IEntryDraft,
+  INow,
+  IReturnOption,
+  QUICK_OUT_CATEGORY,
+  quickOutEntry,
+  returnedEntry,
+  timeOf,
   IScheduleEntry,
   newDraft,
   suggestPlaces,
@@ -19,6 +26,7 @@ import {
   findSelf,
   groupByDepartment,
   groupByWorker,
+  orderDepartments,
   HOLIDAY_WORK_CATEGORY,
   ICell,
   ICellRuleOptions,
@@ -37,9 +45,11 @@ import { ALL, FilterPopover } from './FilterPopover';
 import { DatePickButton } from './DatePickButton';
 import { DayList } from './DayList';
 import { EntryForm } from './EntryForm';
-import { errorDetail } from './errorMessages';
-import { formatShortDate, formatShortRange, formatVersion } from './format';
-import { getCategoryStyle, HOLIDAY_WORK_STYLE, LEAVE_STYLE } from './categoryStyle';
+import { errorDetail, saveErrorMessage } from './errorMessages';
+import { PeriodChoiceDialog } from './PeriodChoiceDialog';
+import { QuickOutDialog } from './QuickOutDialog';
+import { formatClock, formatShortDate, formatShortRange, formatVersion } from './format';
+import { HelpDialog } from './HelpDialog';
 import { Icon } from './Icon';
 import { IGridGroup, WeekGrid } from './WeekGrid';
 import styles from './ScheduleBoard.module.scss';
@@ -57,6 +67,23 @@ export interface IScheduleBoardProps {
   initialView?: ViewMode;
   /** 版(例 '0.2.0')。右下に小さく「ver 0.2.0」と出す。どの版を試しているか確かめるため */
   version?: string;
+  /** 上に小さく出すタイトル(例 行動予定表)。空なら出さない */
+  title?: string;
+  /** ヘルプの「困ったとき」に出す連絡先。空なら出さない */
+  helpContact?: string;
+  /** 部署の並び順(書いた部署から順に。空なら No. 順のまま) */
+  departmentOrder?: string[];
+}
+
+/** 自動で読み直す間隔(5分) */
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+/** 時計(今日の日付・今の時刻)を進める間隔(1分) */
+const CLOCK_INTERVAL_MS = 60 * 1000;
+/** タブに戻ったとき、前の読み込みからこれ以上たっていたら読み直す(1分) */
+const REFRESH_ON_RETURN_MS = 60 * 1000;
+
+function isPageHidden(): boolean {
+  return typeof document !== 'undefined' && document.visibilityState === 'hidden';
 }
 
 /** 週間表示/日表示 */
@@ -79,7 +106,9 @@ const SELF_GROUP = '__self__';
 export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const { service, excludedDepartments, pinSelfByDefault } = props;
   const cellRuleOptions = props.cellRuleOptions || DEFAULT_CELL_RULE_OPTIONS;
-  const today = props.today || todayKey();
+  // 今の時刻。開きっぱなしでも日付が変わるように、1分ごとに進める
+  const [now, setNow] = React.useState<Date>(() => new Date());
+  const today = props.today || todayKey(now);
   // 配列のままだと毎回「変わった」と判定されるので、文字にして比べる
   const excludedKey = excludedDepartments.join('\n');
 
@@ -99,8 +128,60 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const [collapsed, setCollapsed] = React.useState<string[]>([]);
   // 開いている登録・編集フォーム(閉じているときは undefined)
   const [formDraft, setFormDraft] = React.useState<IEntryDraft | undefined>(undefined);
-  // 保存のあとに読み直すための番号
+  // 読み直すための番号(保存のあと・5分ごと・タブに戻ったときに増やす)
   const [reloadKey, setReloadKey] = React.useState(0);
+  // 最後に読み込めた時刻(画面の「◯◯:◯◯ 更新」)と、自動の読み直しに失敗したかどうか
+  const [updatedAt, setUpdatedAt] = React.useState<Date | undefined>(undefined);
+  const [refreshFailed, setRefreshFailed] = React.useState(false);
+  // いま画面に出しているデータの範囲(同じ範囲の読み直しは、画面を消さずに裏で行う)
+  const loadedRangeRef = React.useRef('');
+  const lastLoadRef = React.useRef(0);
+  const reload = React.useCallback(() => setReloadKey((k) => k + 1), []);
+
+  // 時計を進める。5分ごとに読み直す(タブが隠れているあいだは休む)
+  React.useEffect(() => {
+    const clock = window.setInterval(() => setNow(new Date()), CLOCK_INTERVAL_MS);
+    const refresh = window.setInterval(() => {
+      if (!isPageHidden()) {
+        reload();
+      }
+    }, REFRESH_INTERVAL_MS);
+    // ほかのタブから戻ってきたら、すぐ新しくする
+    const onVisible = (): void => {
+      if (isPageHidden()) {
+        return;
+      }
+      setNow(new Date());
+      if (Date.now() - lastLoadRef.current > REFRESH_ON_RETURN_MS) {
+        reload();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(clock);
+      window.clearInterval(refresh);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [reload]);
+
+  // 開きっぱなしで日付が変わったら、「今日」を見ていた人は新しい今日へ進める
+  const prevTodayRef = React.useRef(today);
+  React.useEffect(() => {
+    const prev = prevTodayRef.current;
+    if (prev !== today) {
+      prevTodayRef.current = today;
+      setDate((d) => (d === prev ? today : d));
+    }
+  }, [today]);
+  const [helpOpen, setHelpOpen] = React.useState(false);
+  // 長期の予定を押したときの選択画面
+  const [periodChoice, setPeriodChoice] = React.useState<{ entry: IScheduleEntry; date: DateKey } | undefined>(undefined);
+  // 「ちょっと外出」の画面と、その候補(最近の外出先)
+  const [quickOpen, setQuickOpen] = React.useState(false);
+  const [quickPlaces, setQuickPlaces] = React.useState<string[]>([]);
+  const [returning, setReturning] = React.useState(false);
+  // 表示中の範囲に今日が入っていないとき用の、今日の予定(「戻りました」を出すかどうかの判定に使う)
+  const [todayEntries, setTodayEntries] = React.useState<IScheduleEntry[] | undefined>(undefined);
   // 「予定を登録しました」などのお知らせ
   const [toast, setToast] = React.useState('');
 
@@ -147,23 +228,67 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     };
   }, [service, excludedKey]);
 
-  // 表示している範囲のデータを読む(週・日を切り替えるたび)
+  // 表示している範囲のデータを読む(週・日を切り替えるたび、読み直しのたび)
   React.useEffect(() => {
     let alive = true;
-    setRange(undefined);
+    const rangeKey = rangeStart + '/' + rangeEnd;
+    // 同じ範囲の読み直しは、今の表示を残したまま裏で読む(画面がちらつかないように)
+    const silent = loadedRangeRef.current === rangeKey;
+    if (!silent) {
+      setRange(undefined);
+    }
     service
       .getRange(rangeStart, rangeEnd)
-      .then((r) => alive && setRange(r))
-      .catch((e: unknown) => {
-        if (alive) {
-          setError('予定を読み込めませんでした。少し時間をおいて、ページを開き直してください。');
-          setErrorInfo(errorDetail(e));
+      .then((r) => {
+        if (!alive) {
+          return;
         }
+        loadedRangeRef.current = rangeKey;
+        lastLoadRef.current = Date.now();
+        setRange(r);
+        setUpdatedAt(new Date());
+        setRefreshFailed(false);
+      })
+      .catch((e: unknown) => {
+        if (!alive) {
+          return;
+        }
+        if (silent) {
+          // 裏での読み直しに失敗したときは、今の表示を残して小さく知らせるだけにする
+          setRefreshFailed(true);
+          return;
+        }
+        setError('予定を読み込めませんでした。少し時間をおいて、ページを開き直してください。');
+        setErrorInfo(errorDetail(e));
       });
     return () => {
       alive = false;
     };
   }, [service, rangeStart, rangeEnd, reloadKey]);
+
+  // 今の日時(終わった今日の予定を薄くする・外出中かどうかの判定に使う)
+  const nowTime = timeOf(now);
+  const nowInfo = React.useMemo<INow>(() => ({ date: today, time: nowTime }), [today, nowTime]);
+
+  // 今日が表示中の範囲に入っていないとき(ほかの週を見ているとき)は、今日の分を別に読む
+  const coversToday = today >= rangeStart && today <= rangeEnd;
+  const selfId = base ? base.selfId : undefined;
+  React.useEffect(() => {
+    if (coversToday || selfId === undefined) {
+      return undefined;
+    }
+    let alive = true;
+    service.getRange(today, today).then(
+      (r) => alive && setTodayEntries(r.entries),
+      () => undefined // 読めなくても予定表は使えるので、何もしない
+    );
+    return () => {
+      alive = false;
+    };
+  }, [service, coversToday, selfId, today, reloadKey]);
+  const selfTodayEntries = coversToday ? (range ? range.entries : undefined) : todayEntries;
+  const activeOuting =
+    selfId !== undefined && selfTodayEntries ? findActiveOuting(selfTodayEntries, selfId, nowInfo) : undefined;
 
   const days = React.useMemo(() => {
     const calendar = createHolidayCalendar(range ? range.holidays : []);
@@ -178,10 +303,10 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     }
     const byWorker = groupByWorker(range);
     base.workers.forEach((w) => {
-      map.set(w.id, resolveRow(days, w.id, byWorker.get(w.id) || EMPTY_WORKER_DATA, cellRuleOptions));
+      map.set(w.id, resolveRow(days, w.id, byWorker.get(w.id) || EMPTY_WORKER_DATA, cellRuleOptions, nowInfo));
     });
     return map;
-  }, [base, range, days, cellRuleOptions]);
+  }, [base, range, days, cellRuleOptions, nowInfo]);
 
   if (error) {
     return (
@@ -208,12 +333,13 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   if (usePin) {
     groups.push({ key: SELF_GROUP, label: 'あなた', workers: self, collapsible: false });
   }
-  groupByDepartment(usePin ? shown.filter((w) => w.id !== base.selfId) : shown).forEach((g) => {
+  const departmentOrder = props.departmentOrder || [];
+  orderDepartments(groupByDepartment(usePin ? shown.filter((w) => w.id !== base.selfId) : shown), departmentOrder).forEach((g) => {
     groups.push({ key: g.department, label: g.department || '(部署なし)', workers: g.workers, collapsible: true });
   });
   const filtering = shown.length !== base.workers.length;
 
-  const departments = groupByDepartment(base.workers).map((g) => g.department);
+  const departments = orderDepartments(groupByDepartment(base.workers), departmentOrder).map((g) => g.department);
   const categoryOptions = base.categories.concat([LEAVE_CATEGORY, HOLIDAY_WORK_CATEGORY]);
   const thisWeek = startOfWeek(today);
   const openDay = (d: DateKey): void => {
@@ -226,12 +352,19 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   // 「予定を追加」ボタンの日付:日表示はその日。週間表示は、今日がその週にあれば今日、なければ週の月曜
   const addDefaultDate = view === 'day' ? date : today >= weekStart && today <= addDays(weekStart, 6) ? today : weekStart;
   const openAdd = (workerId: number | undefined, d: DateKey): void => setFormDraft(newDraft(workerId, d));
-  const openEdit = (entry: IScheduleEntry): void => setFormDraft(draftFromEntry(entry));
+  // 長期の予定(帯)を押したら、「この日だけ別の予定を追加」か「期間の予定を変更」かを選んでもらう
+  const openEdit = (entry: IScheduleEntry, d?: DateKey): void => {
+    if (entry.entryType === 'period' && d) {
+      setPeriodChoice({ entry, date: d });
+    } else {
+      setFormDraft(draftFromEntry(entry));
+    }
+  };
   const closeForm = (message?: string): void => {
     setFormDraft(undefined);
     if (message) {
       setToast(message);
-      setReloadKey(reloadKey + 1);
+      reload();
     }
   };
   const department = criteria.departments && criteria.departments[0] ? criteria.departments[0] : ALL;
@@ -241,8 +374,97 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     setCollapsed(collapsed.indexOf(key) >= 0 ? collapsed.filter((k) => k !== key) : collapsed.concat([key]));
   };
 
+  const title = (props.title || '').trim();
+
+  // 「ちょっと外出」:自分の行があり、区分に「外出」があるときだけ使える
+  const canQuickOut = base.selfId !== undefined && base.categories.indexOf(QUICK_OUT_CATEGORY) >= 0 && !!selfTodayEntries;
+  const openQuickOut = (): void => {
+    setQuickPlaces([]);
+    setQuickOpen(true);
+    if (base.selfId !== undefined) {
+      const id = base.selfId;
+      service.getRecentEntries(id, 100).then(
+        (list) => {
+          const outings = list.filter((e) => e.category.trim() === QUICK_OUT_CATEGORY);
+          setQuickPlaces(
+            suggestPlaces(outings, id, undefined, 12)
+              .map((p) => p.replace('(直帰)', '').trim())
+              .filter((p, i, all) => !!p && p !== '外出' && all.indexOf(p) === i)
+              .slice(0, 6)
+          );
+        },
+        () => undefined
+      );
+    }
+  };
+  const saveQuickOut = (place: string, option: IReturnOption): Promise<void> => {
+    if (base.selfId === undefined) {
+      return Promise.reject('');
+    }
+    return service.createEntry(quickOutEntry(base.selfId, today, new Date(), place, option)).then(
+      () => {
+        setQuickOpen(false);
+        setToast(option.key === 'direct' ? '外出(直帰)を登録しました' : '外出を登録しました。戻ったら「戻りました」を押してください');
+        reload();
+      },
+      (e: unknown) => Promise.reject(saveErrorMessage(e, '保存'))
+    );
+  };
+  const markReturned = (): void => {
+    if (!activeOuting || returning) {
+      return;
+    }
+    setReturning(true);
+    service.updateEntry(returnedEntry(activeOuting, new Date())).then(
+      () => {
+        setReturning(false);
+        setNow(new Date());
+        setToast('おかえりなさい。戻ったことを登録しました');
+        reload();
+      },
+      (e: unknown) => {
+        setReturning(false);
+        setToast(saveErrorMessage(e, '保存'));
+      }
+    );
+  };
+
   return (
     <div className={styles.scheduleBoard}>
+      <div className={styles.titleRow}>
+        {title ? <h2 className={styles.boardTitle}>{title}</h2> : <span />}
+        <div className={styles.titleTools}>
+        {canQuickOut &&
+          (activeOuting ? (
+            <button
+              type="button"
+              className={styles.returnNowButton}
+              disabled={returning}
+              title={'外出中:' + activeOuting.title + (activeOuting.endTime ? '(' + activeOuting.endTime + ' 戻り予定)' : '')}
+              onClick={markReturned}
+            >
+              <Icon name="check" size={18} />
+              {returning ? '登録しています…' : '戻りました'}
+            </button>
+          ) : (
+            <button type="button" className={styles.quickOutButton} onClick={openQuickOut}>
+              <Icon name="car" size={18} />
+              ちょっと外出
+            </button>
+          ))}
+        {updatedAt && (
+          <button
+            type="button"
+            className={styles.updatedButton + (refreshFailed ? ' ' + styles.updatedFailed : '')}
+            title="今すぐ新しくする(5分ごとに自動で新しくなります)"
+            onClick={reload}
+          >
+            <Icon name="refresh" size={14} />
+            {refreshFailed ? '新しくできませんでした(' + formatClock(updatedAt) + ' の内容)' : formatClock(updatedAt) + ' 更新'}
+          </button>
+        )}
+        </div>
+      </div>
       <div className={styles.toolbar}>
         {/* 左:日付の移動 */}
         <div className={styles.navGroup} role="group" aria-label={view === 'week' ? '週の切り替え' : '日の切り替え'}>
@@ -314,6 +536,16 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
             onCategoryChange={(v) => setCriteria({ ...criteria, categories: v ? [v] : [] })}
             onPinSelfChange={setPinSelf}
           />
+          <button
+            type="button"
+            className={styles.iconButton}
+            aria-label="使い方(ヘルプ)"
+            title="使い方(ヘルプ)"
+            aria-haspopup="dialog"
+            onClick={() => setHelpOpen(true)}
+          >
+            <Icon name="help" size={20} />
+          </button>
           <div className={styles.viewSwitch} role="group" aria-label="表示の切り替え">
             <button type="button" className={styles.viewButton} aria-pressed={view === 'week'} onClick={() => setView('week')}>
               週
@@ -410,22 +642,24 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         {toast && <div className={styles.toast}>{toast}</div>}
       </div>
 
-      <ul className={styles.legend} aria-label="区分の見かた">
-        {base.categories.map((c) => {
-          const st = getCategoryStyle(c);
-          return (
-            <li key={c} style={{ borderLeftColor: st.color, background: st.background }}>
-              <Icon name={st.icon} color={st.color} size={16} /> {c}
-            </li>
-          );
-        })}
-        <li style={{ borderLeftColor: LEAVE_STYLE.color, background: LEAVE_STYLE.background }}>
-          <Icon name={LEAVE_STYLE.icon} color={LEAVE_STYLE.color} size={16} /> 休暇
-        </li>
-        <li style={{ borderLeftColor: HOLIDAY_WORK_STYLE.color, background: HOLIDAY_WORK_STYLE.background }}>
-          <Icon name={HOLIDAY_WORK_STYLE.icon} color={HOLIDAY_WORK_STYLE.color} size={16} /> 休日出勤
-        </li>
-      </ul>
+      {periodChoice && (
+        <PeriodChoiceDialog
+          entry={periodChoice.entry}
+          date={periodChoice.date}
+          onAddForDay={() => {
+            setPeriodChoice(undefined);
+            openAdd(periodChoice.entry.workerId, periodChoice.date);
+          }}
+          onEditPeriod={() => {
+            setPeriodChoice(undefined);
+            setFormDraft(draftFromEntry(periodChoice.entry));
+          }}
+          onClose={() => setPeriodChoice(undefined)}
+        />
+      )}
+      {quickOpen && <QuickOutDialog recentPlaces={quickPlaces} onSave={saveQuickOut} onClose={() => setQuickOpen(false)} />}
+      {helpOpen && <HelpDialog categories={base.categories} contact={props.helpContact} onClose={() => setHelpOpen(false)} />}
+
       {formatVersion(props.version) && (
         <p className={styles.versionBadge} title="このWEBパーツの版">
           {formatVersion(props.version)}

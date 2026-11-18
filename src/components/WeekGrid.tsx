@@ -32,7 +32,8 @@ export interface IWeekGridProps {
   /** 編集できる人のマスの空いているところを押したとき(その日の予定を追加) */
   onAdd: (workerId: number, date: DateKey) => void;
   /** 予定を押したとき(変更・削除) */
-  onEdit: (entry: IScheduleEntry) => void;
+  /** 予定を押したとき(長期の予定は、押した日も渡す) */
+  onEdit: (entry: IScheduleEntry, date?: DateKey) => void;
 }
 
 /** 2つのマスが同じ長期の予定(帯をつなげる) */

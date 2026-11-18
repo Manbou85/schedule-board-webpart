@@ -47,7 +47,9 @@ function PreviewControls() {
         excludedDepartments: DEFAULT_EXCLUDED_DEPARTMENTS,
         pinSelfByDefault: true,
         today,
-        version
+        version,
+        title: '行動予定表',
+        helpContact: '例:システム担当 ◯◯(内線 123)\nプレビューでは、WEBパーツの設定に書いた文字がここに出ます。'
       })
     )
   );

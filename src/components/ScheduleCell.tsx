@@ -2,9 +2,9 @@
 // どれを表示するかは core の resolveCell で決まっているので、ここでは見た目だけを作る。
 
 import * as React from 'react';
-import { formatTimeRange, ICell, ILeaveBadge, IScheduleEntry } from '../core';
+import { DateKey, formatTimeRange, ICell, ILeaveBadge, IScheduleEntry } from '../core';
 import { getCategoryStyle, HOLIDAY_WORK_STYLE, LEAVE_STYLE } from './categoryStyle';
-import { formatPeriod } from './format';
+import { finishedLabel, formatPeriod } from './format';
 import { Icon } from './Icon';
 import styles from './ScheduleBoard.module.scss';
 
@@ -14,8 +14,8 @@ export interface IScheduleCellProps {
   joinsPrev: boolean;
   /** 次の日も同じ長期の予定(帯が右につながる) */
   joinsNext: boolean;
-  /** 編集できる人の行のとき:予定を押したら編集フォームを開く */
-  onEdit?: (entry: IScheduleEntry) => void;
+  /** 編集できる人の行のとき:予定を押したら編集フォームを開く(長期の予定は、押した日も渡す) */
+  onEdit?: (entry: IScheduleEntry, date?: DateKey) => void;
 }
 
 interface IEntryBoxProps {
@@ -86,20 +86,24 @@ export const LeaveBadge: React.FC<{ badge: ILeaveBadge; showRemarks?: boolean }>
   );
 };
 
-const SingleEntry: React.FC<{ entry: IScheduleEntry; onEdit?: (entry: IScheduleEntry) => void }> = ({ entry, onEdit }) => {
+const SingleEntry: React.FC<{ entry: IScheduleEntry; onEdit?: (entry: IScheduleEntry) => void; finished?: boolean }> = ({
+  entry,
+  onEdit,
+  finished
+}) => {
   const st = getCategoryStyle(entry.category);
   const time = formatTimeRange(entry.startTime, entry.endTime);
   return (
     <EntryBox
       entry={entry}
       onEdit={onEdit}
-      className={styles.single}
+      className={styles.single + (finished ? ' ' + styles.finished : '')}
       style={{ borderLeftColor: st.color, background: st.background }}
       title={entry.note || undefined}
     >
       <Icon name={st.icon} color={st.color} className={styles.icon} />
       <span className={styles.entryText}>
-        <span className={styles.categoryLabel}>{entry.category}</span>
+        <span className={styles.categoryLabel}>{finished ? finishedLabel(entry.category) : entry.category}</span>
         <span className={styles.place}>{entry.title}</span>
         {time && <span className={styles.time}>{time}</span>}
       </span>
@@ -133,7 +137,9 @@ export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, jo
       );
       break;
     case 'single':
-      body = c.entries.map((e) => <SingleEntry key={e.id} entry={e} onEdit={onEdit} />);
+      body = c.entries.map((e) => (
+        <SingleEntry key={e.id} entry={e} onEdit={onEdit} finished={c.finishedIds.indexOf(e.id) >= 0} />
+      ));
       break;
     case 'period': {
       const st = getCategoryStyle(c.entry.category);
@@ -159,9 +165,10 @@ export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, jo
         </>
       );
       body = (
+        <>
         <EntryBox
           entry={c.entry}
-          onEdit={onEdit}
+          onEdit={onEdit ? (e) => onEdit(e, cell.date) : undefined}
           className={classNames.join(' ')}
           style={{ background: st.background, borderColor: st.color }}
           title={c.entry.category + ':' + c.entry.title + '(' + formatPeriod(c.entry.startDate, c.entry.endDate) + ')'}
@@ -178,6 +185,10 @@ export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, jo
             text
           )}
         </EntryBox>
+        {c.finished.map((e) => (
+          <SingleEntry key={e.id} entry={e} onEdit={onEdit} finished={true} />
+        ))}
+        </>
       );
       break;
     }

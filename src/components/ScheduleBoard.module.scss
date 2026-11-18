@@ -36,6 +36,100 @@ $dayWidth: 8.2em;
   border-radius: 6px;
 }
 
+// ---- タイトルの行(何の予定表かと、最後に新しくした時刻)----
+// ツールバーの邪魔にならないよう、低く・控えめに
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+  margin-bottom: 6px;
+}
+
+.boardTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  color: #242424;
+}
+
+.updatedButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  color: #616161;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.updatedButton:hover {
+  color: #0f6cbd;
+  background: #f3f3f3;
+}
+.updatedButton:focus-visible {
+  outline: 2px solid #0f6cbd;
+}
+
+.updatedFailed {
+  color: #8a5300;
+}
+
+.titleTools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// 「ちょっと外出」「戻りました」:毎日使うので、タイトルの行に置いて押しやすく
+.quickOutButton,
+.returnNowButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 16px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.quickOutButton:focus-visible,
+.returnNowButton:focus-visible {
+  outline: 2px solid #0f6cbd;
+  outline-offset: 2px;
+}
+
+.quickOutButton {
+  color: #00665f;
+  background: #fff;
+  border: 1px solid #7cc4bf;
+}
+.quickOutButton:hover {
+  background: #e9f6f5;
+}
+
+.returnNowButton {
+  color: #fff;
+  background: #00807a;
+  border: 1px solid #00807a;
+}
+.returnNowButton:hover:not(:disabled) {
+  background: #006b66;
+}
+.returnNowButton:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
 // ---- 上のツールバー ----
 // SharePoint の固定の表示が上にあるので、ここはできるだけ低く(PC は1行、スマホは2行)
 $control: 36px; // ボタン・入力欄の高さ
@@ -646,6 +740,11 @@ span.groupButton {
 // 休日の長期予定はうすく(帯のつながりは見えるように)
 .dimmed {
   opacity: 0.4;
+}
+
+// 終わった今日の予定(戻りの時刻を過ぎた)。休日の帯よりは少しはっきり
+.finished {
+  opacity: 0.5;
 }
 
 .holidayWorkBadge {
@@ -1305,5 +1404,162 @@ textarea.input {
 
   .dayName {
     padding: 8px;
+  }
+}
+
+// ---- ヘルプ ----
+.helpBody {
+  gap: 18px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.helpHeading {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.helpList {
+  margin: 0;
+  padding-left: 1.3em;
+}
+.helpList li + li {
+  margin-top: 4px;
+}
+
+.helpText {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.helpLegend {
+  margin: 0 0 8px;
+}
+
+// ---- ちょっと外出の画面 ----
+.quickDialog {
+  max-width: 420px;
+}
+
+.quickTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quickSuggest {
+  margin-top: -6px;
+}
+
+.suggestChip[aria-pressed=true] {
+  color: #fff;
+  background: #00807a;
+  border-color: #00807a;
+}
+
+.returnGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.returnButton {
+  min-height: 48px;
+  padding: 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #00665f;
+  background: #e9f6f5;
+  border: 1px solid #7cc4bf;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.returnButton:hover:not(:disabled) {
+  background: #d4eeec;
+}
+.returnButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.returnButton:focus-visible {
+  outline: 2px solid #0f6cbd;
+  outline-offset: 1px;
+}
+
+.quickNote {
+  margin: 0;
+  font-size: 13px;
+  color: #616161;
+}
+
+@media (max-width: 640px) {
+  .quickDialog {
+    height: auto;
+    margin-top: auto;
+    border-radius: 12px 12px 0 0;
+  }
+}
+
+// ---- 長期の予定を押したときの選択 ----
+.periodSummary {
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  border-left: 4px solid;
+  border-radius: 4px;
+}
+
+.choiceButton {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-family: inherit;
+  text-align: left;
+  color: #242424;
+  background: #fff;
+  border: 1px solid #c8c8c8;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.choiceButton > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.choiceButton:hover {
+  background: #f5f9fd;
+  border-color: #0f6cbd;
+}
+.choiceButton:focus-visible {
+  outline: 2px solid #0f6cbd;
+  outline-offset: 1px;
+}
+
+.choiceNote {
+  font-size: 13px;
+  color: #616161;
+}
+
+// ---- 期間の予定の「今日で終了にする」 ----
+.endTodayButton {
+  align-self: flex-start;
+  padding-left: 0;
+}
+
+.fieldHint {
+  font-size: 13px;
+  color: #3b7d23;
+}
+
+// ---- タッチの機器(スマホ・タブレット):マスの「+」をいつも出す ----
+@media (hover: none) {
+  .cellAdd {
+    opacity: 1;
   }
 }

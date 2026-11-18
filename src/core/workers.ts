@@ -46,6 +46,28 @@ export function groupByDepartment(workers: IWorker[]): IDepartmentGroup[] {
   return groups;
 }
 
+/**
+ * 部署のまとまりを、指定の順に並べかえる(WEBパーツの設定「部署の並び順」)。
+ * 指定した部署はその順に、指定しなかった部署はそのうしろに今までの順(No. 順)で並ぶ。
+ * 指定が空なら今までどおり。部署名は前後の空白と全角・半角のちがいを気にしない。
+ */
+export function orderDepartments<T extends { department: string }>(groups: T[], order: string[]): T[] {
+  const norm = (s: string): string => s.normalize('NFKC').trim();
+  const keys = order.map(norm).filter((s) => !!s);
+  if (keys.length === 0) {
+    return groups;
+  }
+  const rank = (g: T): number => {
+    const i = keys.indexOf(norm(g.department));
+    return i >= 0 ? i : keys.length;
+  };
+  // 同じ順位どうしは元の順を保つ(古いブラウザでも安定するよう、元の位置で比べる)
+  return groups
+    .map((g, i) => ({ g, i }))
+    .sort((a, b) => rank(a.g) - rank(b.g) || a.i - b.i)
+    .map((x) => x.g);
+}
+
 /** ログイン中のユーザー(メールアドレスなど)と M365User が一致する人を探す。大文字・小文字は区別しない */
 export function findSelf(workers: IWorker[], account: string | undefined): IWorker | undefined {
   const target = (account || '').trim().toLowerCase();

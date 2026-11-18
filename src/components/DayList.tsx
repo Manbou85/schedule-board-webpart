@@ -2,9 +2,9 @@
 // 表示ルールは週間表示と同じ(core の resolveCell)。時刻・期間・メモ・休暇の補足は常に出す。
 
 import * as React from 'react';
-import { formatTimeRange, ICell, IScheduleEntry } from '../core';
+import { DateKey, formatTimeRange, ICell, IScheduleEntry } from '../core';
 import { getCategoryStyle, HOLIDAY_WORK_STYLE, ICategoryStyle, LEAVE_STYLE } from './categoryStyle';
-import { formatPeriod } from './format';
+import { finishedLabel, formatPeriod } from './format';
 import { Icon } from './Icon';
 import { EntryBox, LeaveBadge } from './ScheduleCell';
 import { IGridGroup } from './WeekGrid';
@@ -19,7 +19,8 @@ export interface IDayListProps {
   onToggleGroup: (key: string) => void;
   canEdit: (workerId: number) => boolean;
   onAdd: (workerId: number) => void;
-  onEdit: (entry: IScheduleEntry) => void;
+  /** 予定を押したとき(長期の予定は、押した日も渡す) */
+  onEdit: (entry: IScheduleEntry, date?: DateKey) => void;
 }
 
 interface IDetailProps {
@@ -66,7 +67,10 @@ function entryMeta(e: IScheduleEntry, withPeriod: boolean): string[] {
   return [formatTimeRange(e.startTime, e.endTime), withPeriod ? '期間 ' + formatPeriod(e.startDate, e.endDate) : ''];
 }
 
-const DayCell: React.FC<{ cell: ICell | undefined; onEdit?: (entry: IScheduleEntry) => void }> = ({ cell, onEdit }) => {
+const DayCell: React.FC<{ cell: ICell | undefined; onEdit?: (entry: IScheduleEntry, date?: DateKey) => void }> = ({
+  cell,
+  onEdit
+}) => {
   if (!cell) {
     return <></>;
   }
@@ -87,15 +91,28 @@ const DayCell: React.FC<{ cell: ICell | undefined; onEdit?: (entry: IScheduleEnt
       );
       break;
     case 'single':
-      body = c.entries.map((e) => (
-        <Detail key={e.id} entry={e} onEdit={onEdit} st={getCategoryStyle(e.category)} label={e.category} place={e.title} meta={entryMeta(e, false)} note={e.note} />
-      ));
+      body = c.entries.map((e) => {
+        const finished = c.finishedIds.indexOf(e.id) >= 0;
+        return (
+          <Detail
+            key={e.id}
+            entry={e}
+            onEdit={onEdit}
+            st={getCategoryStyle(e.category)}
+            label={finished ? finishedLabel(e.category) : e.category}
+            place={e.title}
+            meta={entryMeta(e, false)}
+            note={e.note}
+            dimmed={finished}
+          />
+        );
+      });
       break;
     case 'period':
       body = (
         <Detail
           entry={c.entry}
-          onEdit={onEdit}
+          onEdit={onEdit ? (e) => onEdit(e, cell.date) : undefined}
           st={getCategoryStyle(c.entry.category)}
           label={c.dimmed ? c.entry.category + '(休日)' : c.entry.category}
           place={c.entry.title}
@@ -104,6 +121,26 @@ const DayCell: React.FC<{ cell: ICell | undefined; onEdit?: (entry: IScheduleEnt
           dimmed={c.dimmed}
         />
       );
+      if (c.finished.length > 0) {
+        body = (
+          <>
+            {body}
+            {c.finished.map((e) => (
+              <Detail
+                key={e.id}
+                entry={e}
+                onEdit={onEdit}
+                st={getCategoryStyle(e.category)}
+                label={finishedLabel(e.category)}
+                place={e.title}
+                meta={entryMeta(e, false)}
+                note={e.note}
+                dimmed={true}
+              />
+            ))}
+          </>
+        );
+      }
       break;
     default:
       body = undefined;

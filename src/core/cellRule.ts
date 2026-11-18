@@ -8,9 +8,13 @@
 //   5. 平日で長期の予定あり         → 長期の予定を通常表示
 //   6. 何もなし                     → 空欄
 // 休暇の「午前」「午後」「遅刻」「早退」は、上の表示にバッジとして重ねる。
+//
+// 今日の単発予定で、戻り(終了)の時刻を過ぎたものは「終わった予定」として薄く表示する。
+// 終わっていない単発予定がなく、長期の予定があれば、長期の予定を出して、その下に終わった予定を薄く出す。
 
 import { formatTimeRange, isDateInPeriod } from './dateUtils';
 import { LEAVE_BADGE_LABELS } from './labels';
+import { INow, isFinishedEntry } from './quickOut';
 import { DateKey, ICell, IDayInfo, IHolidayWork, ILeave, ILeaveBadge, IScheduleEntry, LeaveKind } from './types';
 
 export interface ICellRuleOptions {
@@ -83,12 +87,14 @@ function makeBadges(leaves: ILeave[]): ILeaveBadge[] {
  * @param day  その日の休日判定(holiday.ts の createHolidayCalendar で作る)
  * @param workerId 担当者
  * @param data その人の予定・休暇・休日出勤(ほかの日のものが混ざっていてもよい)
+ * @param now  今の日時(終わった予定を薄くするため)。省略すると薄くしない
  */
 export function resolveCell(
   day: IDayInfo,
   workerId: number,
   data: IWorkerDayData,
-  options: ICellRuleOptions = DEFAULT_CELL_RULE_OPTIONS
+  options: ICellRuleOptions = DEFAULT_CELL_RULE_OPTIONS,
+  now?: INow
 ): ICell {
   const date: DateKey = day.date;
   const leaves = data.leaves.filter((l) => l.workerId === workerId && l.date === date);
@@ -116,7 +122,13 @@ export function resolveCell(
     badges: fullDayLeave ? [] : makeBadges(leaves)
   };
 
-  const singleContent = singles.length > 0 ? { kind: 'single' as const, entries: singles } : undefined;
+  const finished = singles.filter((e) => isFinishedEntry(e, now));
+  const allFinished = singles.length > 0 && finished.length === singles.length;
+  // 単発予定がすべて終わっていて長期の予定があれば、長期の予定を出す(下の 4・5 で終わった予定を添える)
+  const singleContent =
+    singles.length > 0 && !(allFinished && period)
+      ? { kind: 'single' as const, entries: singles, finishedIds: finished.map((e) => e.id) }
+      : undefined;
   const leaveContent = fullDayLeave ? { kind: 'leave' as const, leave: fullDayLeave } : undefined;
 
   if (options.leaveBeforeSingle) {
@@ -147,7 +159,7 @@ export function resolveCell(
 
   // 4・5. 長期の予定(休日は薄く表示)
   if (period) {
-    cell.content = { kind: 'period', entry: period, dimmed: day.isHoliday };
+    cell.content = { kind: 'period', entry: period, dimmed: day.isHoliday, finished };
     return cell;
   }
 
@@ -160,9 +172,10 @@ export function resolveRow(
   days: IDayInfo[],
   workerId: number,
   data: IWorkerDayData,
-  options: ICellRuleOptions = DEFAULT_CELL_RULE_OPTIONS
+  options: ICellRuleOptions = DEFAULT_CELL_RULE_OPTIONS,
+  now?: INow
 ): ICell[] {
-  return days.map((d) => resolveCell(d, workerId, data, options));
+  return days.map((d) => resolveCell(d, workerId, data, options, now));
 }
 
 /** 予定・休暇・休日出勤を担当者ごとに分ける(53人分を毎回全部見ないようにするため) */
