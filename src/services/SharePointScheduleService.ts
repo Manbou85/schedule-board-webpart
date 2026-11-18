@@ -182,6 +182,7 @@ export class SharePointScheduleService implements IScheduleDataService {
     // 作業員の行き先(別サイト):設定でリストを入れたときだけ読む
     const c = this._f.crew;
     const crewWeb = (this._lists.crewSiteUrl || this._webUrl).replace(/\/+$/, '');
+    let crewInfo: IRangeData['crewInfo'];
     const crew = this._lists.crewList
       ? optional(
           this._getAll(
@@ -192,7 +193,11 @@ export class SharePointScheduleService implements IScheduleDataService {
               encodeURIComponent(c.startDate + " le datetime'" + b.to + "' and " + c.endDate + " ge datetime'" + b.from + "'") +
               '&$top=' +
               PAGE_SIZE
-          ).then((rows) => mapRows(rows, (r) => mapCrew(r, c))),
+          ).then((rows) => {
+            const list = mapRows(rows, (r) => mapCrew(r, c));
+            crewInfo = { rows: rows.length, unreadable: rows.length - list.length };
+            return list;
+          }),
           '作業員の行き先'
         )
       : Promise.resolve([]);
@@ -213,6 +218,7 @@ export class SharePointScheduleService implements IScheduleDataService {
       holidayWorks: holidayWorkList.filter((x) => inRange(x.date)),
       holidays: holidayList.filter((x) => inRange(x.date)),
       crewAssignments: crewList.filter((x) => overlapsRange(x.startDate, x.endDate, start, end)),
+      crewInfo,
       warnings
     };
   }

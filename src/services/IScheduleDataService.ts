@@ -13,6 +13,13 @@ export interface IRangeData {
   holidays: ICompanyHoliday[];
   /** 作業員の行き先(別サイトのリスト。設定していなければ空) */
   crewAssignments?: ICrewAssignment[];
+  /** 作業員の行き先リストの読み込みの様子(管理者向けのお知らせに使う)。設定していなければ undefined */
+  crewInfo?: {
+    /** リストから届いた行の数(表示中の期間にかかるもの) */
+    rows: number;
+    /** 作業員の名前か開始日が読めなかった行の数 */
+    unreadable: number;
+  };
   /** 一部のリストが読めなかったときのお知らせ(予定表は表示する) */
   warnings?: string[];
 }

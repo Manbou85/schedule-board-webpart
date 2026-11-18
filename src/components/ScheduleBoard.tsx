@@ -112,6 +112,24 @@ interface IBase {
 
 const SELF_GROUP = '__self__';
 
+/** 管理者向け:作業員の行き先リストが表示されないときの手がかり(設定や名前の確認用) */
+function crewAdminNotices(range: IRangeData | undefined, unmatched: string[]): string[] {
+  const notes: string[] = [];
+  const info = range ? range.crewInfo : undefined;
+  if (info && info.rows === 0) {
+    notes.push(
+      '(管理者向け)作業員の行き先リストは読めましたが、表示中の期間の登録が0件でした。設定のサイトの URL・リストと、リストの開始日・終了日を確かめてください。'
+    );
+  }
+  if (info && info.unreadable > 0) {
+    notes.push('(管理者向け)作業員の行き先リストの ' + info.unreadable + ' 行は、作業員の名前か開始日が読めなかったため表示していません。');
+  }
+  if (unmatched.length > 0) {
+    notes.push('(管理者向け)作業員の行き先リストに、WorkerNameList と名前が合わない人がいます:' + unmatched.join('、'));
+  }
+  return notes;
+}
+
 export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const { service, excludedDepartments, pinSelfByDefault } = props;
   const cellRuleOptions = props.cellRuleOptions || DEFAULT_CELL_RULE_OPTIONS;
@@ -406,9 +424,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const title = (props.title || '').trim();
   // お知らせ:読めなかったリスト。管理者には、作業員の行き先で名前が合わない人も知らせる(設定の確認用)
   const warnings = (range && range.warnings ? range.warnings : []).concat(
-    base.isAdmin && crew.unmatched.length > 0
-      ? ['(管理者向け)作業員の行き先リストに、WorkerNameList と名前が合わない人がいます:' + crew.unmatched.join('、')]
-      : []
+    base.isAdmin ? crewAdminNotices(range, crew.unmatched) : []
   );
   const dateText = view === 'week' ? formatShortRange(weekStart, addDays(weekStart, 6)) : formatShortDate(date);
 

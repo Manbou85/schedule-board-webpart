@@ -51,13 +51,15 @@ export class MemoryScheduleService implements IScheduleDataService {
   public getRange(start: DateKey, end: DateKey): Promise<IRangeData> {
     const d = this._data;
     const inRange = (date: DateKey): boolean => start <= date && date <= end;
+    const crew = (d.crewAssignments || []).filter((c) => overlapsRange(c.startDate, c.endDate, start, end));
     return Promise.resolve({
       // SharePoint から取り出すときと同じ条件(開始日 ≦ 最終日 かつ 終了日 ≧ 初日)
       entries: d.entries.filter((e) => overlapsRange(e.startDate, e.endDate, start, end)).map((e) => ({ ...e })),
       leaves: d.leaves.filter((l) => inRange(l.date)),
       holidayWorks: d.holidayWorks.filter((h) => inRange(h.date)),
       holidays: d.holidays.filter((h) => inRange(h.date)),
-      crewAssignments: (d.crewAssignments || []).filter((c) => overlapsRange(c.startDate, c.endDate, start, end))
+      crewAssignments: crew,
+      crewInfo: d.crewAssignments ? { rows: crew.length, unreadable: 0 } : undefined
     });
   }
 

@@ -214,9 +214,30 @@ export function mapHolidayWork(row: ISpRow, f: IHolidayWorkFields): IHolidayWork
 }
 
 /** 作業員の行き先リストの1行 → 作業員の行き先。作業員・開始日が読めない行は undefined */
+/**
+ * 選択肢の列の値 → 文字。
+ * 1つだけ選ぶ列は文字で届くが、「複数選択を許可」の列は ["山田 太郎"] や { results: [...] } で届くので、最初の1つを使う。
+ */
+export function choiceText(value: unknown): string {
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      const t = choiceText(value[i]);
+      if (t) {
+        return t;
+      }
+    }
+    return '';
+  }
+  if (value && typeof value === 'object') {
+    const v = value as { results?: unknown; Value?: unknown };
+    return v.results !== undefined ? choiceText(v.results) : choiceText(v.Value);
+  }
+  return text(value).trim();
+}
+
 export function mapCrew(row: ISpRow, f: ICrewFields): ICrewAssignment | undefined {
   const id = num(row.Id);
-  const workerName = text(row[f.worker]).trim();
+  const workerName = choiceText(row[f.worker]);
   const startDate = spDateToKey(row[f.startDate]);
   if (id === undefined || !workerName || !startDate) {
     return undefined;
