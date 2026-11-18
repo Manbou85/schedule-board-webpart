@@ -87,18 +87,25 @@ $dayWidth: 8.2em;
   gap: 8px;
 }
 
-// 「ちょっと外出」「戻りました」:毎日使うので、タイトルの行に置いて押しやすく
+// 「ちょっと外出」「帰社しました」:毎日使うので、「予定を追加」の左に目立つように置く
+.actionGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .quickOutButton,
 .returnNowButton {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  height: 32px;
-  padding: 0 12px;
+  height: 36px;
+  padding: 0 14px 0 12px;
   font-size: 14px;
   font-weight: 600;
   font-family: inherit;
-  border-radius: 16px;
+  border-radius: 4px;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -110,11 +117,11 @@ $dayWidth: 8.2em;
 
 .quickOutButton {
   color: #00665f;
-  background: #fff;
-  border: 1px solid #7cc4bf;
+  background: #e9f6f5;
+  border: 1px solid #00807a;
 }
 .quickOutButton:hover {
-  background: #e9f6f5;
+  background: #d4eeec;
 }
 
 .returnNowButton {
@@ -1561,5 +1568,31 @@ textarea.input {
 @media (hover: none) {
   .cellAdd {
     opacity: 1;
+  }
+}
+
+// ---- スマホ:「ちょっと外出」「予定を追加」を横幅いっぱいの1行にして、親指で押しやすく ----
+@media (max-width: 640px) {
+  .toolGroup {
+    flex-wrap: wrap;
+  }
+
+  .actionGroup {
+    width: 100%;
+  }
+
+  .actionGroup > button {
+    flex: 1;
+    height: 40px;
+    justify-content: center;
+  }
+
+  // 「予定を追加」の文字はスマホでも出す
+  .actionGroup .toolButtonText {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
   }
 }

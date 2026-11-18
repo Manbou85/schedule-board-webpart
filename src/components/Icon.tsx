@@ -27,7 +27,7 @@ export type IconName =
   | 'chevronDown'
   | 'refresh' // 新しくする
   | 'help' // ヘルプ
-  | 'check'; // 戻りました
+  | 'check'; // 帰社しました
 
 /** 線(path)と円(circle)の組み合わせで1つのアイコンを表す */
 interface IShape {

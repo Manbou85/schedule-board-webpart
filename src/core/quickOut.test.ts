@@ -45,7 +45,7 @@ describe('ちょっと外出', () => {
   });
 });
 
-describe('戻りました', () => {
+describe('帰社しました', () => {
   const base: IScheduleEntry = {
     id: 1,
     workerId: 3,

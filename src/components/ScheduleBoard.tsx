@@ -180,7 +180,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const [quickOpen, setQuickOpen] = React.useState(false);
   const [quickPlaces, setQuickPlaces] = React.useState<string[]>([]);
   const [returning, setReturning] = React.useState(false);
-  // 表示中の範囲に今日が入っていないとき用の、今日の予定(「戻りました」を出すかどうかの判定に使う)
+  // 表示中の範囲に今日が入っていないとき用の、今日の予定(「帰社しました」を出すかどうかの判定に使う)
   const [todayEntries, setTodayEntries] = React.useState<IScheduleEntry[] | undefined>(undefined);
   // 「予定を登録しました」などのお知らせ
   const [toast, setToast] = React.useState('');
@@ -404,7 +404,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     return service.createEntry(quickOutEntry(base.selfId, today, new Date(), place, option)).then(
       () => {
         setQuickOpen(false);
-        setToast(option.key === 'direct' ? '外出(直帰)を登録しました' : '外出を登録しました。戻ったら「戻りました」を押してください');
+        setToast(option.key === 'direct' ? '外出(直帰)を登録しました' : '外出を登録しました。帰社したら「帰社しました」を押してください');
         reload();
       },
       (e: unknown) => Promise.reject(saveErrorMessage(e, '保存'))
@@ -419,7 +419,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
       () => {
         setReturning(false);
         setNow(new Date());
-        setToast('おかえりなさい。戻ったことを登録しました');
+        setToast('帰社を登録しました');
         reload();
       },
       (e: unknown) => {
@@ -434,24 +434,6 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
       <div className={styles.titleRow}>
         {title ? <h2 className={styles.boardTitle}>{title}</h2> : <span />}
         <div className={styles.titleTools}>
-        {canQuickOut &&
-          (activeOuting ? (
-            <button
-              type="button"
-              className={styles.returnNowButton}
-              disabled={returning}
-              title={'外出中:' + activeOuting.title + (activeOuting.endTime ? '(' + activeOuting.endTime + ' 戻り予定)' : '')}
-              onClick={markReturned}
-            >
-              <Icon name="check" size={18} />
-              {returning ? '登録しています…' : '戻りました'}
-            </button>
-          ) : (
-            <button type="button" className={styles.quickOutButton} onClick={openQuickOut}>
-              <Icon name="car" size={18} />
-              ちょっと外出
-            </button>
-          ))}
         {updatedAt && (
           <button
             type="button"
@@ -504,15 +486,38 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
 
         {/* 右:探す・絞り込み・表示の切り替え */}
         <div className={styles.toolGroup}>
-          {canAdd && (
-            <button
-              type="button"
-              className={styles.addButton}
-              onClick={() => openAdd(base.selfId, addDefaultDate)}
-            >
-              <Icon name="plus" size={18} />
-              <span className={styles.toolButtonText}>予定を追加</span>
-            </button>
+          {/* よく使う登録のボタン(スマホでは横幅いっぱいの1行にする) */}
+          {(canQuickOut || canAdd) && (
+            <div className={styles.actionGroup}>
+          {canQuickOut &&
+            (activeOuting ? (
+              <button
+                type="button"
+                className={styles.returnNowButton}
+                disabled={returning}
+                title={'外出中:' + activeOuting.title + (activeOuting.endTime ? '(' + activeOuting.endTime + ' 戻り予定)' : '')}
+                onClick={markReturned}
+              >
+                <Icon name="check" size={18} />
+                {returning ? '登録しています…' : '帰社しました'}
+              </button>
+            ) : (
+              <button type="button" className={styles.quickOutButton} onClick={openQuickOut}>
+                <Icon name="car" size={18} />
+                ちょっと外出
+              </button>
+            ))}
+              {canAdd && (
+                <button
+                  type="button"
+                  className={styles.addButton}
+                  onClick={() => openAdd(base.selfId, addDefaultDate)}
+                >
+                  <Icon name="plus" size={18} />
+                  <span className={styles.toolButtonText}>予定を追加</span>
+                </button>
+              )}
+            </div>
           )}
           <label className={styles.searchBox}>
             <Icon name="search" size={18} className={styles.searchIcon} />
@@ -521,7 +526,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
               type="search"
               className={styles.searchInput}
               value={criteria.keyword || ''}
-              placeholder="名前・現場名"
+              placeholder="名前・現場名で探す"
               onChange={(e) => setCriteria({ ...criteria, keyword: e.target.value })}
             />
           </label>

@@ -84,14 +84,14 @@ export const QuickOutDialog: React.FC<IQuickOutDialogProps> = (props) => {
         </div>
         <div className={styles.dialogBody}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>行き先(空欄でもOK)</span>
+            <span className={styles.fieldLabel}>行き先(任意)</span>
             <input
               ref={inputRef}
               type="text"
               className={styles.input}
               value={place}
               maxLength={200}
-              placeholder="例:銀行、資材メーカー"
+              placeholder="例:銀行、市役所"
               onChange={(e) => setPlace(e.target.value)}
             />
           </label>
