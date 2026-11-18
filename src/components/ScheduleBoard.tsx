@@ -6,6 +6,7 @@ import {
   addDays,
   canEditWorker,
   crewToEntries,
+  DEFAULT_CREW_DEPARTMENTS,
   draftFromEntry,
   findActiveOuting,
   IEntryDraft,
@@ -74,6 +75,8 @@ export interface IScheduleBoardProps {
   helpContact?: string;
   /** 部署の並び順(書いた部署から順に。空なら No. 順のまま) */
   departmentOrder?: string[];
+  /** 作業員の行き先リストを反映する部署(空なら全員。WEBパーツの設定。初期値は「作業員」) */
+  crewDepartments?: string[];
   /** 「行の高さ」などの表示の設定を覚えておく場所。省略すると覚えない(開き直すと「ふつう」に戻る) */
   prefsStore?: IViewPrefsStore;
 }
@@ -111,6 +114,24 @@ interface IBase {
 }
 
 const SELF_GROUP = '__self__';
+
+/** 管理者向け:作業員の行き先リストが表示されないときの手がかり(設定や名前の確認用) */
+function crewAdminNotices(range: IRangeData | undefined, unmatched: string[]): string[] {
+  const notes: string[] = [];
+  const info = range ? range.crewInfo : undefined;
+  if (info && info.rows === 0) {
+    notes.push(
+      '(管理者向け)作業員の行き先リストは読めましたが、表示中の期間の登録が0件でした。設定のサイトの URL・リストと、リストの開始日・終了日を確かめてください。'
+    );
+  }
+  if (info && info.unreadable > 0) {
+    notes.push('(管理者向け)作業員の行き先リストの ' + info.unreadable + ' 行は、作業員の名前か開始日が読めなかったため表示していません。');
+  }
+  if (unmatched.length > 0) {
+    notes.push('(管理者向け)作業員の行き先リストに、WorkerNameList と名前が合わない人がいます:' + unmatched.join('、'));
+  }
+  return notes;
+}
 
 export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const { service, excludedDepartments, pinSelfByDefault } = props;
@@ -316,9 +337,13 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   }, [view, rangeStart, range]);
 
   // 作業員の行き先(別サイトのリスト)を、名前で WorkerNameList の人に結びつける
+  const crewDeptKey = (props.crewDepartments || DEFAULT_CREW_DEPARTMENTS).join('\n');
   const crew = React.useMemo(
-    () => (base && range ? crewToEntries(range.crewAssignments || [], base.workers) : { entries: [], unmatched: [] }),
-    [base, range]
+    () =>
+      base && range
+        ? crewToEntries(range.crewAssignments || [], base.workers, crewDeptKey ? crewDeptKey.split('\n') : [])
+        : { entries: [], unmatched: [] },
+    [base, range, crewDeptKey]
   );
 
   // 全員ぶんのマスを作る(表示ルールは core の resolveRow)
@@ -406,9 +431,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const title = (props.title || '').trim();
   // お知らせ:読めなかったリスト。管理者には、作業員の行き先で名前が合わない人も知らせる(設定の確認用)
   const warnings = (range && range.warnings ? range.warnings : []).concat(
-    base.isAdmin && crew.unmatched.length > 0
-      ? ['(管理者向け)作業員の行き先リストに、WorkerNameList と名前が合わない人がいます:' + crew.unmatched.join('、')]
-      : []
+    base.isAdmin ? crewAdminNotices(range, crew.unmatched) : []
   );
   const dateText = view === 'week' ? formatShortRange(weekStart, addDays(weekStart, 6)) : formatShortDate(date);
 
@@ -611,6 +634,13 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
           {warnings.map((w) => (
             <div key={w}>{w}</div>
           ))}
+          {base.isAdmin &&
+            range &&
+            (range.warningDetails || []).map((d) => (
+              <div key={'d' + d} className={styles.warningDetail}>
+                くわしい内容(管理者向け):{d}
+              </div>
+            ))}
         </div>
       )}
 

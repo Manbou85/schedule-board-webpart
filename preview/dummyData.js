@@ -211,6 +211,8 @@ function createDummyData(today) {
   period(crewWorkers[3], '(行動予定表の長期の予定:作業員の行き先が優先)', d(-30), d(30));
   crewSite(crewWorkers[3], SITES_CIVIL[2], d(0), d(25));
   single(crewWorkers[3], '本社(安全講習)', d(3), '研修');
+  // 作業員以外の人もリストに入っているが、反映するのは「作業員」の部署だけ(建築部の人の行は使わない)
+  crewSite(build[4], '(作業員以外の人の行:表示されない)', d(-5), d(10));
   // WorkerNameList にいない名前(管理者には知らせが出る)
   crewAssignments.push({ id: crewId++, workerName: '名簿にない 作業員', title: SITES_CIVIL[0], startDate: d(0), endDate: d(5) });
 

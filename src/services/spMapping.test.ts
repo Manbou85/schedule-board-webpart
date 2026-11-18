@@ -5,6 +5,8 @@ import {
   escapeOData,
   listApiUrl,
   mapEntry,
+  choiceText,
+  splitSiteAndList,
   mapCrew,
   mapHoliday,
   mapHolidayWork,
@@ -129,6 +131,26 @@ describe('リストの行 → 予定表のデータ', () => {
     expect(mapRows(rows, (r) => mapEntry(r, f)).map((e) => e.id)).toEqual([1]);
   });
 
+  it('サイトの URL とリスト:リストの画面の URL を貼り付けても分けて使える', () => {
+    const site = 'https://example.sharepoint.com/sites/team1';
+    expect(splitSiteAndList(site, 'Lists/List')).toEqual({ siteUrl: site, list: 'Lists/List' });
+    expect(splitSiteAndList(site + '/', ' Lists/List ')).toEqual({ siteUrl: site, list: 'Lists/List' });
+    expect(splitSiteAndList(site + '/Lists/List/AllItems.aspx', '')).toEqual({ siteUrl: site, list: 'Lists/List' });
+    expect(splitSiteAndList(site + '/Lists/List/AllItems.aspx?viewid=x', 'Lists/List')).toEqual({ siteUrl: site, list: 'Lists/List' });
+    expect(splitSiteAndList(site, site + '/Lists/List/AllItems.aspx')).toEqual({ siteUrl: site, list: 'Lists/List' });
+    expect(splitSiteAndList(site, 'Lists/List/AllItems.aspx')).toEqual({ siteUrl: site, list: 'Lists/List' });
+    expect(splitSiteAndList(site + '/SitePages/Home.aspx', 'Lists/List')).toEqual({ siteUrl: site, list: 'Lists/List' });
+    expect(splitSiteAndList('', '休暇情報共有リスト')).toEqual({ siteUrl: '', list: '休暇情報共有リスト' });
+  });
+
+  it('選択肢の値:1つ選択は文字、複数選択は最初の1つ', () => {
+    expect(choiceText(' 山田 太郎 ')).toBe('山田 太郎');
+    expect(choiceText(['山田 太郎', '佐藤 次郎'])).toBe('山田 太郎');
+    expect(choiceText({ results: ['', '佐藤 次郎'] })).toBe('佐藤 次郎');
+    expect(choiceText(null)).toBe('');
+    expect(choiceText([])).toBe('');
+  });
+
   it('作業員の行き先(別サイトのリスト)', () => {
     expect(
       mapCrew(
@@ -145,6 +167,10 @@ describe('リストの行 → 予定表のデータ', () => {
       endDate: '2026-11-16'
     });
     expect(mapCrew({ Id: 1, WorkerName: '', SiteName: 'x', Start: '2026-11-15T15:00:00Z' }, SP_FIELDS.crew)).toBeUndefined();
+    // 「複数選択を許可」の列でも読める
+    expect(
+      mapCrew({ Id: 2, WorkerName: ['山田 太郎'], SiteName: 'x', Start: '2026-11-15T15:00:00Z', End: '2026-11-15T15:00:00Z' }, SP_FIELDS.crew)
+    ).toEqual({ id: 2, workerName: '山田 太郎', title: 'x', startDate: '2026-11-16', endDate: '2026-11-16' });
   });
 
   it('会社休日・休暇・休日出勤', () => {

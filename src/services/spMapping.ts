@@ -84,6 +84,31 @@ export function listApiUrl(webUrl: string, listRef: string): string {
   return web + "/_api/web/lists/getbytitle('" + encodeURIComponent(escapeOData(ref)) + "')";
 }
 
+/**
+ * 設定に入れた「サイトの URL」と「リスト」を整える。
+ * リストの画面の URL(…/Lists/List/AllItems.aspx など)をそのまま貼り付けても、
+ * サイトの URL(…/sites/〜)とリスト(Lists/List)に分けて使えるようにする。
+ */
+export function splitSiteAndList(siteUrl: string, list: string): { siteUrl: string; list: string } {
+  let site = (siteUrl || '').trim().replace(/[?#].*$/, '');
+  let ref = (list || '').trim();
+  const m = /^(.*?)\/(Lists\/[^/]+)(\/.*)?$/i.exec(site);
+  if (m) {
+    site = m[1];
+    if (!ref) {
+      ref = m[2];
+    }
+  }
+  // サイトのページや設定画面の URL を貼り付けたとき(…/SitePages/〜、…/_layouts/〜)
+  site = site.replace(/\/(SitePages|_layouts|Shared%20Documents|Forms)(\/.*)?$/i, '').replace(/\/+$/, '');
+  // リストの欄に画面の URL の続き(Lists/List/AllItems.aspx)が入っていても、Lists/List だけにする
+  const lm = /(Lists\/[^/?#]+)/i.exec(ref);
+  if (lm) {
+    ref = lm[1];
+  }
+  return { siteUrl: site, list: ref };
+}
+
 function text(value: unknown): string {
   return typeof value === 'string' ? value : typeof value === 'number' ? String(value) : '';
 }
@@ -214,9 +239,30 @@ export function mapHolidayWork(row: ISpRow, f: IHolidayWorkFields): IHolidayWork
 }
 
 /** 作業員の行き先リストの1行 → 作業員の行き先。作業員・開始日が読めない行は undefined */
+/**
+ * 選択肢の列の値 → 文字。
+ * 1つだけ選ぶ列は文字で届くが、「複数選択を許可」の列は ["山田 太郎"] や { results: [...] } で届くので、最初の1つを使う。
+ */
+export function choiceText(value: unknown): string {
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      const t = choiceText(value[i]);
+      if (t) {
+        return t;
+      }
+    }
+    return '';
+  }
+  if (value && typeof value === 'object') {
+    const v = value as { results?: unknown; Value?: unknown };
+    return v.results !== undefined ? choiceText(v.results) : choiceText(v.Value);
+  }
+  return text(value).trim();
+}
+
 export function mapCrew(row: ISpRow, f: ICrewFields): ICrewAssignment | undefined {
   const id = num(row.Id);
-  const workerName = text(row[f.worker]).trim();
+  const workerName = choiceText(row[f.worker]);
   const startDate = spDateToKey(row[f.startDate]);
   if (id === undefined || !workerName || !startDate) {
     return undefined;
