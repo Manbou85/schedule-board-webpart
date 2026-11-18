@@ -151,6 +151,13 @@ $control: 36px; // ボタン・入力欄の高さ
   position: relative; // スマホでポップアップを横いっぱいに出すための基準
 }
 
+.leftGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
 .navGroup,
 .toolGroup {
   display: flex;
@@ -1594,5 +1601,55 @@ textarea.input {
     height: auto;
     overflow: visible;
     clip: auto;
+  }
+}
+
+// ---- スマホ:左のまとまり(週・日+日付の移動)を1行に収める ----
+@media (max-width: 640px) {
+  .leftGroup {
+    width: 100%;
+    gap: 6px;
+  }
+
+  .navGroup {
+    flex: 1;
+    width: auto;
+    gap: 4px;
+  }
+
+  .viewButton {
+    min-width: 40px;
+    padding: 0 8px;
+  }
+
+  // 年は省いて短くする(PCでは出す)
+  .yearText {
+    display: none;
+  }
+
+  // ボタンは縮めず、日付の文字のほうを折り返して収める(週の範囲・「今日」「祝日」の札が長いとき)
+  .leftGroup .iconButton,
+  .leftGroup .toolButton,
+  .leftGroup .viewSwitch {
+    flex: none;
+  }
+
+  .leftGroup .dateLabel {
+    flex: 1;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px 4px;
+    font-size: 14px;
+    line-height: 1.25;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .leftGroup .todayChip,
+  .leftGroup .holidayChip {
+    padding: 0 6px;
+    font-size: 11px;
+    line-height: 18px;
   }
 }

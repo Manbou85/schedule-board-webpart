@@ -375,6 +375,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   };
 
   const title = (props.title || '').trim();
+  const dateText = view === 'week' ? formatShortRange(weekStart, addDays(weekStart, 6)) : formatShortDate(date);
 
   // 「ちょっと外出」:自分の行があり、区分に「外出」があるときだけ使える
   const canQuickOut = base.selfId !== undefined && base.categories.indexOf(QUICK_OUT_CATEGORY) >= 0 && !!selfTodayEntries;
@@ -448,7 +449,16 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         </div>
       </div>
       <div className={styles.toolbar}>
-        {/* 左:日付の移動 */}
+        {/* 左:表示の切り替え(週・日)と日付の移動。よく使う操作を左にまとめる */}
+        <div className={styles.leftGroup}>
+            <div className={styles.viewSwitch} role="group" aria-label="表示の切り替え">
+              <button type="button" className={styles.viewButton} aria-pressed={view === 'week'} onClick={() => setView('week')}>
+                週
+              </button>
+              <button type="button" className={styles.viewButton} aria-pressed={view === 'day'} onClick={() => setView('day')}>
+                日
+              </button>
+            </div>
         <div className={styles.navGroup} role="group" aria-label={view === 'week' ? '週の切り替え' : '日の切り替え'}>
           <button
             type="button"
@@ -477,14 +487,17 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
             <Icon name="chevronRight" size={18} />
           </button>
           <div className={styles.dateLabel} aria-live="polite">
-            {view === 'week' ? formatShortRange(weekStart, addDays(weekStart, 6)) : formatShortDate(date)}
+            {/* 先頭の「2026年 」はスマホでは省く(1行に収めるため) */}
+            <span className={styles.yearText}>{dateText.substring(0, 6)}</span>
+            {dateText.substring(6)}
             {view === 'day' && date === today && <span className={styles.todayChip}>今日</span>}
             {view === 'day' && range && day && day.isHoliday && <span className={styles.holidayChip}>{day.holidayName || '休日'}</span>}
           </div>
           <DatePickButton value={date} onChange={setDate} />
         </div>
+        </div>
 
-        {/* 右:探す・絞り込み・表示の切り替え */}
+        {/* 右:登録・探す・絞り込み・ヘルプ */}
         <div className={styles.toolGroup}>
           {/* よく使う登録のボタン(スマホでは横幅いっぱいの1行にする) */}
           {(canQuickOut || canAdd) && (
@@ -551,14 +564,6 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
           >
             <Icon name="help" size={20} />
           </button>
-          <div className={styles.viewSwitch} role="group" aria-label="表示の切り替え">
-            <button type="button" className={styles.viewButton} aria-pressed={view === 'week'} onClick={() => setView('week')}>
-              週
-            </button>
-            <button type="button" className={styles.viewButton} aria-pressed={view === 'day'} onClick={() => setView('day')}>
-              日
-            </button>
-          </div>
         </div>
       </div>
 
