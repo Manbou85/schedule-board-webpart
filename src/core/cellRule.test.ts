@@ -28,7 +28,7 @@ function data(d: Partial<IWorkerDayData>): IWorkerDayData {
   return { entries: d.entries || [], leaves: d.leaves || [], holidayWorks: d.holidayWorks || [] };
 }
 
-describe('終わった今日の予定を薄く表示する(ちょっと外出 → 戻りました)', () => {
+describe('終わった今日の予定を薄く表示する(ちょっと外出 → 帰社しました)', () => {
   const longSite = period('2026-11-01', '2026-11-30');
   const now = { date: '2026-11-17', time: '11:30' };
 

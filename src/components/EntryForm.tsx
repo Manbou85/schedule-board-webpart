@@ -292,7 +292,7 @@ export const EntryForm: React.FC<IEntryFormProps> = (props) => {
               className={styles.input}
               value={draft.title}
               maxLength={255}
-              placeholder="例:駅前ビル新築工事"
+              placeholder="例:〇〇新築工事"
               aria-invalid={!!shown.title}
               onChange={(e) => set({ title: e.target.value })}
             />

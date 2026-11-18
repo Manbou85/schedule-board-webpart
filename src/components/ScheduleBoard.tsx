@@ -180,7 +180,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const [quickOpen, setQuickOpen] = React.useState(false);
   const [quickPlaces, setQuickPlaces] = React.useState<string[]>([]);
   const [returning, setReturning] = React.useState(false);
-  // 表示中の範囲に今日が入っていないとき用の、今日の予定(「戻りました」を出すかどうかの判定に使う)
+  // 表示中の範囲に今日が入っていないとき用の、今日の予定(「帰社しました」を出すかどうかの判定に使う)
   const [todayEntries, setTodayEntries] = React.useState<IScheduleEntry[] | undefined>(undefined);
   // 「予定を登録しました」などのお知らせ
   const [toast, setToast] = React.useState('');
@@ -404,7 +404,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     return service.createEntry(quickOutEntry(base.selfId, today, new Date(), place, option)).then(
       () => {
         setQuickOpen(false);
-        setToast(option.key === 'direct' ? '外出(直帰)を登録しました' : '外出を登録しました。戻ったら「戻りました」を押してください');
+        setToast(option.key === 'direct' ? '外出(直帰)を登録しました' : '外出を登録しました。帰社したら「帰社しました」を押してください');
         reload();
       },
       (e: unknown) => Promise.reject(saveErrorMessage(e, '保存'))
@@ -499,7 +499,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
                 onClick={markReturned}
               >
                 <Icon name="check" size={18} />
-                {returning ? '登録しています…' : '戻りました'}
+                {returning ? '登録しています…' : '帰社しました'}
               </button>
             ) : (
               <button type="button" className={styles.quickOutButton} onClick={openQuickOut}>
@@ -526,7 +526,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
               type="search"
               className={styles.searchInput}
               value={criteria.keyword || ''}
-              placeholder="名前・現場名"
+              placeholder="名前・現場名で探す"
               onChange={(e) => setCriteria({ ...criteria, keyword: e.target.value })}
             />
           </label>
