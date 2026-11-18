@@ -5,6 +5,8 @@ import * as React from 'react';
 import {
   addDays,
   canEditWorker,
+  NO_ENTRY_STATUS,
+  summarizeStatus,
   crewToEntries,
   DEFAULT_CREW_DEPARTMENTS,
   draftFromEntry,
@@ -50,7 +52,8 @@ import { EntryForm } from './EntryForm';
 import { errorDetail, saveErrorMessage } from './errorMessages';
 import { PeriodChoiceDialog } from './PeriodChoiceDialog';
 import { QuickOutDialog } from './QuickOutDialog';
-import { formatClock, formatShortDate, formatShortRange, formatVersion } from './format';
+import { formatClock, formatMonthDay, formatShortDate, formatShortRange, formatVersion, formatWeekday } from './format';
+import { getCategoryStyle, HOLIDAY_WORK_STYLE, ICategoryStyle, LEAVE_STYLE } from './categoryStyle';
 import { HelpDialog } from './HelpDialog';
 import { Icon } from './Icon';
 import { IGridGroup, WeekGrid } from './WeekGrid';
@@ -122,6 +125,20 @@ interface IBase {
 }
 
 const SELF_GROUP = '__self__';
+
+/** 人数のまとめの札のアイコンと色 */
+function statusStyle(status: string): ICategoryStyle {
+  if (status === LEAVE_CATEGORY) {
+    return LEAVE_STYLE;
+  }
+  if (status === HOLIDAY_WORK_CATEGORY) {
+    return HOLIDAY_WORK_STYLE;
+  }
+  if (status === NO_ENTRY_STATUS) {
+    return { icon: 'tag', color: '#8a8a8a', background: '#f3f3f3' };
+  }
+  return getCategoryStyle(status);
+}
 
 /** 管理者向け:作業員の行き先リストが表示されないときの手がかり(設定や名前の確認用) */
 function crewAdminNotices(range: IRangeData | undefined, unmatched: string[]): string[] {
@@ -232,6 +249,8 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     }
   }, [today]);
   const [helpOpen, setHelpOpen] = React.useState(false);
+  // 人数のまとめで選んだ状態(例 外出)。その状態の人だけにしぼる。空ならしぼらない
+  const [statusFilter, setStatusFilter] = React.useState('');
   // 「自分の行へ」ボタン:自分の行が見えなくなったときだけ出す(表が画面に見えているときに限る)
   const tableAreaRef = React.useRef<HTMLDivElement>(null);
   const [selfOutOfView, setSelfOutOfView] = React.useState(false);
@@ -421,7 +440,27 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     );
   }
 
-  const shown = filterWorkers(base.workers, rows, criteria);
+  const filtered = filterWorkers(base.workers, rows, criteria);
+  // 人数のまとめ:日表示はその日、週間表示は今日がその週にあれば今日(なければ出さない)
+  let summaryIndex = -1;
+  if (range && !loading) {
+    if (shownView === 'day') {
+      summaryIndex = 0;
+    } else {
+      for (let i = 0; i < days.length; i++) {
+        if (days[i].date === today) {
+          summaryIndex = i;
+        }
+      }
+    }
+  }
+  const summaryDate = summaryIndex >= 0 ? days[summaryIndex].date : '';
+  const summary = summaryIndex >= 0 ? summarizeStatus(filtered, rows, summaryIndex, base.categories, nowInfo) : [];
+  const activeStatus = summary.filter((s) => s.status === statusFilter)[0];
+  const shown = activeStatus ? filtered.filter((w) => activeStatus.workerIds.indexOf(w.id) >= 0) : filtered;
+  const summaryLabel = summaryDate
+    ? (summaryDate === today ? '今日 ' : '') + formatMonthDay(summaryDate) + '(' + formatWeekday(summaryDate) + ')'
+    : '';
   const self = base.selfId !== undefined ? shown.filter((w) => w.id === base.selfId) : [];
   const usePin = pinSelf && self.length > 0;
   const groups: IGridGroup[] = [];
@@ -688,8 +727,34 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         </div>
       )}
 
+      {/* 人数のまとめ:押すと、その状態の人だけにしぼる(もう一度押すと元に戻る) */}
+      {summary.length > 0 && (
+        <div className={styles.summaryRow} role="group" aria-label={'人数のまとめ(' + summaryLabel + ')'}>
+          <span className={styles.summaryLabel}>{summaryLabel}</span>
+          {summary.map((s) => {
+            const st = statusStyle(s.status);
+            const pressed = !!activeStatus && activeStatus.status === s.status;
+            return (
+              <button
+                key={s.status}
+                type="button"
+                className={styles.summaryChip}
+                aria-pressed={pressed}
+                title={pressed ? 'もう一度押すと、しぼり込みを外します' : s.status + 'の人だけを表示します'}
+                style={pressed ? { borderColor: st.color, background: st.background } : undefined}
+                onClick={() => setStatusFilter(pressed ? '' : s.status)}
+              >
+                <Icon name={st.icon} color={st.color} size={16} />
+                {s.status}
+                <span className={styles.summaryCount}>{s.count}</span>人
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* 絞り込み中だけ出す行:条件の札(× で外せる)と人数 */}
-      {!isEmptyCriteria(criteria) && (
+      {(!isEmptyCriteria(criteria) || !!activeStatus) && (
         <div className={styles.activeFilters} aria-live="polite">
           {department !== ALL && (
             <button type="button" className={styles.chip} onClick={() => setCriteria({ ...criteria, departments: [] })}>
@@ -705,10 +770,24 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
               <span className={styles.srOnly}>(外す)</span>
             </button>
           )}
+          {activeStatus && (
+            <button type="button" className={styles.chip} onClick={() => setStatusFilter('')}>
+              {summaryLabel}:{activeStatus.status}
+              <Icon name="close" size={14} />
+              <span className={styles.srOnly}>(外す)</span>
+            </button>
+          )}
           <span className={styles.count}>
             {base.workers.length}人中 {shown.length}人を表示
           </span>
-          <button type="button" className={styles.linkButton} onClick={() => setCriteria({})}>
+          <button
+            type="button"
+            className={styles.linkButton}
+            onClick={() => {
+              setCriteria({});
+              setStatusFilter('');
+            }}
+          >
             すべて解除
           </button>
         </div>

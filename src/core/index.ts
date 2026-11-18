@@ -9,3 +9,4 @@ export * from './search';
 export * from './entryForm';
 export * from './quickOut';
 export * from './crew';
+export * from './summary';

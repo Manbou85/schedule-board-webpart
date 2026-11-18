@@ -1898,3 +1898,61 @@ textarea.input {
     font-size: 12px;
   }
 }
+
+// ---- 人数のまとめ(今日 在社 12人・外出 5人…)----
+.summaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.summaryLabel {
+  margin-right: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #424242;
+  white-space: nowrap;
+}
+
+.summaryChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 10px 0 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #242424;
+  background: #fff;
+  border: 1px solid #dcdcdc;
+  border-radius: 15px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.summaryChip:hover {
+  background: #f5f5f5;
+}
+.summaryChip[aria-pressed=true] {
+  font-weight: 600;
+}
+.summaryChip:focus-visible {
+  outline: 2px solid #0f6cbd;
+  outline-offset: 1px;
+}
+
+.summaryCount {
+  margin-left: 2px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  // スマホでは横にスクロールして見る(何行にもならないように)
+  .summaryRow {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+}
