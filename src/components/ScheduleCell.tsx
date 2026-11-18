@@ -2,7 +2,7 @@
 // どれを表示するかは core の resolveCell で決まっているので、ここでは見た目だけを作る。
 
 import * as React from 'react';
-import { formatTimeRange, ICell, ILeaveBadge, IScheduleEntry } from '../core';
+import { DateKey, formatTimeRange, ICell, ILeaveBadge, IScheduleEntry } from '../core';
 import { getCategoryStyle, HOLIDAY_WORK_STYLE, LEAVE_STYLE } from './categoryStyle';
 import { finishedLabel, formatPeriod } from './format';
 import { Icon } from './Icon';
@@ -14,8 +14,8 @@ export interface IScheduleCellProps {
   joinsPrev: boolean;
   /** 次の日も同じ長期の予定(帯が右につながる) */
   joinsNext: boolean;
-  /** 編集できる人の行のとき:予定を押したら編集フォームを開く */
-  onEdit?: (entry: IScheduleEntry) => void;
+  /** 編集できる人の行のとき:予定を押したら編集フォームを開く(長期の予定は、押した日も渡す) */
+  onEdit?: (entry: IScheduleEntry, date?: DateKey) => void;
 }
 
 interface IEntryBoxProps {
@@ -168,7 +168,7 @@ export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, jo
         <>
         <EntryBox
           entry={c.entry}
-          onEdit={onEdit}
+          onEdit={onEdit ? (e) => onEdit(e, cell.date) : undefined}
           className={classNames.join(' ')}
           style={{ background: st.background, borderColor: st.color }}
           title={c.entry.category + ':' + c.entry.title + '(' + formatPeriod(c.entry.startDate, c.entry.endDate) + ')'}

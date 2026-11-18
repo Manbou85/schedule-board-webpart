@@ -1,4 +1,4 @@
-import { excludeDepartments, findSelf, groupByDepartment, moveSelfToTop, sortWorkers, DEFAULT_EXCLUDED_DEPARTMENTS } from './workers';
+import { excludeDepartments, findSelf, groupByDepartment, moveSelfToTop, orderDepartments, sortWorkers, DEFAULT_EXCLUDED_DEPARTMENTS } from './workers';
 import { IWorker } from './types';
 
 const workers: IWorker[] = [
@@ -39,5 +39,23 @@ describe('予定表に出す人の整理', () => {
     const sorted = sortWorkers(workers);
     expect(moveSelfToTop(sorted, 5).map((w) => w.id)).toEqual([5, 2, 1, 3, 4]);
     expect(moveSelfToTop(sorted, undefined)).toBe(sorted);
+  });
+});
+
+describe('部署の並び順', () => {
+  const groups = ['役員', '企画室', '総務部', '建築部'].map((department) => ({ department, workers: [] }));
+  const names = (gs: { department: string }[]): string[] => gs.map((g) => g.department);
+
+  it('指定がなければ今までどおり', () => {
+    expect(names(orderDepartments(groups, []))).toEqual(['役員', '企画室', '総務部', '建築部']);
+    expect(names(orderDepartments(groups, ['', ' ']))).toEqual(['役員', '企画室', '総務部', '建築部']);
+  });
+
+  it('指定した部署はその順に、指定しなかった部署はうしろに今までの順で', () => {
+    expect(names(orderDepartments(groups, ['建築部', ' 総務部 ']))).toEqual(['建築部', '総務部', '役員', '企画室']);
+  });
+
+  it('リストにない部署名を書いても困らない', () => {
+    expect(names(orderDepartments(groups, ['営業部', '企画室']))).toEqual(['企画室', '役員', '総務部', '建築部']);
   });
 });

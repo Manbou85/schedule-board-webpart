@@ -22,6 +22,8 @@ export interface IScheduleBoardWebPartProps extends Partial<ISpListSettings> {
   title?: string;
   /** ヘルプの「困ったとき」に出す連絡先 */
   helpContact?: string;
+  /** 部署の並び順(「、」や改行で区切る。空欄なら No. 順) */
+  departmentOrder?: string;
   /** 予定表から外す部署(「、」や改行で区切って複数) */
   excludedDepartments?: string;
   /** 「自分を一番上に表示」を最初からオンにする */
@@ -73,7 +75,8 @@ export default class ScheduleBoardWebPart extends BaseClientSideWebPart<ISchedul
       // manifest の version は "*"(= package.json の version)
       version: this.manifest.version,
       title: p.title === undefined ? DEFAULT_TITLE : p.title,
-      helpContact: p.helpContact
+      helpContact: p.helpContact,
+      departmentOrder: splitList(p.departmentOrder)
     });
 
     if (!this._root) {
@@ -120,6 +123,13 @@ export default class ScheduleBoardWebPart extends BaseClientSideWebPart<ISchedul
                   placeholder: '例:システム担当 ◯◯(内線 123)',
                   multiline: true,
                   rows: 2
+                }),
+                PropertyPaneTextField('departmentOrder', {
+                  label: '部署の並び順',
+                  description: '上から並べたい順に、1行に1部署ずつ書きます。書かなかった部署はうしろに並びます。空欄なら No. の順です',
+                  placeholder: '例:\n役員\n企画室\n建築部',
+                  multiline: true,
+                  rows: 5
                 }),
                 PropertyPaneTextField('excludedDepartments', {
                   label: '予定表に出さない部署',

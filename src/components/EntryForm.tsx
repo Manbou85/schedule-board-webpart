@@ -154,6 +154,9 @@ export const EntryForm: React.FC<IEntryFormProps> = (props) => {
   };
 
   const worker = workers.filter((w) => w.id === draft.workerId)[0];
+  // 「今日で終了にする」:登録済みの期間の予定で、今日が期間の途中(終了日より前)のとき
+  const canEndToday =
+    isEdit && draft.entryType === 'period' && isValidDateKey(draft.startDate) && draft.startDate <= today && today < draft.endDate;
   const quickActions = (props.quickActions || DEFAULT_QUICK_ACTIONS).filter((a) => categories.indexOf(a.category) >= 0);
   const suggestions = places
     .filter((p) => normalizeForSearch(p) !== normalizeForSearch(draft.title) && matchesText(p, draft.title))
@@ -330,6 +333,14 @@ export const EntryForm: React.FC<IEntryFormProps> = (props) => {
                   onChange={(e) => set({ endDate: e.target.value })}
                 />
                 {shown.endDate && <span className={styles.fieldError}>{shown.endDate}</span>}
+                {canEndToday && (
+                  <button type="button" className={styles.linkButton + ' ' + styles.endTodayButton} onClick={() => set({ endDate: today })}>
+                    今日で終了にする
+                  </button>
+                )}
+                {isEdit && draft.entryType === 'period' && draft.endDate === today && initial.endDate !== today && (
+                  <span className={styles.fieldHint}>終了日を今日にしました。「保存」を押すと確定します。</span>
+                )}
               </label>
             )}
           </div>

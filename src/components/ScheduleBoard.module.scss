@@ -1501,3 +1501,65 @@ textarea.input {
     border-radius: 12px 12px 0 0;
   }
 }
+
+// ---- 長期の予定を押したときの選択 ----
+.periodSummary {
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  border-left: 4px solid;
+  border-radius: 4px;
+}
+
+.choiceButton {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-family: inherit;
+  text-align: left;
+  color: #242424;
+  background: #fff;
+  border: 1px solid #c8c8c8;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.choiceButton > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.choiceButton:hover {
+  background: #f5f9fd;
+  border-color: #0f6cbd;
+}
+.choiceButton:focus-visible {
+  outline: 2px solid #0f6cbd;
+  outline-offset: 1px;
+}
+
+.choiceNote {
+  font-size: 13px;
+  color: #616161;
+}
+
+// ---- 期間の予定の「今日で終了にする」 ----
+.endTodayButton {
+  align-self: flex-start;
+  padding-left: 0;
+}
+
+.fieldHint {
+  font-size: 13px;
+  color: #3b7d23;
+}
+
+// ---- タッチの機器(スマホ・タブレット):マスの「+」をいつも出す ----
+@media (hover: none) {
+  .cellAdd {
+    opacity: 1;
+  }
+}

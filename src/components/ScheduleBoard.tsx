@@ -26,6 +26,7 @@ import {
   findSelf,
   groupByDepartment,
   groupByWorker,
+  orderDepartments,
   HOLIDAY_WORK_CATEGORY,
   ICell,
   ICellRuleOptions,
@@ -45,6 +46,7 @@ import { DatePickButton } from './DatePickButton';
 import { DayList } from './DayList';
 import { EntryForm } from './EntryForm';
 import { errorDetail, saveErrorMessage } from './errorMessages';
+import { PeriodChoiceDialog } from './PeriodChoiceDialog';
 import { QuickOutDialog } from './QuickOutDialog';
 import { formatClock, formatShortDate, formatShortRange, formatVersion } from './format';
 import { HelpDialog } from './HelpDialog';
@@ -69,6 +71,8 @@ export interface IScheduleBoardProps {
   title?: string;
   /** ヘルプの「困ったとき」に出す連絡先。空なら出さない */
   helpContact?: string;
+  /** 部署の並び順(書いた部署から順に。空なら No. 順のまま) */
+  departmentOrder?: string[];
 }
 
 /** 自動で読み直す間隔(5分) */
@@ -170,6 +174,8 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     }
   }, [today]);
   const [helpOpen, setHelpOpen] = React.useState(false);
+  // 長期の予定を押したときの選択画面
+  const [periodChoice, setPeriodChoice] = React.useState<{ entry: IScheduleEntry; date: DateKey } | undefined>(undefined);
   // 「ちょっと外出」の画面と、その候補(最近の外出先)
   const [quickOpen, setQuickOpen] = React.useState(false);
   const [quickPlaces, setQuickPlaces] = React.useState<string[]>([]);
@@ -327,12 +333,13 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   if (usePin) {
     groups.push({ key: SELF_GROUP, label: 'あなた', workers: self, collapsible: false });
   }
-  groupByDepartment(usePin ? shown.filter((w) => w.id !== base.selfId) : shown).forEach((g) => {
+  const departmentOrder = props.departmentOrder || [];
+  orderDepartments(groupByDepartment(usePin ? shown.filter((w) => w.id !== base.selfId) : shown), departmentOrder).forEach((g) => {
     groups.push({ key: g.department, label: g.department || '(部署なし)', workers: g.workers, collapsible: true });
   });
   const filtering = shown.length !== base.workers.length;
 
-  const departments = groupByDepartment(base.workers).map((g) => g.department);
+  const departments = orderDepartments(groupByDepartment(base.workers), departmentOrder).map((g) => g.department);
   const categoryOptions = base.categories.concat([LEAVE_CATEGORY, HOLIDAY_WORK_CATEGORY]);
   const thisWeek = startOfWeek(today);
   const openDay = (d: DateKey): void => {
@@ -345,7 +352,14 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   // 「予定を追加」ボタンの日付:日表示はその日。週間表示は、今日がその週にあれば今日、なければ週の月曜
   const addDefaultDate = view === 'day' ? date : today >= weekStart && today <= addDays(weekStart, 6) ? today : weekStart;
   const openAdd = (workerId: number | undefined, d: DateKey): void => setFormDraft(newDraft(workerId, d));
-  const openEdit = (entry: IScheduleEntry): void => setFormDraft(draftFromEntry(entry));
+  // 長期の予定(帯)を押したら、「この日だけ別の予定を追加」か「期間の予定を変更」かを選んでもらう
+  const openEdit = (entry: IScheduleEntry, d?: DateKey): void => {
+    if (entry.entryType === 'period' && d) {
+      setPeriodChoice({ entry, date: d });
+    } else {
+      setFormDraft(draftFromEntry(entry));
+    }
+  };
   const closeForm = (message?: string): void => {
     setFormDraft(undefined);
     if (message) {
@@ -628,6 +642,21 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         {toast && <div className={styles.toast}>{toast}</div>}
       </div>
 
+      {periodChoice && (
+        <PeriodChoiceDialog
+          entry={periodChoice.entry}
+          date={periodChoice.date}
+          onAddForDay={() => {
+            setPeriodChoice(undefined);
+            openAdd(periodChoice.entry.workerId, periodChoice.date);
+          }}
+          onEditPeriod={() => {
+            setPeriodChoice(undefined);
+            setFormDraft(draftFromEntry(periodChoice.entry));
+          }}
+          onClose={() => setPeriodChoice(undefined)}
+        />
+      )}
       {quickOpen && <QuickOutDialog recentPlaces={quickPlaces} onSave={saveQuickOut} onClose={() => setQuickOpen(false)} />}
       {helpOpen && <HelpDialog categories={base.categories} contact={props.helpContact} onClose={() => setHelpOpen(false)} />}
 
