@@ -1,6 +1,6 @@
 # 引き継ぎメモ(次のセッション向け)
 
-最終更新:2026-11-18(ver 0.6.1。フェーズ1 完了、フェーズ2・3 のWEBパーツ部分を作成済み。開発者の実機確認待ち)
+最終更新:2026-11-18(ver 0.6.2。フェーズ1 完了、フェーズ2・3 のWEBパーツ部分を作成済み。開発者の実機確認待ち)
 
 **新しいセッションの Claude は、作業を始める前にこのファイルを最後まで読んでください。**
 
@@ -12,12 +12,12 @@
 3. 開発者に、実機確認の結果と、確認待ちの項目(「2.」)の回答を聞く。そこから続きを決める
 4. 画面を変えたら:`npm run build` → `npm run preview` → 確認用プレビュー(「4.」の URL)を上書きする
 5. 版を上げるとき:`package.json`・`package-lock.json`(先頭の2か所)・`config/package-solution.json`(2か所)をそろえる。
-   `docs/test-checklist.html` の「ver 0.6.1」の例(2か所)も直す
+   `docs/test-checklist.html` の「ver 0.6.2」の例(2か所)も直す
 6. 仕上がったら:作業ブランチにプッシュ → 開発者が「PRお願い」と言ったらプルリクエストを作る → 開発者がマージ →
    作業ブランチを main に合わせて(`git merge --ff-only origin/main`)プッシュしておく
 7. 毎回の作業の終わりに、「アーティファクト版で確認すること」「WEBパーツで確認が必要なこと」を分けて伝える(CLAUDE.md 3)
 
-## 1. いまの状況(ver 0.6.1)
+## 1. いまの状況(ver 0.6.2)
 
 ### できているもの
 | 部分 | 場所 | 内容 |
@@ -121,6 +121,10 @@
 - ver 0.6.1(2026-11-18):人数のまとめで、総務の「休暇」と本人の区分「休み」を**あわせて「休み」**と数える(`DAY_OFF_STATUS`。開発者が案Aを選択)。
   マスの表示は「休暇」(総務の登録)/「休み」(本人の登録。急な休みなど)で分けたまま。ヘルプに違いを1行追加。
   検討した案:B 分けて数える/C 区分の「休み」をなくす(本人が急な休みを入れられなくなるため見送り)
+- ver 0.6.2(2026-11-18):実機の日表示で「自分の行へ」が、ページのいちばん下までスクロールしないと出なかった。
+  SharePoint のページでは、WEBパーツの外側の入れ物に transform が付いていて、position: fixed が「画面」ではなく「入れ物」に固定されるため
+  (週表示は表の中だけでスクロールするので気づかなかった)。「自分の行へ」とお知らせ(トースト)も `ModalPortal` で body の直下に出すようにした。
+  プレビューの入れ物にも `transform: translateZ(0)` を付けて、同じ問題に気づけるようにした
 - スマホ幅では最初に日表示(CLAUDE.md 6-7)
 - 6-2:総務の「1日」休暇と単発予定が重なったら**休暇を優先**で決定(WEBパーツの設定で切り替え可能)
 - 自分たちで作るリストは **URL(`Lists/〜`)で探す**(表示名を「行動予定」に変えても動くように)。既存のリストは名前で探す
@@ -151,7 +155,8 @@
 - `yo @microsoft/sharepoint`(雛形作成)は root だと動かない → 一般ユーザー(`useradd -m spfx`)で実行し、質問には `yes "" |` で既定の答えを流し込む
 - SPFx は ES5 向けにビルドする → `Array.prototype.includes`・`padStart`・`flatMap` などは使わない。`Error` を継承したクラスは `Object.setPrototypeOf(this, X.prototype)` が必要
 - Jest では `@microsoft/sp-http` が読み込めない → テストでは `jest.mock` で差し替える(`SharePointScheduleService.test.ts` 参照)
-- WEBパーツの中で position: fixed の重ねる画面を出すと、SharePoint の見出しの下にもぐる → `ModalPortal` で body の直下に出す
+- WEBパーツの中で position: fixed のもの(重ねる画面・お知らせ・右下のボタン)を出すと、SharePoint の見出しの下にもぐったり、
+  画面ではなく WEBパーツの下に固定されたりする(外側の入れ物の transform のため)→ すべて `ModalPortal` で body の直下に出す
 - `webpack` の CLI は入力待ちで止まる → Node の API で呼ぶ(`preview/build-preview.mjs`)
 - Playwright(スクリーンショット)は最初から入っている Node で動かす(Node 26 の PATH を外す)
 - learn.microsoft.com にはつながらない → 公式ドキュメントは GitHub の `SharePoint/sp-dev-docs`(raw.githubusercontent.com)で読む
