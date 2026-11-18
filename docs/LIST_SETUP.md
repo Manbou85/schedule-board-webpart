@@ -55,7 +55,7 @@ https://<テナント>.sharepoint.com/sites/<サイト>/_api/web/lists/getbytitl
 ```
 **かんたんな方法**:リストの設定 → 列の名前をクリック → アドレスバーの URL の最後にある `Field=〇〇` が内部名(`%5F` は `_` のこと)。
 
-対象:WorkerNameList・休暇情報共有リスト・休日出勤情報共有リスト(3つとも確認済み:2026-11-18)
+対象:WorkerNameList・休暇情報共有リスト・休日出勤情報共有リスト・作業員の行き先リスト(すべて確認済み:2026-11-18)
 
 内部名は `src/services/spConfig.ts` の `SP_FIELDS` 1か所で設定している(【要確認】の印があるのが仮の値)。
 
@@ -75,6 +75,8 @@ https://<テナント>.sharepoint.com/sites/<サイト>/_api/web/lists/getbytitl
 | 会社休日リストのあるサイトの URL | (空欄=同じサイト) | 別サイトのリストを使うときだけ |
 | 会社休日リスト | Lists/CompanyHolidays | |
 | 管理者の SharePoint グループ名 | 行動予定表管理者 | |
+| 作業員の行き先リストのあるサイトの URL | (空欄) | 例 `https://<テナント>.sharepoint.com/sites/msteams_92936b` |
+| 作業員の行き先リスト | (空欄=使わない) | `Lists/List`(リストの URL の `/Lists/` からうしろ) |
 
 - 設定を変えたら「適用」を押す
 - 休暇・休日出勤・会社休日のリストが読めないときは、予定表は表示したまま、上に黄色いお知らせが出る
