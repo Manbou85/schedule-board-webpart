@@ -132,11 +132,13 @@ export class SharePointScheduleService implements IScheduleDataService {
     // 総務のリスト・会社休日は、読めなくても予定表は出す(お知らせだけ出す)
     const warnings: string[] = [];
     const warningDetails: string[] = [];
-    const optional = <T>(promise: Promise<T[]>, label: string): Promise<T[]> =>
+    const optional = <T>(promise: Promise<T[]>, label: string, place?: string): Promise<T[]> =>
       promise.catch((err: unknown) => {
         warnings.push(label + 'を読み込めなかったため、表示していません。');
-        // 管理者向けのくわしい内容(状態コードと SharePoint からの文言)
-        warningDetails.push(label + ':' + (err instanceof Error ? err.message : String(err)));
+        // 管理者向けのくわしい内容(状態コードと SharePoint からの文言、読みに行った場所)
+        warningDetails.push(
+          label + ':' + (err instanceof Error ? err.message : String(err)) + (place ? '(読みに行った場所:' + place + ')' : '')
+        );
         return [] as T[];
       });
 
@@ -204,9 +206,18 @@ export class SharePointScheduleService implements IScheduleDataService {
             crewInfo = { rows: rows.length, unreadable: rows.length - list.length };
             return list;
           }),
-          '作業員の行き先'
+          '作業員の行き先',
+          crewWeb + ' のリスト「' + crewRef.list + '」'
         )
       : Promise.resolve([]);
+    // 別サイトの URL のホスト名(〜.sharepoint.com)がこのサイトとちがうと、ブラウザが通信を止める(Failed to fetch)
+    const hostOf = (u: string): string => (/^https?:\/\/([^/]+)/i.exec(u) || ['', ''])[1].toLowerCase();
+    if (crewRef.list && crewRef.siteUrl && hostOf(crewRef.siteUrl) !== hostOf(this._webUrl)) {
+      warningDetails.push(
+        '作業員の行き先:サイトの URL「' + crewRef.siteUrl + '」が、このサイト(' + hostOf(this._webUrl) +
+          ')と同じ「https://〜.sharepoint.com/sites/〜」の形になっていません。Teams のリンクではなく、SharePoint のサイトの URL を入れてください。'
+      );
+    }
 
     const [entryList, holidayList, leaveList, holidayWorkList, crewList] = await Promise.all([
       entryRows.then((rows) => mapRows(rows, (r) => mapEntry(r, e))),
