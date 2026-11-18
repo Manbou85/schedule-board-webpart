@@ -77,7 +77,7 @@ export const SP_FIELDS: ISpFieldConfig = {
   workers: {
     title: 'Title',
     name: 'WorkerName',
-    no: 'No_x002e_', // 【要確認】「No.」の「.」は内部名で別の文字になる
+    no: 'No_x002e_', // 「No.」の「.」は内部名で _x002e_ になる(2026-11 開発者が確認済み)
     user: 'M365User',
     department: 'Department'
   },

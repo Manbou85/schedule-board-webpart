@@ -33,7 +33,9 @@
 ```
 https://<テナント>.sharepoint.com/sites/<サイト>/_api/web/lists/getbytitle('リスト名')/fields?$filter=Hidden eq false&$select=Title,InternalName,TypeAsString
 ```
-対象:WorkerNameList、休暇情報共有リスト、休日出勤情報共有リスト、(A のとき)既存の休日リスト
+**かんたんな方法**:リストの設定 → 列の名前をクリック → アドレスバーの URL の最後にある `Field=〇〇` が内部名(`%5F` は `_` のこと)。
+
+対象:WorkerNameList(確認済み)、休暇情報共有リスト、休日出勤情報共有リスト、(A のとき)既存の休日リスト
 
 内部名は `src/services/spConfig.ts` の `SP_FIELDS` 1か所で設定している(【要確認】の印があるのが仮の値)。
 
