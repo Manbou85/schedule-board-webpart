@@ -17,11 +17,12 @@ const DEPARTMENTS = [
   ['01', '役員', 3],
   ['02', '総務部', 6],
   ['03', '営業部', 7],
-  ['04', '建築部', 12],
-  ['05', '土木部', 11],
+  ['04', '建築部', 10],
+  ['05', '土木部', 9],
   ['06', '企画室', 3],
   ['07', '設計部', 5],
   ['08', '管理部', 3],
+  ['09', '作業員', 4],
   ['99', '退職者', 3]
 ];
 
@@ -45,7 +46,8 @@ function makeWorkerRows() {
       nameIndex++;
       const no = code + String(i < 10 ? '0' + i : i);
       // 建築部・土木部の後ろのほうの人は、M365 のアカウントなし(現場の職人さんなど)
-      const noAccount = (dept === '建築部' || dept === '土木部') && i > count - 3;
+      // 作業員は全員アカウントなし(PCを使わない。行き先は別サイトの「作業員の行き先」リストから出す)
+      const noAccount = ((dept === '建築部' || dept === '土木部') && i > count - 3) || dept === '作業員';
       rows.push({
         Id: id,
         Title: family + ' ' + given,
@@ -190,6 +192,28 @@ function createDummyData(today) {
   });
   single(byDept('設計部')[1], '確認申請', d(0), 'その他');
 
+  // ---- 作業員:行き先は別サイトの「作業員の行き先」リスト(名前の文字で突き合わせる)----
+  const crewWorkers = byDept('作業員');
+  let crewId = 1;
+  const crewAssignments = [];
+  const crewSite = (w, title, start, end, nameOverride) =>
+    crewAssignments.push({ id: crewId++, workerName: nameOverride || w.name, title, startDate: start, endDate: end });
+  // 名前の空白が全角でも突き合わせられることの確認
+  crewSite(crewWorkers[0], SITES_BUILD[1], d(-10), d(20), crewWorkers[0].name.replace(' ', '\u3000'));
+  // 週の途中で現場が切り替わる
+  crewSite(crewWorkers[1], SITES_CIVIL[1], d(-5), d(2));
+  crewSite(crewWorkers[1], SITES_CIVIL[3], d(3), d(30));
+  // 総務の休暇・休日出勤が優先されることの確認
+  crewSite(crewWorkers[2], SITES_BUILD[3], d(-3), d(10));
+  leave(crewWorkers[2], d(1), 'fullDay');
+  holidayWork(crewWorkers[2], d(5), SITES_BUILD[3]);
+  // 行動予定表の長期の予定より作業員の行き先が優先、単発の予定は作業員の行き先より優先
+  period(crewWorkers[3], '(行動予定表の長期の予定:作業員の行き先が優先)', d(-30), d(30));
+  crewSite(crewWorkers[3], SITES_CIVIL[2], d(0), d(25));
+  single(crewWorkers[3], '本社(安全講習)', d(3), '研修');
+  // WorkerNameList にいない名前(管理者には知らせが出る)
+  crewAssignments.push({ id: crewId++, workerName: '名簿にない 作業員', title: SITES_CIVIL[0], startDate: d(0), endDate: d(5) });
+
   // ---- 退職者(画面には出ないことの確認) ----
   byDept('退職者').forEach((w) => period(w, '(退職者の予定:表示されない)', d(-10), d(10)));
 
@@ -218,7 +242,8 @@ function createDummyData(today) {
     entries,
     leaves,
     holidayWorks,
-    holidays
+    holidays,
+    crewAssignments
   };
 }
 

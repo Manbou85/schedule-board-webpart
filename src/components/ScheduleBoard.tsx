@@ -5,6 +5,7 @@ import * as React from 'react';
 import {
   addDays,
   canEditWorker,
+  crewToEntries,
   draftFromEntry,
   findActiveOuting,
   IEntryDraft,
@@ -314,18 +315,24 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     return (view === 'week' ? weekDates(rangeStart) : [rangeStart]).map(calendar);
   }, [view, rangeStart, range]);
 
+  // 作業員の行き先(別サイトのリスト)を、名前で WorkerNameList の人に結びつける
+  const crew = React.useMemo(
+    () => (base && range ? crewToEntries(range.crewAssignments || [], base.workers) : { entries: [], unmatched: [] }),
+    [base, range]
+  );
+
   // 全員ぶんのマスを作る(表示ルールは core の resolveRow)
   const rows = React.useMemo(() => {
     const map = new Map<number, ICell[]>();
     if (!base || !range) {
       return map;
     }
-    const byWorker = groupByWorker(range);
+    const byWorker = groupByWorker({ entries: range.entries, leaves: range.leaves, holidayWorks: range.holidayWorks, crew: crew.entries });
     base.workers.forEach((w) => {
       map.set(w.id, resolveRow(days, w.id, byWorker.get(w.id) || EMPTY_WORKER_DATA, cellRuleOptions, nowInfo));
     });
     return map;
-  }, [base, range, days, cellRuleOptions, nowInfo]);
+  }, [base, range, crew, days, cellRuleOptions, nowInfo]);
 
   if (error) {
     return (
@@ -373,6 +380,9 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const openAdd = (workerId: number | undefined, d: DateKey): void => setFormDraft(newDraft(workerId, d));
   // 長期の予定(帯)を押したら、「この日だけ別の予定を追加」か「期間の予定を変更」かを選んでもらう
   const openEdit = (entry: IScheduleEntry, d?: DateKey): void => {
+    if (entry.readOnly && !d) {
+      return; // 作業員の行き先リストの予定は、この画面では変更しない
+    }
     if (entry.entryType === 'period' && d) {
       setPeriodChoice({ entry, date: d });
     } else {
@@ -394,6 +404,12 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   };
 
   const title = (props.title || '').trim();
+  // お知らせ:読めなかったリスト。管理者には、作業員の行き先で名前が合わない人も知らせる(設定の確認用)
+  const warnings = (range && range.warnings ? range.warnings : []).concat(
+    base.isAdmin && crew.unmatched.length > 0
+      ? ['(管理者向け)作業員の行き先リストに、WorkerNameList と名前が合わない人がいます:' + crew.unmatched.join('、')]
+      : []
+  );
   const dateText = view === 'week' ? formatShortRange(weekStart, addDays(weekStart, 6)) : formatShortDate(date);
 
   // 「ちょっと外出」:自分の行があり、区分に「外出」があるときだけ使える
@@ -590,9 +606,9 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         </div>
       </div>
 
-      {range && range.warnings && range.warnings.length > 0 && (
+      {warnings.length > 0 && (
         <div className={styles.warning} role="status">
-          {range.warnings.map((w) => (
+          {warnings.map((w) => (
             <div key={w}>{w}</div>
           ))}
         </div>

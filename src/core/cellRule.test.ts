@@ -25,7 +25,7 @@ function holidayWork(date: string, workPlace: string): IHolidayWork {
   return { id: nextId++, workerId: W, date, workPlace, startTime: '08:00', endTime: '17:30' };
 }
 function data(d: Partial<IWorkerDayData>): IWorkerDayData {
-  return { entries: d.entries || [], leaves: d.leaves || [], holidayWorks: d.holidayWorks || [] };
+  return { entries: d.entries || [], leaves: d.leaves || [], holidayWorks: d.holidayWorks || [], crew: d.crew || [] };
 }
 
 describe('終わった今日の予定を薄く表示する(ちょっと外出 → 帰社しました)', () => {
@@ -194,14 +194,40 @@ describe('1人ぶんの行(1週間)', () => {
   });
 });
 
+describe('作業員の行き先リスト(別サイト)', () => {
+  const longSite = period('2026-11-01', '2026-11-30', '行動予定の現場');
+  const crewSite: IScheduleEntry = { ...period('2026-11-16', '2026-11-20', '作業員の現場'), id: -5, readOnly: true };
+
+  it('行動予定表の長期の予定より、作業員の行き先を優先する', () => {
+    const cell = resolveCell(TUE, W, data({ entries: [longSite], crew: [crewSite] }));
+    expect(cell.content).toEqual({ kind: 'period', entry: crewSite, dimmed: false, finished: [] });
+  });
+
+  it('単発の予定・総務の休暇・休日出勤は、作業員の行き先より優先する', () => {
+    const s = single('2026-11-17', '研修センター');
+    expect(resolveCell(TUE, W, data({ entries: [s], crew: [crewSite] })).content.kind).toBe('single');
+    expect(resolveCell(TUE, W, data({ leaves: [leave('2026-11-17', 'fullDay')], crew: [crewSite] })).content.kind).toBe('leave');
+    const satCrew: IScheduleEntry = { ...crewSite, endDate: '2026-11-22' };
+    expect(
+      resolveCell(SAT, W, data({ holidayWorks: [holidayWork('2026-11-21', '本社')], crew: [satCrew] })).content.kind
+    ).toBe('holidayWork');
+  });
+
+  it('休日は作業員の行き先も薄く出す。期間の外は出さない', () => {
+    const satCrew: IScheduleEntry = { ...crewSite, endDate: '2026-11-22' };
+    expect(resolveCell(SAT, W, data({ crew: [satCrew] })).content).toEqual({ kind: 'period', entry: satCrew, dimmed: true, finished: [] });
+    expect(resolveCell(MON, W, data({ crew: [{ ...crewSite, startDate: '2026-11-17' }] })).content).toEqual({ kind: 'empty' });
+  });
+});
+
 describe('担当者ごとの振り分けと、検索用の文字', () => {
   it('担当者ごとにデータを分ける', () => {
     const a = single('2026-11-17', 'a');
     const b: IScheduleEntry = { ...single('2026-11-17', 'b'), workerId: 2 };
     const lv: ILeave = { ...leave('2026-11-17', 'fullDay'), workerId: 2 };
     const map = groupByWorker(data({ entries: [a, b], leaves: [lv] }));
-    expect(map.get(1)).toEqual({ entries: [a], leaves: [], holidayWorks: [] });
-    expect(map.get(2)).toEqual({ entries: [b], leaves: [lv], holidayWorks: [] });
+    expect(map.get(1)).toEqual({ entries: [a], leaves: [], holidayWorks: [], crew: [] });
+    expect(map.get(2)).toEqual({ entries: [b], leaves: [lv], holidayWorks: [], crew: [] });
     expect(map.get(3)).toBeUndefined();
   });
 

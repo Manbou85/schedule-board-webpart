@@ -39,6 +39,19 @@ export interface IScheduleEntry {
   /** 終了・戻り時刻(例 '15:00')。任意 */
   endTime?: string;
   note?: string;
+  /** 作業員の行き先リスト(別サイト)から読んだ予定。この画面からは変更・削除できない */
+  readOnly?: boolean;
+}
+
+/** 作業員の行き先(別サイトの作業員の行き先リストの1行。読み取りだけ) */
+export interface ICrewAssignment {
+  id: number;
+  /** 作業員の名前(選択肢の文字。WorkerNameList の名前と突き合わせる) */
+  workerName: string;
+  /** 行き先・現場名(SiteName) */
+  title: string;
+  startDate: DateKey;
+  endDate: DateKey;
 }
 
 /** 会社休日リストの種別を、休日あつかいか出勤日あつかいかに分けたもの */

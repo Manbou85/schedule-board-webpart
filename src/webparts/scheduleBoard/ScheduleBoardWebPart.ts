@@ -79,7 +79,9 @@ export default class ScheduleBoardWebPart extends BaseClientSideWebPart<ISchedul
       holidaysList: pick(p.holidaysList, DEFAULT_LIST_SETTINGS.holidaysList),
       leavesList: pick(p.leavesList, DEFAULT_LIST_SETTINGS.leavesList),
       holidayWorksList: pick(p.holidayWorksList, DEFAULT_LIST_SETTINGS.holidayWorksList),
-      adminGroup: pick(p.adminGroup, DEFAULT_LIST_SETTINGS.adminGroup)
+      adminGroup: pick(p.adminGroup, DEFAULT_LIST_SETTINGS.adminGroup),
+      crewSiteUrl: (p.crewSiteUrl || '').trim(),
+      crewList: (p.crewList || '').trim()
     };
     const user = this.context.pageContext.user;
     const service = new SharePointScheduleService({
@@ -193,6 +195,21 @@ export default class ScheduleBoardWebPart extends BaseClientSideWebPart<ISchedul
                   placeholder: 'https://'
                 }),
                 PropertyPaneTextField('holidaysList', { label: '会社休日リスト', description: listNote, placeholder: d.holidaysList })
+              ]
+            },
+            {
+              groupName: '作業員の行き先(別サイトのリスト)',
+              groupFields: [
+                PropertyPaneTextField('crewSiteUrl', {
+                  label: '作業員の行き先リストのあるサイトの URL',
+                  description: '例 https://〜.sharepoint.com/sites/〜(空欄ならこのサイト)',
+                  placeholder: 'https://'
+                }),
+                PropertyPaneTextField('crewList', {
+                  label: '作業員の行き先リスト',
+                  description: 'リストの名前、または「Lists/〜」の形の URL。空欄なら作業員の行き先は表示しません',
+                  placeholder: 'Lists/List'
+                })
               ]
             },
             {
