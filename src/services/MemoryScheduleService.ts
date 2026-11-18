@@ -22,6 +22,8 @@ export class PreviewSaveError extends Error {
 export class MemoryScheduleService implements IScheduleDataService {
   /** true のあいだ、登録・変更・削除がすべて失敗する(プレビューの確認用) */
   public failSaves: boolean = false;
+  /** 読み込みにかける時間(ミリ秒)。プレビューで SharePoint の読み込みの待ち時間をまねるため */
+  public latencyMs = 0;
 
   private readonly _data: IMemoryData;
   private _nextId: number;
@@ -52,7 +54,7 @@ export class MemoryScheduleService implements IScheduleDataService {
     const d = this._data;
     const inRange = (date: DateKey): boolean => start <= date && date <= end;
     const crew = (d.crewAssignments || []).filter((c) => overlapsRange(c.startDate, c.endDate, start, end));
-    return Promise.resolve({
+    const result: IRangeData = {
       // SharePoint から取り出すときと同じ条件(開始日 ≦ 最終日 かつ 終了日 ≧ 初日)
       entries: d.entries.filter((e) => overlapsRange(e.startDate, e.endDate, start, end)).map((e) => ({ ...e })),
       leaves: d.leaves.filter((l) => inRange(l.date)),
@@ -60,7 +62,10 @@ export class MemoryScheduleService implements IScheduleDataService {
       holidays: d.holidays.filter((h) => inRange(h.date)),
       crewAssignments: crew,
       crewInfo: d.crewAssignments ? { rows: crew.length, unreadable: 0 } : undefined
-    });
+    };
+    return this.latencyMs > 0
+      ? new Promise((resolve) => setTimeout(() => resolve(result), this.latencyMs))
+      : Promise.resolve(result);
   }
 
   public getRecentEntries(workerId: number, limit: number): Promise<IScheduleEntry[]> {

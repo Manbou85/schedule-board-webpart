@@ -491,6 +491,17 @@ $control: 36px; // ボタン・入力欄の高さ
 }
 
 // ---- 表 ----
+// 週・日を切り替えて読み込み中のあいだは、前の表を薄く出したままにする(スクロールの位置を残すため)
+.tableArea {
+  position: relative;
+  transition: opacity 0.15s;
+}
+
+.tableLoading {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 .gridScroll {
   overflow: auto;
   max-height: 75vh;

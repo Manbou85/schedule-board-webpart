@@ -14,6 +14,8 @@ const h = React.createElement;
 const today = todayKey();
 const data = createDummyData(today);
 const service = new MemoryScheduleService(data);
+// SharePoint から読むときの待ち時間をまねる(週の切り替えで表がどう見えるかを確かめるため)
+service.latencyMs = 400;
 const selfAccount = data.currentUser.account;
 
 function PreviewControls() {
