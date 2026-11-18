@@ -43,7 +43,8 @@
 
 - 確かめ方は `docs/LIST_SETUP.md` の「3.」(列の名前をクリックして URL の `Field=` を見るのがかんたん)
 - 確認済み:WorkerNameList の列は計画どおり。「No.」の内部名は `No_x002e_`(2026-11-18)
-- 確認済み:休暇情報共有リスト(この名前のまま)。列は Date / AcquisitionTime / Name / Remarks で計画どおり。「Name: No.」は `Name_x003a__x0020_No_x002e_`(使わない)
+- 確認済み:休暇情報共有リスト(この名前のまま)。列は Date / AcquisitionTime / Name / Remarks で計画どおり。「Name: No.」は `Name_x003a__x0020_No_x002e_`(使わない)。
+  AcquisitionTime の選択肢は 1日/午前/午後/遅刻/早退 で `LEAVE_KIND_LABELS` と一致。Date は「日付のみ」
 - 実機でエラーが出たら、画面の「くわしい内容(管理者向け)」を共有してもらう(400 は列名、404 はリスト名のまちがいが多い)
 
 ## 3. これまでに決めたこと
