@@ -28,6 +28,43 @@ function data(d: Partial<IWorkerDayData>): IWorkerDayData {
   return { entries: d.entries || [], leaves: d.leaves || [], holidayWorks: d.holidayWorks || [] };
 }
 
+describe('終わった今日の予定を薄く表示する(ちょっと外出 → 戻りました)', () => {
+  const longSite = period('2026-11-01', '2026-11-30');
+  const now = { date: '2026-11-17', time: '11:30' };
+
+  it('戻りの時刻を過ぎた今日の単発予定は「終わった予定」になる', () => {
+    const done = single('2026-11-17', '銀行', { startTime: '10:00', endTime: '11:00' });
+    const later = single('2026-11-17', '打合せ', { startTime: '14:00', endTime: '15:00' });
+    const cell = resolveCell(TUE, W, data({ entries: [done, later] }), undefined, now);
+    expect(cell.content).toEqual({ kind: 'single', entries: [done, later], finishedIds: [done.id] });
+  });
+
+  it('戻りの時刻ちょうども終わった扱い。戻り時刻のない予定は終わらない', () => {
+    const justNow = single('2026-11-17', '郵便局', { startTime: '11:00', endTime: '11:30' });
+    const noEnd = single('2026-11-17', '現場確認', { startTime: '09:00' });
+    const cell = resolveCell(TUE, W, data({ entries: [justNow, noEnd] }), undefined, now);
+    expect(cell.content).toEqual({ kind: 'single', entries: [noEnd, justNow], finishedIds: [justNow.id] });
+  });
+
+  it('単発予定がすべて終わっていて長期の予定があれば、長期の予定を出し、終わった予定を添える', () => {
+    const done = single('2026-11-17', '銀行', { startTime: '10:00', endTime: '11:00' });
+    const cell = resolveCell(TUE, W, data({ entries: [longSite, done] }), undefined, now);
+    expect(cell.content).toEqual({ kind: 'period', entry: longSite, dimmed: false, finished: [done] });
+  });
+
+  it('長期の予定がなければ、終わった予定を薄く出したまま', () => {
+    const done = single('2026-11-17', '銀行', { startTime: '10:00', endTime: '11:00' });
+    const cell = resolveCell(TUE, W, data({ entries: [done] }), undefined, now);
+    expect(cell.content).toEqual({ kind: 'single', entries: [done], finishedIds: [done.id] });
+  });
+
+  it('今日以外の日は薄くしない(過去の週も見やすいように)', () => {
+    const yesterday = single('2026-11-16', '銀行', { startTime: '10:00', endTime: '11:00' });
+    const cell = resolveCell(MON, W, data({ entries: [yesterday] }), undefined, now);
+    expect(cell.content).toEqual({ kind: 'single', entries: [yesterday], finishedIds: [] });
+  });
+});
+
 describe('1マスの表示ルール(6-2)', () => {
   const longSite = period('2026-11-01', '2026-11-30');
 
@@ -39,12 +76,12 @@ describe('1マスの表示ルール(6-2)', () => {
 
   it('5. 平日で長期の予定があれば、通常表示', () => {
     const cell = resolveCell(TUE, W, data({ entries: [longSite] }));
-    expect(cell.content).toEqual({ kind: 'period', entry: longSite, dimmed: false });
+    expect(cell.content).toEqual({ kind: 'period', entry: longSite, dimmed: false, finished: [] });
   });
 
   it('4. 休日は長期の予定を薄く表示', () => {
     const cell = resolveCell(SAT, W, data({ entries: [longSite] }));
-    expect(cell.content).toEqual({ kind: 'period', entry: longSite, dimmed: true });
+    expect(cell.content).toEqual({ kind: 'period', entry: longSite, dimmed: true, finished: [] });
     expect(cell.isHoliday).toBe(true);
   });
 
@@ -55,12 +92,12 @@ describe('1マスの表示ルール(6-2)', () => {
   it('3. 単発の予定は長期の予定より優先', () => {
     const s = single('2026-11-17', '本社で打合せ');
     const cell = resolveCell(TUE, W, data({ entries: [longSite, s] }));
-    expect(cell.content).toEqual({ kind: 'single', entries: [s] });
+    expect(cell.content).toEqual({ kind: 'single', entries: [s], finishedIds: [] });
   });
 
   it('3. 休日の単発予定もそのまま表示', () => {
     const s = single('2026-11-21', '研修会', { category: '研修' });
-    expect(resolveCell(SAT, W, data({ entries: [longSite, s] })).content).toEqual({ kind: 'single', entries: [s] });
+    expect(resolveCell(SAT, W, data({ entries: [longSite, s] })).content).toEqual({ kind: 'single', entries: [s], finishedIds: [] });
   });
 
   it('3. 単発が同じ日に複数あれば、時刻の早い順(時刻なしは後ろ)', () => {
@@ -68,7 +105,7 @@ describe('1マスの表示ルール(6-2)', () => {
     const b = single('2026-11-17', '時刻なし');
     const c = single('2026-11-17', '朝の外出', { startTime: '09:00' });
     const cell = resolveCell(TUE, W, data({ entries: [a, b, c] }));
-    expect(cell.content).toEqual({ kind: 'single', entries: [c, a, b] });
+    expect(cell.content).toEqual({ kind: 'single', entries: [c, a, b], finishedIds: [] });
   });
 
   it('2. 休日出勤は単発・長期の予定より優先し、出勤先と時刻を出す', () => {
@@ -94,7 +131,8 @@ describe('1マスの表示ルール(6-2)', () => {
     const opt = { leaveBeforeSingle: false };
     expect(resolveCell(TUE, W, data({ entries: [longSite, s], leaves: [lv] }), opt).content).toEqual({
       kind: 'single',
-      entries: [s]
+      entries: [s],
+      finishedIds: []
     });
     // 単発がなければ、休暇が長期の予定より優先
     expect(resolveCell(TUE, W, data({ entries: [longSite], leaves: [lv] }), opt).content).toEqual({ kind: 'leave', leave: lv });
@@ -106,7 +144,7 @@ describe('1マスの表示ルール(6-2)', () => {
       W,
       data({ entries: [longSite], leaves: [leave('2026-11-17', 'early', ' 15:00 早退 '), leave('2026-11-17', 'morning')] })
     );
-    expect(cell.content).toEqual({ kind: 'period', entry: longSite, dimmed: false });
+    expect(cell.content).toEqual({ kind: 'period', entry: longSite, dimmed: false, finished: [] });
     // 並びは1日の流れの順(午前休 → 早退)。補足は前後の空白を取る
     expect(cell.badges).toEqual([
       { kind: 'morning', label: '午前休' },

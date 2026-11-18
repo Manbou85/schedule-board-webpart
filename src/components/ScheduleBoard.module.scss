@@ -81,6 +81,55 @@ $dayWidth: 8.2em;
   color: #8a5300;
 }
 
+.titleTools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// 「ちょっと外出」「戻りました」:毎日使うので、タイトルの行に置いて押しやすく
+.quickOutButton,
+.returnNowButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 16px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.quickOutButton:focus-visible,
+.returnNowButton:focus-visible {
+  outline: 2px solid #0f6cbd;
+  outline-offset: 2px;
+}
+
+.quickOutButton {
+  color: #00665f;
+  background: #fff;
+  border: 1px solid #7cc4bf;
+}
+.quickOutButton:hover {
+  background: #e9f6f5;
+}
+
+.returnNowButton {
+  color: #fff;
+  background: #00807a;
+  border: 1px solid #00807a;
+}
+.returnNowButton:hover:not(:disabled) {
+  background: #006b66;
+}
+.returnNowButton:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
 // ---- 上のツールバー ----
 // SharePoint の固定の表示が上にあるので、ここはできるだけ低く(PC は1行、スマホは2行)
 $control: 36px; // ボタン・入力欄の高さ
@@ -691,6 +740,11 @@ span.groupButton {
 // 休日の長期予定はうすく(帯のつながりは見えるように)
 .dimmed {
   opacity: 0.4;
+}
+
+// 終わった今日の予定(戻りの時刻を過ぎた)。休日の帯よりは少しはっきり
+.finished {
+  opacity: 0.5;
 }
 
 .holidayWorkBadge {
@@ -1381,4 +1435,69 @@ textarea.input {
 
 .helpLegend {
   margin: 0 0 8px;
+}
+
+// ---- ちょっと外出の画面 ----
+.quickDialog {
+  max-width: 420px;
+}
+
+.quickTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quickSuggest {
+  margin-top: -6px;
+}
+
+.suggestChip[aria-pressed=true] {
+  color: #fff;
+  background: #00807a;
+  border-color: #00807a;
+}
+
+.returnGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.returnButton {
+  min-height: 48px;
+  padding: 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #00665f;
+  background: #e9f6f5;
+  border: 1px solid #7cc4bf;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.returnButton:hover:not(:disabled) {
+  background: #d4eeec;
+}
+.returnButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.returnButton:focus-visible {
+  outline: 2px solid #0f6cbd;
+  outline-offset: 1px;
+}
+
+.quickNote {
+  margin: 0;
+  font-size: 13px;
+  color: #616161;
+}
+
+@media (max-width: 640px) {
+  .quickDialog {
+    height: auto;
+    margin-top: auto;
+    border-radius: 12px 12px 0 0;
+  }
 }

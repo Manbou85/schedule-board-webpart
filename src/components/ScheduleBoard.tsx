@@ -6,7 +6,14 @@ import {
   addDays,
   canEditWorker,
   draftFromEntry,
+  findActiveOuting,
   IEntryDraft,
+  INow,
+  IReturnOption,
+  QUICK_OUT_CATEGORY,
+  quickOutEntry,
+  returnedEntry,
+  timeOf,
   IScheduleEntry,
   newDraft,
   suggestPlaces,
@@ -37,7 +44,8 @@ import { ALL, FilterPopover } from './FilterPopover';
 import { DatePickButton } from './DatePickButton';
 import { DayList } from './DayList';
 import { EntryForm } from './EntryForm';
-import { errorDetail } from './errorMessages';
+import { errorDetail, saveErrorMessage } from './errorMessages';
+import { QuickOutDialog } from './QuickOutDialog';
 import { formatClock, formatShortDate, formatShortRange, formatVersion } from './format';
 import { HelpDialog } from './HelpDialog';
 import { Icon } from './Icon';
@@ -162,6 +170,12 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     }
   }, [today]);
   const [helpOpen, setHelpOpen] = React.useState(false);
+  // 「ちょっと外出」の画面と、その候補(最近の外出先)
+  const [quickOpen, setQuickOpen] = React.useState(false);
+  const [quickPlaces, setQuickPlaces] = React.useState<string[]>([]);
+  const [returning, setReturning] = React.useState(false);
+  // 表示中の範囲に今日が入っていないとき用の、今日の予定(「戻りました」を出すかどうかの判定に使う)
+  const [todayEntries, setTodayEntries] = React.useState<IScheduleEntry[] | undefined>(undefined);
   // 「予定を登録しました」などのお知らせ
   const [toast, setToast] = React.useState('');
 
@@ -246,6 +260,30 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     };
   }, [service, rangeStart, rangeEnd, reloadKey]);
 
+  // 今の日時(終わった今日の予定を薄くする・外出中かどうかの判定に使う)
+  const nowTime = timeOf(now);
+  const nowInfo = React.useMemo<INow>(() => ({ date: today, time: nowTime }), [today, nowTime]);
+
+  // 今日が表示中の範囲に入っていないとき(ほかの週を見ているとき)は、今日の分を別に読む
+  const coversToday = today >= rangeStart && today <= rangeEnd;
+  const selfId = base ? base.selfId : undefined;
+  React.useEffect(() => {
+    if (coversToday || selfId === undefined) {
+      return undefined;
+    }
+    let alive = true;
+    service.getRange(today, today).then(
+      (r) => alive && setTodayEntries(r.entries),
+      () => undefined // 読めなくても予定表は使えるので、何もしない
+    );
+    return () => {
+      alive = false;
+    };
+  }, [service, coversToday, selfId, today, reloadKey]);
+  const selfTodayEntries = coversToday ? (range ? range.entries : undefined) : todayEntries;
+  const activeOuting =
+    selfId !== undefined && selfTodayEntries ? findActiveOuting(selfTodayEntries, selfId, nowInfo) : undefined;
+
   const days = React.useMemo(() => {
     const calendar = createHolidayCalendar(range ? range.holidays : []);
     return (view === 'week' ? weekDates(rangeStart) : [rangeStart]).map(calendar);
@@ -259,10 +297,10 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     }
     const byWorker = groupByWorker(range);
     base.workers.forEach((w) => {
-      map.set(w.id, resolveRow(days, w.id, byWorker.get(w.id) || EMPTY_WORKER_DATA, cellRuleOptions));
+      map.set(w.id, resolveRow(days, w.id, byWorker.get(w.id) || EMPTY_WORKER_DATA, cellRuleOptions, nowInfo));
     });
     return map;
-  }, [base, range, days, cellRuleOptions]);
+  }, [base, range, days, cellRuleOptions, nowInfo]);
 
   if (error) {
     return (
@@ -324,10 +362,82 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
 
   const title = (props.title || '').trim();
 
+  // 「ちょっと外出」:自分の行があり、区分に「外出」があるときだけ使える
+  const canQuickOut = base.selfId !== undefined && base.categories.indexOf(QUICK_OUT_CATEGORY) >= 0 && !!selfTodayEntries;
+  const openQuickOut = (): void => {
+    setQuickPlaces([]);
+    setQuickOpen(true);
+    if (base.selfId !== undefined) {
+      const id = base.selfId;
+      service.getRecentEntries(id, 100).then(
+        (list) => {
+          const outings = list.filter((e) => e.category.trim() === QUICK_OUT_CATEGORY);
+          setQuickPlaces(
+            suggestPlaces(outings, id, undefined, 12)
+              .map((p) => p.replace('(直帰)', '').trim())
+              .filter((p, i, all) => !!p && p !== '外出' && all.indexOf(p) === i)
+              .slice(0, 6)
+          );
+        },
+        () => undefined
+      );
+    }
+  };
+  const saveQuickOut = (place: string, option: IReturnOption): Promise<void> => {
+    if (base.selfId === undefined) {
+      return Promise.reject('');
+    }
+    return service.createEntry(quickOutEntry(base.selfId, today, new Date(), place, option)).then(
+      () => {
+        setQuickOpen(false);
+        setToast(option.key === 'direct' ? '外出(直帰)を登録しました' : '外出を登録しました。戻ったら「戻りました」を押してください');
+        reload();
+      },
+      (e: unknown) => Promise.reject(saveErrorMessage(e, '保存'))
+    );
+  };
+  const markReturned = (): void => {
+    if (!activeOuting || returning) {
+      return;
+    }
+    setReturning(true);
+    service.updateEntry(returnedEntry(activeOuting, new Date())).then(
+      () => {
+        setReturning(false);
+        setNow(new Date());
+        setToast('おかえりなさい。戻ったことを登録しました');
+        reload();
+      },
+      (e: unknown) => {
+        setReturning(false);
+        setToast(saveErrorMessage(e, '保存'));
+      }
+    );
+  };
+
   return (
     <div className={styles.scheduleBoard}>
       <div className={styles.titleRow}>
         {title ? <h2 className={styles.boardTitle}>{title}</h2> : <span />}
+        <div className={styles.titleTools}>
+        {canQuickOut &&
+          (activeOuting ? (
+            <button
+              type="button"
+              className={styles.returnNowButton}
+              disabled={returning}
+              title={'外出中:' + activeOuting.title + (activeOuting.endTime ? '(' + activeOuting.endTime + ' 戻り予定)' : '')}
+              onClick={markReturned}
+            >
+              <Icon name="check" size={18} />
+              {returning ? '登録しています…' : '戻りました'}
+            </button>
+          ) : (
+            <button type="button" className={styles.quickOutButton} onClick={openQuickOut}>
+              <Icon name="car" size={18} />
+              ちょっと外出
+            </button>
+          ))}
         {updatedAt && (
           <button
             type="button"
@@ -339,6 +449,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
             {refreshFailed ? '新しくできませんでした(' + formatClock(updatedAt) + ' の内容)' : formatClock(updatedAt) + ' 更新'}
           </button>
         )}
+        </div>
       </div>
       <div className={styles.toolbar}>
         {/* 左:日付の移動 */}
@@ -517,6 +628,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         {toast && <div className={styles.toast}>{toast}</div>}
       </div>
 
+      {quickOpen && <QuickOutDialog recentPlaces={quickPlaces} onSave={saveQuickOut} onClose={() => setQuickOpen(false)} />}
       {helpOpen && <HelpDialog categories={base.categories} contact={props.helpContact} onClose={() => setHelpOpen(false)} />}
 
       {formatVersion(props.version) && (

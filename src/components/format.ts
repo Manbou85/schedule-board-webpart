@@ -74,3 +74,8 @@ export function formatClock(d: Date): string {
   const m = d.getMinutes();
   return d.getHours() + ':' + (m < 10 ? '0' : '') + m;
 }
+
+/** 終わった予定の区分名:外出は「外出・戻り済み」、ほかは「研修・終了」 */
+export function finishedLabel(category: string): string {
+  return category + '・' + (category.trim() === '外出' ? '戻り済み' : '終了');
+}

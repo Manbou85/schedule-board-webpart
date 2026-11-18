@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { formatTimeRange, ICell, IScheduleEntry } from '../core';
 import { getCategoryStyle, HOLIDAY_WORK_STYLE, ICategoryStyle, LEAVE_STYLE } from './categoryStyle';
-import { formatPeriod } from './format';
+import { finishedLabel, formatPeriod } from './format';
 import { Icon } from './Icon';
 import { EntryBox, LeaveBadge } from './ScheduleCell';
 import { IGridGroup } from './WeekGrid';
@@ -87,9 +87,22 @@ const DayCell: React.FC<{ cell: ICell | undefined; onEdit?: (entry: IScheduleEnt
       );
       break;
     case 'single':
-      body = c.entries.map((e) => (
-        <Detail key={e.id} entry={e} onEdit={onEdit} st={getCategoryStyle(e.category)} label={e.category} place={e.title} meta={entryMeta(e, false)} note={e.note} />
-      ));
+      body = c.entries.map((e) => {
+        const finished = c.finishedIds.indexOf(e.id) >= 0;
+        return (
+          <Detail
+            key={e.id}
+            entry={e}
+            onEdit={onEdit}
+            st={getCategoryStyle(e.category)}
+            label={finished ? finishedLabel(e.category) : e.category}
+            place={e.title}
+            meta={entryMeta(e, false)}
+            note={e.note}
+            dimmed={finished}
+          />
+        );
+      });
       break;
     case 'period':
       body = (
@@ -104,6 +117,26 @@ const DayCell: React.FC<{ cell: ICell | undefined; onEdit?: (entry: IScheduleEnt
           dimmed={c.dimmed}
         />
       );
+      if (c.finished.length > 0) {
+        body = (
+          <>
+            {body}
+            {c.finished.map((e) => (
+              <Detail
+                key={e.id}
+                entry={e}
+                onEdit={onEdit}
+                st={getCategoryStyle(e.category)}
+                label={finishedLabel(e.category)}
+                place={e.title}
+                meta={entryMeta(e, false)}
+                note={e.note}
+                dimmed={true}
+              />
+            ))}
+          </>
+        );
+      }
       break;
     default:
       body = undefined;
