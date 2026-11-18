@@ -10,7 +10,9 @@
   .pv-note { margin: 0 0 12px; padding: 8px 12px; font: 13px/1.5 'Segoe UI', 'Yu Gothic UI', Meiryo, sans-serif;
              color: #5c4400; background: #fff4ce; border: 1px solid #f0d77a; border-radius: 6px; }
   /* SharePoint の全幅のセクションと同じように、入れ物の余白は 0(余白は WEBパーツの中で付ける) */
-  .pv-card { padding: 0; background: #fff; border: 1px solid #e1dfdd; border-radius: 8px; }
+  /* transform は SharePoint のページのまね:WEBパーツの中に「画面に固定」で置いたものが、画面ではなく入れ物に固定される。
+     プレビューでも同じ問題に気づけるように、わざと付けている */
+  .pv-card { padding: 0; background: #fff; border: 1px solid #e1dfdd; border-radius: 8px; transform: translateZ(0); }
   .pv-controls { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin: -4px 0 12px; padding: 6px 12px;
                  font: 13px/1.5 'Segoe UI', 'Yu Gothic UI', Meiryo, sans-serif; color: #5c4400; background: #fff4ce;
                  border: 1px solid #f0d77a; border-radius: 6px; }

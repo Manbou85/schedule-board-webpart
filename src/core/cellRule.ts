@@ -4,7 +4,7 @@
 //   1. 休暇リストで「1日」          → 「休暇」
 //   2. 休日出勤リストに登録あり     → 「休出」+出勤先+時刻
 //   3. 単発の予定あり               → 単発の予定
-//   4. 休日(出勤なし)             → 長期の予定(作業員の行き先を含む)を薄く表示。なければ空欄
+//   4. 休日(出勤なし)             → 空欄(長期の予定・作業員の行き先は出さない。開発者回答 2026-11-19)
 //   5. 平日で長期の予定あり         → 長期の予定を通常表示
 //      ※ 作業員の行き先リスト(別サイト)に登録があれば、行動予定表の長期の予定より優先する
 //   6. 何もなし                     → 空欄
@@ -131,11 +131,13 @@ export function resolveCell(
 
   const finished = singles.filter((e) => isFinishedEntry(e, now));
   const allFinished = singles.length > 0 && finished.length === singles.length;
-  // 単発予定がすべて終わっていて長期の予定があれば、長期の予定を出す(下の 4・5 で終わった予定を添える)
+  // 休日(出勤なし)は長期の予定を使わない(その日は現場にいないため。表示も人数のまとめも)
+  const workingPeriod = day.isHoliday ? undefined : period;
+  // 単発予定がすべて終わっていて長期の予定があれば、長期の予定を出す(下の 5 で終わった予定を添える)
   const singleContent =
-    singles.length > 0 && !(allFinished && period)
-      ? period
-        ? { kind: 'single' as const, entries: singles, finishedIds: finished.map((e) => e.id), underlying: period }
+    singles.length > 0 && !(allFinished && workingPeriod)
+      ? workingPeriod
+        ? { kind: 'single' as const, entries: singles, finishedIds: finished.map((e) => e.id), underlying: workingPeriod }
         : { kind: 'single' as const, entries: singles, finishedIds: finished.map((e) => e.id) }
       : undefined;
   const leaveContent = fullDayLeave ? { kind: 'leave' as const, leave: fullDayLeave } : undefined;
@@ -166,9 +168,10 @@ export function resolveCell(
     return cell;
   }
 
-  // 4・5. 長期の予定(休日は薄く表示)
-  if (period) {
-    cell.content = { kind: 'period', entry: period, dimmed: day.isHoliday, finished };
+  // 4. 休日(出勤なし)は、長期の予定があっても空欄
+  // 5. 平日の長期の予定
+  if (workingPeriod) {
+    cell.content = { kind: 'period', entry: workingPeriod, dimmed: false, finished };
     return cell;
   }
 

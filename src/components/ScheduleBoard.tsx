@@ -51,6 +51,7 @@ import { DayList } from './DayList';
 import { EntryForm } from './EntryForm';
 import { errorDetail, saveErrorMessage } from './errorMessages';
 import { PeriodChoiceDialog } from './PeriodChoiceDialog';
+import { ModalPortal } from './ModalPortal';
 import { QuickOutDialog } from './QuickOutDialog';
 import { formatClock, formatMonthDay, formatShortDate, formatShortRange, formatVersion, formatWeekday } from './format';
 import { getCategoryStyle, HOLIDAY_WORK_STYLE, ICategoryStyle, LEAVE_STYLE } from './categoryStyle';
@@ -842,26 +843,30 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         />
       )}
 
-      <div className={styles.toastArea} aria-live="polite">
-        {toast && <div className={styles.toast}>{toast}</div>}
-      </div>
+      {/* 画面に固定して出すもの(お知らせ・「自分の行へ」)は、ページのいちばん外側に出す。
+          SharePoint では WEBパーツの中に固定して置くと、画面ではなく WEBパーツのいちばん下に出てしまうため */}
+      <ModalPortal>
+        <div className={styles.toastArea} aria-live="polite">
+          {toast && <div className={styles.toast}>{toast}</div>}
+        </div>
 
-      {selfOutOfView && (
-        <button
-          type="button"
-          className={styles.toSelfButton}
-          onClick={() => {
-            const area = tableAreaRef.current;
-            const selfEl = area ? (area.querySelector('[data-self-row]') as HTMLElement | null) : null;
-            if (selfEl) {
-              selfEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
-            }
-          }}
-        >
-          <Icon name="arrowUp" size={18} />
-          自分の行へ
-        </button>
-      )}
+        {selfOutOfView && (
+          <button
+            type="button"
+            className={styles.toSelfButton}
+            onClick={() => {
+              const area = tableAreaRef.current;
+              const selfEl = area ? (area.querySelector('[data-self-row]') as HTMLElement | null) : null;
+              if (selfEl) {
+                selfEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+              }
+            }}
+          >
+            <Icon name="arrowUp" size={18} />
+            自分の行へ
+          </button>
+        )}
+      </ModalPortal>
 
       {periodChoice && (
         <PeriodChoiceDialog

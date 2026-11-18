@@ -849,13 +849,19 @@ button.leaveBadge {
 
 // ---- 日表示 ----
 .dayList {
+  // 週間表示と同じく、予定表の中だけでスクロールする(ツールバーや人数のまとめが見えたままになるように。開発者の要望)
+  max-height: 75vh;
+  overflow: auto;
   border: 1px solid #e6e6e6;
   border-radius: 8px;
   background: #fff;
-  overflow: hidden;
 }
 
+// 部署の見出しは、スクロールしても上に残す(その部署の行が見えているあいだ)
 .dayGroupHead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   margin: 0;
   background: #fafafa;
   border-bottom: 1px solid $line;
