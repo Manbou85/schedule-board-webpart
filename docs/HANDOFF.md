@@ -35,14 +35,15 @@
 ## 2. 開発者の確認待ち(回答が来たら直すところ)
 | 項目 | 今の仮の値 | 直す場所 |
 | --- | --- | --- |
-| 休暇・休日出勤リストの列の内部名 | Date / AcquisitionTime / Name / Remarks、Date / StartTime / EndTime / WorkPlace / Name | `SP_FIELDS.leaves`・`holidayWorks` |
-| 休暇・休日出勤リストの実際の名前 | 休暇情報共有リスト / 休日出勤情報共有リスト | `spConfig.ts` の `DEFAULT_LIST_SETTINGS`(WEBパーツの設定でも変えられる) |
+| 休日出勤リストの列の内部名 | Date / StartTime / EndTime / WorkPlace / Name | `SP_FIELDS.holidayWorks` |
+| 休日出勤リストの実際の名前 | 休日出勤情報共有リスト | `spConfig.ts` の `DEFAULT_LIST_SETTINGS`(WEBパーツの設定でも変えられる) |
 | 会社休日:既存リストを参照(A)か、新しく作る(B)か | B(`Lists/CompanyHolidays`、列 Title / HolidayDate / DayType) | A なら `SP_FIELDS.holidays` と設定のサイトURL |
 | 行動予定リストの作成 | `docs/LIST_SETUP.md` のとおり | (作ってもらうだけ) |
 | ワンタップ登録「在社」の行き先 | 本社 | `src/core/entryForm.ts` の `DEFAULT_QUICK_ACTIONS` |
 
 - 確かめ方は `docs/LIST_SETUP.md` の「3.」(列の名前をクリックして URL の `Field=` を見るのがかんたん)
 - 確認済み:WorkerNameList の列は計画どおり。「No.」の内部名は `No_x002e_`(2026-11-18)
+- 確認済み:休暇情報共有リスト(この名前のまま)。列は Date / AcquisitionTime / Name / Remarks で計画どおり。「Name: No.」は `Name_x003a__x0020_No_x002e_`(使わない)
 - 実機でエラーが出たら、画面の「くわしい内容(管理者向け)」を共有してもらう(400 は列名、404 はリスト名のまちがいが多い)
 
 ## 3. これまでに決めたこと

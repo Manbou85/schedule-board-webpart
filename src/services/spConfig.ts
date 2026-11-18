@@ -99,7 +99,7 @@ export const SP_FIELDS: ISpFieldConfig = {
     dayType: 'DayType'
   },
   leaves: {
-    // 【要確認】
+    // 2026-11 開発者が確認済み。「Name: No.」(Name_x003a__x0020_No_x002e_)は使わない(本人は Name の参照IDで突き合わせる)
     date: 'Date',
     kind: 'AcquisitionTime',
     worker: 'Name',
@@ -133,7 +133,7 @@ export interface ISpListSettings {
   adminGroup: string;
 }
 
-/** 設定の初期値。【要確認】総務のリストの名前は仮 */
+/** 設定の初期値。休暇情報共有リストの名前は確認済み。【要確認】休日出勤情報共有リストの名前は仮 */
 export const DEFAULT_LIST_SETTINGS: ISpListSettings = {
   // 自分たちで作るリストは URL で指定する(表示名を「行動予定」に変えても動くように)
   entriesList: 'Lists/ScheduleEntries',
