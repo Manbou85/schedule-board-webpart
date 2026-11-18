@@ -71,7 +71,7 @@ export interface ISpFieldConfig {
 
 /**
  * 列の内部名。
- * 【要確認】は、開発者に上の URL で確かめてもらうまでの仮の値。
+ * 2026-11 開発者がすべて確認済み(リストの列設定の URL の Field= で確認)。
  */
 export const SP_FIELDS: ISpFieldConfig = {
   workers: {
@@ -93,7 +93,7 @@ export const SP_FIELDS: ISpFieldConfig = {
     note: 'Note'
   },
   holidays: {
-    // 【要確認】既存の休日リストを参照する場合は、そのリストの内部名に合わせる
+    // 社内ポータルに新しく作る(2026-11 開発者が決定)。docs/LIST_SETUP.md の「2.」
     name: 'Title',
     date: 'HolidayDate',
     dayType: 'DayType'
@@ -106,7 +106,7 @@ export const SP_FIELDS: ISpFieldConfig = {
     remarks: 'Remarks'
   },
   holidayWorks: {
-    // 【要確認】
+    // 2026-11 開発者が確認済み。StartTime・EndTime は選択肢、Date は日付のみ
     date: 'Date',
     startTime: 'StartTime',
     endTime: 'EndTime',
@@ -133,7 +133,7 @@ export interface ISpListSettings {
   adminGroup: string;
 }
 
-/** 設定の初期値。休暇情報共有リストの名前は確認済み。【要確認】休日出勤情報共有リストの名前は仮 */
+/** 設定の初期値。総務のリストの名前は確認済み(2026-11) */
 export const DEFAULT_LIST_SETTINGS: ISpListSettings = {
   // 自分たちで作るリストは URL で指定する(表示名を「行動予定」に変えても動くように)
   entriesList: 'Lists/ScheduleEntries',
