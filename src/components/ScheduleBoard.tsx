@@ -73,6 +73,8 @@ export interface IScheduleBoardProps {
   helpContact?: string;
   /** 部署の並び順(書いた部署から順に。空なら No. 順のまま) */
   departmentOrder?: string[];
+  /** 見た目の案(見た目の改修の検討用。プレビューで切り替えて比べる)。省略すると今の見た目 */
+  theme?: BoardTheme;
 }
 
 /** 自動で読み直す間隔(5分) */
@@ -85,6 +87,15 @@ const REFRESH_ON_RETURN_MS = 60 * 1000;
 function isPageHidden(): boolean {
   return typeof document !== 'undefined' && document.visibilityState === 'hidden';
 }
+
+/** 見た目の案:a=やわらか(色の面) b=すっきり(線) c=コンパクト(一覧性) */
+export type BoardTheme = 'a' | 'b' | 'c';
+
+const THEME_CLASS: { [key in BoardTheme]: string } = {
+  a: styles.themeA,
+  b: styles.themeB,
+  c: styles.themeC
+};
 
 /** 週間表示/日表示 */
 export type ViewMode = 'week' | 'day';
@@ -430,8 +441,10 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     );
   };
 
+  const rootClass = styles.scheduleBoard + (props.theme ? ' ' + THEME_CLASS[props.theme] : '');
+
   return (
-    <div className={styles.scheduleBoard}>
+    <div className={rootClass}>
       <div className={styles.titleRow}>
         {title ? <h2 className={styles.boardTitle}>{title}</h2> : <span />}
         <div className={styles.titleTools}>

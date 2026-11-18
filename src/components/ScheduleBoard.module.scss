@@ -1653,3 +1653,285 @@ textarea.input {
     line-height: 18px;
   }
 }
+
+// =====================================================================
+// 見た目の案(見た目の改修の検討用)。プレビューの「見た目の案」で切り替えて比べる。
+// 選ばれた案をふつうの見た目にして、ほかの案はあとで消す。
+// ※ 予定の色は画面の部品から直接(style で)付けているので、消すときだけ !important を使っている
+// =====================================================================
+
+// ---- 3つの案に共通:線を減らし、SharePoint の書体を受け継ぎ、色の数をしぼる ----
+@mixin commonRefine {
+  font-family: inherit; // WEBパーツでは SharePoint の書体になる
+
+  .gridScroll {
+    border-color: #e6e6e6;
+    border-radius: 8px;
+  }
+
+  .grid th,
+  .grid td {
+    border-right: none;
+    border-bottom: 1px solid #ededed;
+  }
+
+  // 日と日のあいだは、ごく薄い線だけ
+  .grid td.cell + td.cell,
+  .grid .dayHead + .dayHead {
+    box-shadow: inset 1px 0 0 #f2f2f2;
+  }
+
+  .nameHead,
+  .dayHead {
+    background: #fff;
+    border-bottom: 1px solid #dcdcdc !important;
+  }
+
+  .nameCell {
+    border-right: 1px solid #ededed !important;
+  }
+
+  .holiday,
+  .dayHead.holiday {
+    background: #f8f7f4;
+  }
+
+  .today {
+    background: #f4f9fe;
+    box-shadow: none !important;
+  }
+
+  .dayHead.today {
+    background: #f4f9fe;
+    color: $accent;
+    box-shadow: inset 0 -3px 0 $accent !important;
+  }
+
+  .groupRow th {
+    background: #fafafa;
+  }
+
+  .groupButton {
+    font-size: 14px;
+    color: #424242;
+  }
+
+  .selfRow .nameCell {
+    background: #f7fbf4;
+    box-shadow: inset 3px 0 0 #3b7d23;
+  }
+
+  .toolButton,
+  .iconButton,
+  .searchInput {
+    border-color: #d6d6d6;
+  }
+
+  .dayList {
+    border-color: #e6e6e6;
+    border-radius: 8px;
+  }
+
+  .dayRow {
+    border-bottom-color: #ededed;
+  }
+
+  .dayName {
+    border-right-color: #ededed;
+  }
+
+  .dayGroupHead {
+    background: #fafafa;
+    border-bottom-color: #ededed;
+  }
+}
+
+// ---- 案A やわらか:予定は淡い色の面だけ(枠線なし・角を丸く)----
+.themeA {
+  @include commonRefine;
+
+  .single,
+  .leave {
+    border-left-width: 0;
+    border-radius: 6px;
+    padding: 4px 8px;
+  }
+
+  .band {
+    border-width: 0;
+    border-radius: 6px;
+    padding: 4px 8px;
+  }
+
+  .joinPrev {
+    padding-left: 12px; // 余白4px+8px
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .joinNext {
+    padding-right: 12px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .dayEntry {
+    border-left-width: 0;
+    border-radius: 8px;
+    padding: 8px 12px;
+  }
+}
+
+// ---- 案B すっきり:面の色をやめ、色はアイコンと細い線だけ(SharePoint のリストに近い)----
+.themeB {
+  @include commonRefine;
+
+  .single,
+  .leave {
+    background: transparent !important;
+    border-left-width: 3px;
+    border-radius: 0;
+    padding: 2px 6px;
+  }
+
+  // 長期の予定は、下の色の線が横につながる
+  .band {
+    background: transparent !important;
+    border-width: 0 0 3px 0;
+    border-radius: 0;
+    min-height: 0;
+    padding: 2px 6px 4px;
+  }
+
+  .joinPrev {
+    padding-left: 10px; // 余白4px+6px
+  }
+
+  .joinNext {
+    padding-right: 10px;
+  }
+
+  .dayEntry {
+    background: transparent !important;
+    border-left-width: 3px;
+    border-radius: 0;
+  }
+
+  .holidayWorkBadge {
+    background: #a4262c;
+  }
+}
+
+// ---- 案C コンパクト:1マスを低く・1行にして、一度にたくさんの人を見られるように ----
+.themeC {
+  @include commonRefine;
+  font-size: 14px;
+
+  .cell {
+    height: 36px;
+    padding: 2px 0;
+  }
+
+  .nameCell {
+    padding: 2px 8px;
+  }
+
+  .workerName {
+    display: inline;
+    font-size: 14px;
+  }
+
+  .selfMark {
+    margin: 0 0 0 4px;
+    vertical-align: 1px;
+  }
+
+  .groupButton {
+    min-height: 28px;
+    font-size: 13px;
+  }
+
+  .dayHead {
+    padding: 4px;
+  }
+
+  .dayDate {
+    font-size: 14px;
+  }
+
+  // 区分名はアイコンでわかるので省き、行き先と時刻を1行に
+  .categoryLabel {
+    display: none;
+  }
+
+  .entryText {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 4px;
+  }
+
+  .place {
+    font-size: 13px;
+  }
+
+  .time {
+    font-size: 11px;
+  }
+
+  .icon {
+    width: 16px;
+    height: 16px;
+    margin-top: 0;
+  }
+
+  .single,
+  .leave {
+    align-items: center;
+    margin-bottom: 2px;
+    padding: 1px 6px;
+    border-left-width: 3px;
+    border-radius: 4px;
+  }
+
+  .band {
+    align-items: center;
+    min-height: 0;
+    padding: 1px 6px;
+    border-width: 1px 1px 1px 3px;
+    border-right-color: transparent !important;
+    border-radius: 4px;
+  }
+
+  .joinPrev {
+    padding-left: 13px; // 余白4px+線3px+6px
+    border-left-width: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .joinNext {
+    padding-right: 7px;
+    border-right-width: 0;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .dayRow {
+    min-height: 40px;
+  }
+
+  .dayName {
+    padding: 6px 10px;
+  }
+
+  .dayEntry {
+    padding: 4px 10px;
+    border-left-width: 3px;
+  }
+
+  // 日表示では区分名を残す(くわしく見る画面のため)
+  .dayEntry .categoryLabel {
+    display: inline;
+  }
+}
