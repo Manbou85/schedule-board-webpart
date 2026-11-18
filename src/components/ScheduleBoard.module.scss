@@ -1815,3 +1815,39 @@ textarea.input {
   padding: 2px 10px;
   white-space: nowrap;
 }
+
+// ---- 「自分の行へ」ボタン:自分の行が見えなくなったときだけ、画面の右下に出す ----
+.toSelfButton {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 900; // 登録画面など(1000)より下
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 16px 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  background: #3b7d23; // 自分の行の印(あなた)と同じ緑
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+.toSelfButton:hover {
+  background: #316a1d;
+}
+.toSelfButton:focus-visible {
+  outline: 2px solid #0f6cbd;
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .toSelfButton {
+    right: 16px;
+    bottom: 16px;
+  }
+}

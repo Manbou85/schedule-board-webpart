@@ -179,7 +179,11 @@ export const DayList: React.FC<IDayListProps> = ({ groups, rows, selfId, collaps
           {!isCollapsed && (
             <ul className={styles.dayRows}>
               {g.workers.map((w) => (
-                <li key={w.id} className={styles.dayRow + (w.id === selfId ? ' ' + styles.selfRow : '')}>
+                <li
+                  key={w.id}
+                  className={styles.dayRow + (w.id === selfId ? ' ' + styles.selfRow : '')}
+                  data-self-row={w.id === selfId ? 'true' : undefined}
+                >
                   <div className={styles.dayName}>
                     <span className={styles.workerName}>{w.name}</span>
                     {w.id === selfId && <span className={styles.selfMark}>あなた</span>}
