@@ -114,7 +114,7 @@
     <div class="fields">
       <label class="f" for="tester">テストした人<input id="tester" type="text" placeholder="例:企画室 山田"></label>
       <label class="f" for="date">テストした日<input id="date" type="date"></label>
-      <label class="f" for="ver">テストした版(WEBパーツの右下の「ver」)<input id="ver" type="text" placeholder="例:ver 0.3.0"></label>
+      <label class="f" for="ver">テストした版(WEBパーツの右下の「ver」)<input id="ver" type="text" placeholder="例:ver 0.3.1"></label>
     </div>
     <p class="print-only" id="print-meta"></p>
     <div class="counts" id="counts"></div>
@@ -291,8 +291,8 @@ const GROUPS = [
         how: ['ツールバーの「?」を押す', 'WEBパーツの設定の「ヘルプの『困ったとき』の連絡先」に連絡先を書いて「適用」し、もう一度開く'],
         expect: '使い方の画面が出る(区分の見かたもここにある)。連絡先を書くと、最後に「困ったとき」が出る' },
       { id: 'G4', title: 'ちょっと外出 → 戻りました',
-        how: ['右上の「ちょっと外出」を押す', '行き先に「テスト」と入れて「30分後」を押す', 'ボタンが「戻りました」に変わったら押す'],
-        expect: '今日のマスに「外出 テスト(今の時刻〜戻り)」が出る。「戻りました」を押すと、その予定が薄く「外出・戻り済み」になり、ボタンが「ちょっと外出」に戻る' },
+        how: ['「予定を追加」の左の「ちょっと外出」を押す', '行き先に「テスト」と入れて「30分後」を押す', 'ボタンが「戻りました」に変わったら押す'],
+        expect: '「予定を追加」の左の「ちょっと外出」から登録でき、今日のマスに「外出 テスト(今の時刻〜戻り)」が出る。「戻りました」を押すと、その予定が薄く「外出・帰社済み」になり、ボタンが「ちょっと外出」に戻る' },
       { id: 'G5', title: '直帰・未定',
         how: ['「ちょっと外出」で行き先を空欄のまま「直帰」を押す'],
         expect: '「外出(直帰)」と出る。戻りの時刻は出ない。「戻りました」を押すと「(直帰)」が消えて薄くなる' },

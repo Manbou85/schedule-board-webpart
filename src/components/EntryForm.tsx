@@ -346,7 +346,7 @@ export const EntryForm: React.FC<IEntryFormProps> = (props) => {
           </div>
 
           <div className={styles.field}>
-            <span className={styles.fieldLabel}>時刻(なくてもOK)</span>
+            <span className={styles.fieldLabel}>時刻(任意)</span>
             <div className={styles.timeRow}>
               <input
                 type="time"
@@ -368,7 +368,7 @@ export const EntryForm: React.FC<IEntryFormProps> = (props) => {
           </div>
 
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>メモ(なくてもOK)</span>
+            <span className={styles.fieldLabel}>メモ(任意)</span>
             <textarea className={styles.input} rows={2} value={draft.note} onChange={(e) => set({ note: e.target.value })} />
           </label>
 

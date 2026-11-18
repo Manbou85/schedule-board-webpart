@@ -82,13 +82,13 @@ export const HelpDialog: React.FC<IHelpDialogProps> = (props) => {
           </section>
 
           <section>
-            <h3 className={styles.helpHeading}>長い現場は、1回の登録でOK</h3>
+            <h3 className={styles.helpHeading}>長期の現場は、期間で1回登録するだけ</h3>
             <ul className={styles.helpList}>
               <li>
                 何日も続く現場は「<strong>期間</strong>」で開始日と終了日を登録すれば、<strong>毎日の登録はいりません</strong>。
               </li>
               <li>
-                その期間中の外出・出張・休みなどは「1日だけ」で足すと、その日はそちらが優先して出ます(長い現場の登録は変えなくて大丈夫です)。
+                その期間中の外出・出張・休みなどは「1日だけ」で足すと、その日はそちらが優先して出ます(長期の現場の登録は、そのままでかまいません)。
               </li>
               <li>予定を押すと、変更・削除ができます。</li>
             </ul>
@@ -98,10 +98,10 @@ export const HelpDialog: React.FC<IHelpDialogProps> = (props) => {
             <h3 className={styles.helpHeading}>かんたん登録</h3>
             <ul className={styles.helpList}>
               <li>
-                「<strong>ちょっと外出</strong>」ボタン:行き先と戻りの時間を選ぶだけで登録できます。行き先は空欄でもOKです。
+                「<strong>ちょっと外出</strong>」ボタン(「予定を追加」の左):行き先と戻りの時間を選ぶだけで登録できます。行き先は入力しなくても登録できます。
               </li>
               <li>
-                戻ったら「<strong>戻りました</strong>」ボタンを押してください。戻りの時刻を過ぎた今日の予定は、薄く表示されます。
+                戻ったら「<strong>戻りました</strong>」ボタンを押してください。予定が薄く「外出・帰社済み」になります。戻りの時刻を過ぎた今日の予定も、薄く表示されます。
               </li>
               <li>「予定を追加」の画面の「今日は在社」「今日は休み」も、1回押すだけで登録できます。</li>
             </ul>
@@ -127,7 +127,7 @@ export const HelpDialog: React.FC<IHelpDialogProps> = (props) => {
             </ul>
             <ul className={styles.helpList}>
               <li>今日の列は青い枠で囲まれます。土日・祝日・会社の休みの列は、色が付きます。</li>
-              <li>長い現場は、横につながった帯で出ます。休日の部分は薄く出ます。</li>
+              <li>長期の現場は、横につながった帯で出ます。休日の部分は薄く出ます。</li>
               <li>5分ごとに自動で新しくなります。右上の時刻を押すと、すぐ新しくなります。</li>
             </ul>
           </section>

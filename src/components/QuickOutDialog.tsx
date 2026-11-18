@@ -84,7 +84,7 @@ export const QuickOutDialog: React.FC<IQuickOutDialogProps> = (props) => {
         </div>
         <div className={styles.dialogBody}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>行き先(空欄でもOK)</span>
+            <span className={styles.fieldLabel}>行き先(任意)</span>
             <input
               ref={inputRef}
               type="text"
