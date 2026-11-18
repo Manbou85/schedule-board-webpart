@@ -17,6 +17,8 @@ $dayWidth: 8.2em;
   font-size: 15px;
   line-height: 1.45;
   font-family: inherit; // WEBパーツでは SharePoint の書体を受け継ぐ(ポータルになじむように)
+  // 左右の余白:SharePoint の全幅のセクションに置くと、タイトルやボタンが画面の端にくっつくため(開発者の実機確認)
+  padding: 8px 16px;
 
   * {
     box-sizing: border-box;
@@ -1856,6 +1858,7 @@ textarea.input {
 // ---- 上に重ねる画面(body の直下に出す。ModalPortal)----
 .portalRoot {
   position: relative;
+  padding: 0; // 重ねる画面の入れ物には余白を付けない
 }
 
 // ---- 高さの低い画面(ノートPCで表示倍率125%など):登録画面などを詰めて、なるべくスクロールせずに収める ----
@@ -1954,5 +1957,16 @@ textarea.input {
     flex-wrap: nowrap;
     overflow-x: auto;
     padding-bottom: 2px;
+  }
+}
+
+// スマホでは画面がせまいので、左右の余白は少なめに
+@media (max-width: 640px) {
+  .scheduleBoard {
+    padding: 2px 4px 6px;
+  }
+
+  .portalRoot {
+    padding: 0;
   }
 }
