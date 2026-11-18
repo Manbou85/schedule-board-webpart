@@ -48,7 +48,8 @@ function PreviewControls() {
         pinSelfByDefault: true,
         today,
         version,
-        title: '行動予定表'
+        title: '行動予定表',
+        helpContact: '例:システム担当 ◯◯(内線 123)\nプレビューでは、WEBパーツの設定に書いた文字がここに出ます。'
       })
     )
   );

@@ -1352,3 +1352,33 @@ textarea.input {
     padding: 8px;
   }
 }
+
+// ---- ヘルプ ----
+.helpBody {
+  gap: 18px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.helpHeading {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.helpList {
+  margin: 0;
+  padding-left: 1.3em;
+}
+.helpList li + li {
+  margin-top: 4px;
+}
+
+.helpText {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.helpLegend {
+  margin: 0 0 8px;
+}

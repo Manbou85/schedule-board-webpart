@@ -39,7 +39,7 @@ import { DayList } from './DayList';
 import { EntryForm } from './EntryForm';
 import { errorDetail } from './errorMessages';
 import { formatClock, formatShortDate, formatShortRange, formatVersion } from './format';
-import { getCategoryStyle, HOLIDAY_WORK_STYLE, LEAVE_STYLE } from './categoryStyle';
+import { HelpDialog } from './HelpDialog';
 import { Icon } from './Icon';
 import { IGridGroup, WeekGrid } from './WeekGrid';
 import styles from './ScheduleBoard.module.scss';
@@ -59,6 +59,8 @@ export interface IScheduleBoardProps {
   version?: string;
   /** 上に小さく出すタイトル(例 行動予定表)。空なら出さない */
   title?: string;
+  /** ヘルプの「困ったとき」に出す連絡先。空なら出さない */
+  helpContact?: string;
 }
 
 /** 自動で読み直す間隔(5分) */
@@ -159,6 +161,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
       setDate((d) => (d === prev ? today : d));
     }
   }, [today]);
+  const [helpOpen, setHelpOpen] = React.useState(false);
   // 「予定を登録しました」などのお知らせ
   const [toast, setToast] = React.useState('');
 
@@ -408,6 +411,16 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
             onCategoryChange={(v) => setCriteria({ ...criteria, categories: v ? [v] : [] })}
             onPinSelfChange={setPinSelf}
           />
+          <button
+            type="button"
+            className={styles.iconButton}
+            aria-label="使い方(ヘルプ)"
+            title="使い方(ヘルプ)"
+            aria-haspopup="dialog"
+            onClick={() => setHelpOpen(true)}
+          >
+            <Icon name="help" size={20} />
+          </button>
           <div className={styles.viewSwitch} role="group" aria-label="表示の切り替え">
             <button type="button" className={styles.viewButton} aria-pressed={view === 'week'} onClick={() => setView('week')}>
               週
@@ -504,22 +517,8 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         {toast && <div className={styles.toast}>{toast}</div>}
       </div>
 
-      <ul className={styles.legend} aria-label="区分の見かた">
-        {base.categories.map((c) => {
-          const st = getCategoryStyle(c);
-          return (
-            <li key={c} style={{ borderLeftColor: st.color, background: st.background }}>
-              <Icon name={st.icon} color={st.color} size={16} /> {c}
-            </li>
-          );
-        })}
-        <li style={{ borderLeftColor: LEAVE_STYLE.color, background: LEAVE_STYLE.background }}>
-          <Icon name={LEAVE_STYLE.icon} color={LEAVE_STYLE.color} size={16} /> 休暇
-        </li>
-        <li style={{ borderLeftColor: HOLIDAY_WORK_STYLE.color, background: HOLIDAY_WORK_STYLE.background }}>
-          <Icon name={HOLIDAY_WORK_STYLE.icon} color={HOLIDAY_WORK_STYLE.color} size={16} /> 休日出勤
-        </li>
-      </ul>
+      {helpOpen && <HelpDialog categories={base.categories} contact={props.helpContact} onClose={() => setHelpOpen(false)} />}
+
       {formatVersion(props.version) && (
         <p className={styles.versionBadge} title="このWEBパーツの版">
           {formatVersion(props.version)}

@@ -20,6 +20,8 @@ import { DEFAULT_LIST_SETTINGS, ISpListSettings } from '../../services/spConfig'
 export interface IScheduleBoardWebPartProps extends Partial<ISpListSettings> {
   /** 上に小さく出すタイトル。空欄にすると出さない(一度も設定していなければ「行動予定表」) */
   title?: string;
+  /** ヘルプの「困ったとき」に出す連絡先 */
+  helpContact?: string;
   /** 予定表から外す部署(「、」や改行で区切って複数) */
   excludedDepartments?: string;
   /** 「自分を一番上に表示」を最初からオンにする */
@@ -70,7 +72,8 @@ export default class ScheduleBoardWebPart extends BaseClientSideWebPart<ISchedul
       cellRuleOptions: { leaveBeforeSingle: p.leaveBeforeSingle !== false },
       // manifest の version は "*"(= package.json の version)
       version: this.manifest.version,
-      title: p.title === undefined ? DEFAULT_TITLE : p.title
+      title: p.title === undefined ? DEFAULT_TITLE : p.title,
+      helpContact: p.helpContact
     });
 
     if (!this._root) {
@@ -110,6 +113,13 @@ export default class ScheduleBoardWebPart extends BaseClientSideWebPart<ISchedul
                   label: 'タイトル',
                   description: '予定表の上に小さく出します。空欄にすると出しません',
                   placeholder: DEFAULT_TITLE
+                }),
+                PropertyPaneTextField('helpContact', {
+                  label: 'ヘルプの「困ったとき」の連絡先',
+                  description: '使い方の画面の最後に出します。空欄なら出しません',
+                  placeholder: '例:システム担当 ◯◯(内線 123)',
+                  multiline: true,
+                  rows: 2
                 }),
                 PropertyPaneTextField('excludedDepartments', {
                   label: '予定表に出さない部署',
