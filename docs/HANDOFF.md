@@ -1,6 +1,6 @@
 # 引き継ぎメモ(次のセッション向け)
 
-最終更新:2026-11-18(ver 0.5.6。フェーズ1 完了、フェーズ2・3 のWEBパーツ部分を作成済み。開発者の実機確認待ち)
+最終更新:2026-11-18(ver 0.5.7。フェーズ1 完了、フェーズ2・3 のWEBパーツ部分を作成済み。開発者の実機確認待ち)
 
 **新しいセッションの Claude は、作業を始める前にこのファイルを最後まで読んでください。**
 
@@ -12,12 +12,12 @@
 3. 開発者に、実機確認の結果と、確認待ちの項目(「2.」)の回答を聞く。そこから続きを決める
 4. 画面を変えたら:`npm run build` → `npm run preview` → 確認用プレビュー(「4.」の URL)を上書きする
 5. 版を上げるとき:`package.json`・`package-lock.json`(先頭の2か所)・`config/package-solution.json`(2か所)をそろえる。
-   `docs/test-checklist.html` の「ver 0.5.6」の例(2か所)も直す
+   `docs/test-checklist.html` の「ver 0.5.7」の例(2か所)も直す
 6. 仕上がったら:作業ブランチにプッシュ → 開発者が「PRお願い」と言ったらプルリクエストを作る → 開発者がマージ →
    作業ブランチを main に合わせて(`git merge --ff-only origin/main`)プッシュしておく
 7. 毎回の作業の終わりに、「アーティファクト版で確認すること」「WEBパーツで確認が必要なこと」を分けて伝える(CLAUDE.md 3)
 
-## 1. いまの状況(ver 0.5.6)
+## 1. いまの状況(ver 0.5.7)
 
 ### できているもの
 | 部分 | 場所 | 内容 |
@@ -27,7 +27,7 @@
 | データの読み書き | `src/services` | 約束(`IScheduleDataService.ts`)、プレビュー用(`MemoryScheduleService.ts`)、SharePoint 用(`SharePointScheduleService.ts`・`spMapping.ts`)、列の内部名(`spConfig.ts`) |
 | WEBパーツ本体 | `src/webparts/scheduleBoard` | 組み立てと日本語の設定画面 |
 | プレビュー | `preview/` | 架空の53名のダミーデータ、1ファイルのHTMLを作るスクリプト。「管理者として見る」「保存を失敗させる」の切り替え付き |
-| 手順書 | `docs/` | `LIST_SETUP.md`(リストの作り方・内部名の確かめ方・設定項目)、`DEPLOY.md`(登録・展開・うまくいかないとき)、`test-checklist.html`(実機テスト48項目)、`IMPROVEMENT_PLAN.md`(改修案) |
+| 手順書 | `docs/` | `LIST_SETUP.md`(リストの作り方・内部名の確かめ方・設定項目)、`DEPLOY.md`(登録・展開・うまくいかないとき)、`test-checklist.html`(実機テスト49項目)、`IMPROVEMENT_PLAN.md`(改修案) |
 
 - テスト:117件(`npm run build` で実行)
 - **SharePoint の実機では、まだ一度も動かしていない**(偽物の通信相手でのテストのみ)
@@ -108,6 +108,9 @@
 - ver 0.5.6(2026-11-18):**「自分の行へ」ボタン**(開発者が案Aを選択)。自分の行が見えなくなり、かつ表が画面に見えているときだけ右下に出す。
   見張りは IntersectionObserver(`data-self-row` の行と表)。押すと `scrollIntoView` で自分の行へ。自分の行がない/絞り込みで隠れているときは出さない。
   検討した案:B 自分の行を見出しの下にずっと固定(表が1行分狭くなるため見送り)/C 作らない
+- ver 0.5.7(2026-11-18):実機(ノートPC・表示倍率125%)で、登録画面の上が SharePoint の見出し・検索欄の下にもぐって見切れた。
+  - 登録画面・ちょっと外出・ヘルプ・帯を押したときの選択を、**body の直下に出す**(`ModalPortal`、React の createPortal)。重なり順も 1000000 に
+  - 高さの低い画面(820px 以下・PC 幅)では、登録画面などの余白・ボタンの高さを詰めて、なるべくスクロールせずに収める
 - スマホ幅では最初に日表示(CLAUDE.md 6-7)
 - 6-2:総務の「1日」休暇と単発予定が重なったら**休暇を優先**で決定(WEBパーツの設定で切り替え可能)
 - 自分たちで作るリストは **URL(`Lists/〜`)で探す**(表示名を「行動予定」に変えても動くように)。既存のリストは名前で探す
@@ -138,6 +141,7 @@
 - `yo @microsoft/sharepoint`(雛形作成)は root だと動かない → 一般ユーザー(`useradd -m spfx`)で実行し、質問には `yes "" |` で既定の答えを流し込む
 - SPFx は ES5 向けにビルドする → `Array.prototype.includes`・`padStart`・`flatMap` などは使わない。`Error` を継承したクラスは `Object.setPrototypeOf(this, X.prototype)` が必要
 - Jest では `@microsoft/sp-http` が読み込めない → テストでは `jest.mock` で差し替える(`SharePointScheduleService.test.ts` 参照)
+- WEBパーツの中で position: fixed の重ねる画面を出すと、SharePoint の見出しの下にもぐる → `ModalPortal` で body の直下に出す
 - `webpack` の CLI は入力待ちで止まる → Node の API で呼ぶ(`preview/build-preview.mjs`)
 - Playwright(スクリーンショット)は最初から入っている Node で動かす(Node 26 の PATH を外す)
 - learn.microsoft.com にはつながらない → 公式ドキュメントは GitHub の `SharePoint/sp-dev-docs`(raw.githubusercontent.com)で読む
