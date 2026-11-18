@@ -84,6 +84,31 @@ export function listApiUrl(webUrl: string, listRef: string): string {
   return web + "/_api/web/lists/getbytitle('" + encodeURIComponent(escapeOData(ref)) + "')";
 }
 
+/**
+ * 設定に入れた「サイトの URL」と「リスト」を整える。
+ * リストの画面の URL(…/Lists/List/AllItems.aspx など)をそのまま貼り付けても、
+ * サイトの URL(…/sites/〜)とリスト(Lists/List)に分けて使えるようにする。
+ */
+export function splitSiteAndList(siteUrl: string, list: string): { siteUrl: string; list: string } {
+  let site = (siteUrl || '').trim().replace(/[?#].*$/, '');
+  let ref = (list || '').trim();
+  const m = /^(.*?)\/(Lists\/[^/]+)(\/.*)?$/i.exec(site);
+  if (m) {
+    site = m[1];
+    if (!ref) {
+      ref = m[2];
+    }
+  }
+  // サイトのページや設定画面の URL を貼り付けたとき(…/SitePages/〜、…/_layouts/〜)
+  site = site.replace(/\/(SitePages|_layouts|Shared%20Documents|Forms)(\/.*)?$/i, '').replace(/\/+$/, '');
+  // リストの欄に画面の URL の続き(Lists/List/AllItems.aspx)が入っていても、Lists/List だけにする
+  const lm = /(Lists\/[^/?#]+)/i.exec(ref);
+  if (lm) {
+    ref = lm[1];
+  }
+  return { siteUrl: site, list: ref };
+}
+
 function text(value: unknown): string {
   return typeof value === 'string' ? value : typeof value === 'number' ? String(value) : '';
 }

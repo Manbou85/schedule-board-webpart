@@ -14,6 +14,7 @@ import {
   mapEntry,
   mapHoliday,
   mapCrew,
+  splitSiteAndList,
   mapHolidayWork,
   mapLeave,
   mapRows,
@@ -130,9 +131,12 @@ export class SharePointScheduleService implements IScheduleDataService {
 
     // 総務のリスト・会社休日は、読めなくても予定表は出す(お知らせだけ出す)
     const warnings: string[] = [];
+    const warningDetails: string[] = [];
     const optional = <T>(promise: Promise<T[]>, label: string): Promise<T[]> =>
-      promise.catch(() => {
+      promise.catch((err: unknown) => {
         warnings.push(label + 'を読み込めなかったため、表示していません。');
+        // 管理者向けのくわしい内容(状態コードと SharePoint からの文言)
+        warningDetails.push(label + ':' + (err instanceof Error ? err.message : String(err)));
         return [] as T[];
       });
 
@@ -181,12 +185,14 @@ export class SharePointScheduleService implements IScheduleDataService {
 
     // 作業員の行き先(別サイト):設定でリストを入れたときだけ読む
     const c = this._f.crew;
-    const crewWeb = (this._lists.crewSiteUrl || this._webUrl).replace(/\/+$/, '');
+    // リストの画面の URL をそのまま貼り付けても使えるように、サイトの URL とリストに分ける
+    const crewRef = splitSiteAndList(this._lists.crewSiteUrl, this._lists.crewList);
+    const crewWeb = (crewRef.siteUrl || this._webUrl).replace(/\/+$/, '');
     let crewInfo: IRangeData['crewInfo'];
-    const crew = this._lists.crewList
+    const crew = crewRef.list
       ? optional(
           this._getAll(
-            listApiUrl(crewWeb, this._lists.crewList) +
+            listApiUrl(crewWeb, crewRef.list) +
               '/items?$select=' +
               ['Id', c.worker, c.title, c.startDate, c.endDate].join(',') +
               '&$filter=' +
@@ -219,7 +225,8 @@ export class SharePointScheduleService implements IScheduleDataService {
       holidays: holidayList.filter((x) => inRange(x.date)),
       crewAssignments: crewList.filter((x) => overlapsRange(x.startDate, x.endDate, start, end)),
       crewInfo,
-      warnings
+      warnings,
+      warningDetails
     };
   }
 

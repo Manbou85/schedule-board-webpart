@@ -6,6 +6,7 @@ import {
   listApiUrl,
   mapEntry,
   choiceText,
+  splitSiteAndList,
   mapCrew,
   mapHoliday,
   mapHolidayWork,
@@ -128,6 +129,18 @@ describe('リストの行 → 予定表のデータ', () => {
       { Id: 4, WorkerId: 1, EntryType: '単発' }
     ];
     expect(mapRows(rows, (r) => mapEntry(r, f)).map((e) => e.id)).toEqual([1]);
+  });
+
+  it('サイトの URL とリスト:リストの画面の URL を貼り付けても分けて使える', () => {
+    const site = 'https://example.sharepoint.com/sites/team1';
+    expect(splitSiteAndList(site, 'Lists/List')).toEqual({ siteUrl: site, list: 'Lists/List' });
+    expect(splitSiteAndList(site + '/', ' Lists/List ')).toEqual({ siteUrl: site, list: 'Lists/List' });
+    expect(splitSiteAndList(site + '/Lists/List/AllItems.aspx', '')).toEqual({ siteUrl: site, list: 'Lists/List' });
+    expect(splitSiteAndList(site + '/Lists/List/AllItems.aspx?viewid=x', 'Lists/List')).toEqual({ siteUrl: site, list: 'Lists/List' });
+    expect(splitSiteAndList(site, site + '/Lists/List/AllItems.aspx')).toEqual({ siteUrl: site, list: 'Lists/List' });
+    expect(splitSiteAndList(site, 'Lists/List/AllItems.aspx')).toEqual({ siteUrl: site, list: 'Lists/List' });
+    expect(splitSiteAndList(site + '/SitePages/Home.aspx', 'Lists/List')).toEqual({ siteUrl: site, list: 'Lists/List' });
+    expect(splitSiteAndList('', '休暇情報共有リスト')).toEqual({ siteUrl: '', list: '休暇情報共有リスト' });
   });
 
   it('選択肢の値:1つ選択は文字、複数選択は最初の1つ', () => {

@@ -627,6 +627,13 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
           {warnings.map((w) => (
             <div key={w}>{w}</div>
           ))}
+          {base.isAdmin &&
+            range &&
+            (range.warningDetails || []).map((d) => (
+              <div key={'d' + d} className={styles.warningDetail}>
+                くわしい内容(管理者向け):{d}
+              </div>
+            ))}
         </div>
       )}
 

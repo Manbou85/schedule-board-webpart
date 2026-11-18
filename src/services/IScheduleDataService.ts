@@ -20,6 +20,8 @@ export interface IRangeData {
     /** 作業員の名前か開始日が読めなかった行の数 */
     unreadable: number;
   };
+  /** 読めなかったときのくわしい内容(状態コードなど。管理者にだけ見せる) */
+  warningDetails?: string[];
   /** 一部のリストが読めなかったときのお知らせ(予定表は表示する) */
   warnings?: string[];
 }
