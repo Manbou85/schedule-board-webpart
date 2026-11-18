@@ -134,7 +134,9 @@ export function resolveCell(
   // 単発予定がすべて終わっていて長期の予定があれば、長期の予定を出す(下の 4・5 で終わった予定を添える)
   const singleContent =
     singles.length > 0 && !(allFinished && period)
-      ? { kind: 'single' as const, entries: singles, finishedIds: finished.map((e) => e.id) }
+      ? period
+        ? { kind: 'single' as const, entries: singles, finishedIds: finished.map((e) => e.id), underlying: period }
+        : { kind: 'single' as const, entries: singles, finishedIds: finished.map((e) => e.id) }
       : undefined;
   const leaveContent = fullDayLeave ? { kind: 'leave' as const, leave: fullDayLeave } : undefined;
 

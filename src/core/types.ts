@@ -119,7 +119,8 @@ export type CellContent =
   | { kind: 'leave'; leave: ILeave }
   | { kind: 'holidayWork'; holidayWork: IHolidayWork; timeText: string }
   /** finishedIds:戻り(終了)の時刻を過ぎた今日の予定。薄く表示する */
-  | { kind: 'single'; entries: IScheduleEntry[]; finishedIds: number[] }
+  /** underlying:単発の予定に隠れている、その日の長期の予定(人数のまとめで「今どこか」を決めるときに使う) */
+  | { kind: 'single'; entries: IScheduleEntry[]; finishedIds: number[]; underlying?: IScheduleEntry }
   /** finished:今日の単発予定がすべて終わったとき、長期の予定の下に薄く出す終わった予定 */
   | { kind: 'period'; entry: IScheduleEntry; dimmed: boolean; finished: IScheduleEntry[] }
   | { kind: 'empty' };

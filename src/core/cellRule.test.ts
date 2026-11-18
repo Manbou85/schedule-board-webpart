@@ -92,12 +92,18 @@ describe('1マスの表示ルール(6-2)', () => {
   it('3. 単発の予定は長期の予定より優先', () => {
     const s = single('2026-11-17', '本社で打合せ');
     const cell = resolveCell(TUE, W, data({ entries: [longSite, s] }));
-    expect(cell.content).toEqual({ kind: 'single', entries: [s], finishedIds: [] });
+    // 隠れた長期の予定も持っておく(人数のまとめで使う)
+    expect(cell.content).toEqual({ kind: 'single', entries: [s], finishedIds: [], underlying: longSite });
   });
 
   it('3. 休日の単発予定もそのまま表示', () => {
     const s = single('2026-11-21', '研修会', { category: '研修' });
-    expect(resolveCell(SAT, W, data({ entries: [longSite, s] })).content).toEqual({ kind: 'single', entries: [s], finishedIds: [] });
+    expect(resolveCell(SAT, W, data({ entries: [longSite, s] })).content).toEqual({
+      kind: 'single',
+      entries: [s],
+      finishedIds: [],
+      underlying: longSite
+    });
   });
 
   it('3. 単発が同じ日に複数あれば、時刻の早い順(時刻なしは後ろ)', () => {
@@ -132,7 +138,8 @@ describe('1マスの表示ルール(6-2)', () => {
     expect(resolveCell(TUE, W, data({ entries: [longSite, s], leaves: [lv] }), opt).content).toEqual({
       kind: 'single',
       entries: [s],
-      finishedIds: []
+      finishedIds: [],
+      underlying: longSite
     });
     // 単発がなければ、休暇が長期の予定より優先
     expect(resolveCell(TUE, W, data({ entries: [longSite], leaves: [lv] }), opt).content).toEqual({ kind: 'leave', leave: lv });

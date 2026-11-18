@@ -9,14 +9,15 @@
   .pv-page { max-width: 1280px; margin: 0 auto; padding: 16px; }
   .pv-note { margin: 0 0 12px; padding: 8px 12px; font: 13px/1.5 'Segoe UI', 'Yu Gothic UI', Meiryo, sans-serif;
              color: #5c4400; background: #fff4ce; border: 1px solid #f0d77a; border-radius: 6px; }
-  .pv-card { padding: 16px; background: #fff; border: 1px solid #e1dfdd; border-radius: 8px; }
+  /* SharePoint の全幅のセクションと同じように、入れ物の余白は 0(余白は WEBパーツの中で付ける) */
+  .pv-card { padding: 0; background: #fff; border: 1px solid #e1dfdd; border-radius: 8px; }
   .pv-controls { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin: -4px 0 12px; padding: 6px 12px;
                  font: 13px/1.5 'Segoe UI', 'Yu Gothic UI', Meiryo, sans-serif; color: #5c4400; background: #fff4ce;
                  border: 1px solid #f0d77a; border-radius: 6px; }
   .pv-controls label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
   .pv-controls-title { font-weight: 600; }
   .pv-footer { margin-top: 12px; font: 12px 'Segoe UI', Meiryo, sans-serif; color: #8a8886; }
-  @media (max-width: 640px) { .pv-page { padding: 8px; } .pv-card { padding: 10px; } }
+  @media (max-width: 640px) { .pv-page { padding: 8px; } .pv-card { padding: 0; } }
 /*__CSS__*/
 </style>
 </head>
