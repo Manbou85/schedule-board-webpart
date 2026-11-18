@@ -36,6 +36,51 @@ $dayWidth: 8.2em;
   border-radius: 6px;
 }
 
+// ---- タイトルの行(何の予定表かと、最後に新しくした時刻)----
+// ツールバーの邪魔にならないよう、低く・控えめに
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 24px;
+  margin-bottom: 6px;
+}
+
+.boardTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  color: #242424;
+}
+
+.updatedButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-family: inherit;
+  color: #616161;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.updatedButton:hover {
+  color: #0f6cbd;
+  background: #f3f3f3;
+}
+.updatedButton:focus-visible {
+  outline: 2px solid #0f6cbd;
+}
+
+.updatedFailed {
+  color: #8a5300;
+}
+
 // ---- 上のツールバー ----
 // SharePoint の固定の表示が上にあるので、ここはできるだけ低く(PC は1行、スマホは2行)
 $control: 36px; // ボタン・入力欄の高さ

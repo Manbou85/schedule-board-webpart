@@ -1,6 +1,11 @@
-import { formatPeriod, formatShortRange, formatVersion } from './format';
+import { formatClock, formatPeriod, formatShortRange, formatVersion } from './format';
 
 describe('画面に出す文字の書き方', () => {
+  it('更新時刻は「9:05」の形', () => {
+    expect(formatClock(new Date(2026, 10, 18, 9, 5))).toBe('9:05');
+    expect(formatClock(new Date(2026, 10, 18, 14, 30))).toBe('14:30');
+  });
+
   it('版の表示は「ver 0.2.0」(4つ目の数字は省く。わからなければ空)', () => {
     expect(formatVersion('0.2.0')).toBe('ver 0.2.0');
     expect(formatVersion('1.3.0.0')).toBe('ver 1.3.0');

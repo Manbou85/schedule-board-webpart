@@ -68,3 +68,9 @@ export function formatVersion(version: string | undefined): string {
   }
   return 'ver ' + parts.slice(0, 3).join('.');
 }
+
+/** 時刻の表示:'9:05'(画面の「◯◯:◯◯ 更新」用) */
+export function formatClock(d: Date): string {
+  const m = d.getMinutes();
+  return d.getHours() + ':' + (m < 10 ? '0' : '') + m;
+}

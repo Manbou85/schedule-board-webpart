@@ -38,7 +38,7 @@ import { DatePickButton } from './DatePickButton';
 import { DayList } from './DayList';
 import { EntryForm } from './EntryForm';
 import { errorDetail } from './errorMessages';
-import { formatShortDate, formatShortRange, formatVersion } from './format';
+import { formatClock, formatShortDate, formatShortRange, formatVersion } from './format';
 import { getCategoryStyle, HOLIDAY_WORK_STYLE, LEAVE_STYLE } from './categoryStyle';
 import { Icon } from './Icon';
 import { IGridGroup, WeekGrid } from './WeekGrid';
@@ -57,6 +57,19 @@ export interface IScheduleBoardProps {
   initialView?: ViewMode;
   /** 版(例 '0.2.0')。右下に小さく「ver 0.2.0」と出す。どの版を試しているか確かめるため */
   version?: string;
+  /** 上に小さく出すタイトル(例 行動予定表)。空なら出さない */
+  title?: string;
+}
+
+/** 自動で読み直す間隔(5分) */
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+/** 時計(今日の日付・今の時刻)を進める間隔(1分) */
+const CLOCK_INTERVAL_MS = 60 * 1000;
+/** タブに戻ったとき、前の読み込みからこれ以上たっていたら読み直す(1分) */
+const REFRESH_ON_RETURN_MS = 60 * 1000;
+
+function isPageHidden(): boolean {
+  return typeof document !== 'undefined' && document.visibilityState === 'hidden';
 }
 
 /** 週間表示/日表示 */
@@ -79,7 +92,9 @@ const SELF_GROUP = '__self__';
 export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const { service, excludedDepartments, pinSelfByDefault } = props;
   const cellRuleOptions = props.cellRuleOptions || DEFAULT_CELL_RULE_OPTIONS;
-  const today = props.today || todayKey();
+  // 今の時刻。開きっぱなしでも日付が変わるように、1分ごとに進める
+  const [now, setNow] = React.useState<Date>(() => new Date());
+  const today = props.today || todayKey(now);
   // 配列のままだと毎回「変わった」と判定されるので、文字にして比べる
   const excludedKey = excludedDepartments.join('\n');
 
@@ -99,8 +114,51 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const [collapsed, setCollapsed] = React.useState<string[]>([]);
   // 開いている登録・編集フォーム(閉じているときは undefined)
   const [formDraft, setFormDraft] = React.useState<IEntryDraft | undefined>(undefined);
-  // 保存のあとに読み直すための番号
+  // 読み直すための番号(保存のあと・5分ごと・タブに戻ったときに増やす)
   const [reloadKey, setReloadKey] = React.useState(0);
+  // 最後に読み込めた時刻(画面の「◯◯:◯◯ 更新」)と、自動の読み直しに失敗したかどうか
+  const [updatedAt, setUpdatedAt] = React.useState<Date | undefined>(undefined);
+  const [refreshFailed, setRefreshFailed] = React.useState(false);
+  // いま画面に出しているデータの範囲(同じ範囲の読み直しは、画面を消さずに裏で行う)
+  const loadedRangeRef = React.useRef('');
+  const lastLoadRef = React.useRef(0);
+  const reload = React.useCallback(() => setReloadKey((k) => k + 1), []);
+
+  // 時計を進める。5分ごとに読み直す(タブが隠れているあいだは休む)
+  React.useEffect(() => {
+    const clock = window.setInterval(() => setNow(new Date()), CLOCK_INTERVAL_MS);
+    const refresh = window.setInterval(() => {
+      if (!isPageHidden()) {
+        reload();
+      }
+    }, REFRESH_INTERVAL_MS);
+    // ほかのタブから戻ってきたら、すぐ新しくする
+    const onVisible = (): void => {
+      if (isPageHidden()) {
+        return;
+      }
+      setNow(new Date());
+      if (Date.now() - lastLoadRef.current > REFRESH_ON_RETURN_MS) {
+        reload();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(clock);
+      window.clearInterval(refresh);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [reload]);
+
+  // 開きっぱなしで日付が変わったら、「今日」を見ていた人は新しい今日へ進める
+  const prevTodayRef = React.useRef(today);
+  React.useEffect(() => {
+    const prev = prevTodayRef.current;
+    if (prev !== today) {
+      prevTodayRef.current = today;
+      setDate((d) => (d === prev ? today : d));
+    }
+  }, [today]);
   // 「予定を登録しました」などのお知らせ
   const [toast, setToast] = React.useState('');
 
@@ -147,18 +205,38 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     };
   }, [service, excludedKey]);
 
-  // 表示している範囲のデータを読む(週・日を切り替えるたび)
+  // 表示している範囲のデータを読む(週・日を切り替えるたび、読み直しのたび)
   React.useEffect(() => {
     let alive = true;
-    setRange(undefined);
+    const rangeKey = rangeStart + '/' + rangeEnd;
+    // 同じ範囲の読み直しは、今の表示を残したまま裏で読む(画面がちらつかないように)
+    const silent = loadedRangeRef.current === rangeKey;
+    if (!silent) {
+      setRange(undefined);
+    }
     service
       .getRange(rangeStart, rangeEnd)
-      .then((r) => alive && setRange(r))
-      .catch((e: unknown) => {
-        if (alive) {
-          setError('予定を読み込めませんでした。少し時間をおいて、ページを開き直してください。');
-          setErrorInfo(errorDetail(e));
+      .then((r) => {
+        if (!alive) {
+          return;
         }
+        loadedRangeRef.current = rangeKey;
+        lastLoadRef.current = Date.now();
+        setRange(r);
+        setUpdatedAt(new Date());
+        setRefreshFailed(false);
+      })
+      .catch((e: unknown) => {
+        if (!alive) {
+          return;
+        }
+        if (silent) {
+          // 裏での読み直しに失敗したときは、今の表示を残して小さく知らせるだけにする
+          setRefreshFailed(true);
+          return;
+        }
+        setError('予定を読み込めませんでした。少し時間をおいて、ページを開き直してください。');
+        setErrorInfo(errorDetail(e));
       });
     return () => {
       alive = false;
@@ -231,7 +309,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     setFormDraft(undefined);
     if (message) {
       setToast(message);
-      setReloadKey(reloadKey + 1);
+      reload();
     }
   };
   const department = criteria.departments && criteria.departments[0] ? criteria.departments[0] : ALL;
@@ -241,8 +319,24 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     setCollapsed(collapsed.indexOf(key) >= 0 ? collapsed.filter((k) => k !== key) : collapsed.concat([key]));
   };
 
+  const title = (props.title || '').trim();
+
   return (
     <div className={styles.scheduleBoard}>
+      <div className={styles.titleRow}>
+        {title ? <h2 className={styles.boardTitle}>{title}</h2> : <span />}
+        {updatedAt && (
+          <button
+            type="button"
+            className={styles.updatedButton + (refreshFailed ? ' ' + styles.updatedFailed : '')}
+            title="今すぐ新しくする(5分ごとに自動で新しくなります)"
+            onClick={reload}
+          >
+            <Icon name="refresh" size={14} />
+            {refreshFailed ? '新しくできませんでした(' + formatClock(updatedAt) + ' の内容)' : formatClock(updatedAt) + ' 更新'}
+          </button>
+        )}
+      </div>
       <div className={styles.toolbar}>
         {/* 左:日付の移動 */}
         <div className={styles.navGroup} role="group" aria-label={view === 'week' ? '週の切り替え' : '日の切り替え'}>

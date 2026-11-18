@@ -47,7 +47,8 @@ function PreviewControls() {
         excludedDepartments: DEFAULT_EXCLUDED_DEPARTMENTS,
         pinSelfByDefault: true,
         today,
-        version
+        version,
+        title: '行動予定表'
       })
     )
   );

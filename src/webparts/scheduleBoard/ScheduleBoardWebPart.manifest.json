@@ -22,6 +22,7 @@
     "description": { "default": "行動予定表(デジタル行先ボード)" },
     "officeFabricIconFontName": "Calendar",
     "properties": {
+      "title": "行動予定表",
       "pinSelfByDefault": true,
       "leaveBeforeSingle": true
     }
