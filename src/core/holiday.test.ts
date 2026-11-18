@@ -30,6 +30,16 @@ describe('休日の判定', () => {
     expect(calendar('2026-11-21').holidayName).toBeUndefined();
   });
 
+  it('名称が空欄なら、種別の文字(例 休業日)を見出しに出す', () => {
+    const c = createHolidayCalendar([
+      { date: '2026-08-13', name: '', dayType: 'holiday', kindLabel: '休業日' },
+      { date: '2026-08-14', name: '夏季休業', dayType: 'holiday', kindLabel: '休業日' }
+    ]);
+    expect(c('2026-08-13')).toEqual({ date: '2026-08-13', dayOfWeek: 4, isHoliday: true, holidayName: '休業日' });
+    // 名称があれば名称を優先する
+    expect(c('2026-08-14').holidayName).toBe('夏季休業');
+  });
+
   it('同じ日に「休日」と「出勤日」があれば「出勤日」を優先する', () => {
     const c = createHolidayCalendar([
       { date: '2026-12-05', name: '出勤土曜', dayType: 'workday' },

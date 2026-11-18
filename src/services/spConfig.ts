@@ -71,13 +71,13 @@ export interface ISpFieldConfig {
 
 /**
  * 列の内部名。
- * 【要確認】は、開発者に上の URL で確かめてもらうまでの仮の値。
+ * 2026-11 開発者がすべて確認済み(リストの列設定の URL の Field= で確認)。
  */
 export const SP_FIELDS: ISpFieldConfig = {
   workers: {
     title: 'Title',
     name: 'WorkerName',
-    no: 'No_x002e_', // 【要確認】「No.」の「.」は内部名で別の文字になる
+    no: 'No_x002e_', // 「No.」の「.」は内部名で _x002e_ になる(2026-11 開発者が確認済み)
     user: 'M365User',
     department: 'Department'
   },
@@ -93,20 +93,20 @@ export const SP_FIELDS: ISpFieldConfig = {
     note: 'Note'
   },
   holidays: {
-    // 【要確認】既存の休日リストを参照する場合は、そのリストの内部名に合わせる
+    // 社内ポータルに新しく作る(2026-11 開発者が決定)。docs/LIST_SETUP.md の「2.」
     name: 'Title',
     date: 'HolidayDate',
     dayType: 'DayType'
   },
   leaves: {
-    // 【要確認】
+    // 2026-11 開発者が確認済み。「Name: No.」(Name_x003a__x0020_No_x002e_)は使わない(本人は Name の参照IDで突き合わせる)
     date: 'Date',
     kind: 'AcquisitionTime',
     worker: 'Name',
     remarks: 'Remarks'
   },
   holidayWorks: {
-    // 【要確認】
+    // 2026-11 開発者が確認済み。StartTime・EndTime は選択肢、Date は日付のみ
     date: 'Date',
     startTime: 'StartTime',
     endTime: 'EndTime',
@@ -133,7 +133,7 @@ export interface ISpListSettings {
   adminGroup: string;
 }
 
-/** 設定の初期値。【要確認】総務のリストの名前は仮 */
+/** 設定の初期値。総務のリストの名前は確認済み(2026-11) */
 export const DEFAULT_LIST_SETTINGS: ISpListSettings = {
   // 自分たちで作るリストは URL で指定する(表示名を「行動予定」に変えても動くように)
   entriesList: 'Lists/ScheduleEntries',

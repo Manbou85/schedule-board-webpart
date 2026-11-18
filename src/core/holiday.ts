@@ -1,7 +1,8 @@
 // 休日の判定
 // - 土日は自動で休日
-// - 会社休日リストの「休日」(祝日・会社独自の休み)も休日
+// - 会社休日リストの種別が「出勤日」以外(祝日・休業日・一斉有給など)の日も休日
 // - 会社休日リストの「出勤日」(出勤土曜など)は、土日でも平日あつかい
+// - 見出しに出す文字は、名称があれば名称、空欄なら種別の文字
 
 import { dayOfWeek } from './dateUtils';
 import { DateKey, ICompanyHoliday, IDayInfo } from './types';
@@ -25,8 +26,11 @@ export function createHolidayCalendar(holidays: ICompanyHoliday[]): (date: DateK
       isHoliday = company.dayType === 'holiday';
     }
     const info: IDayInfo = { date, dayOfWeek: w, isHoliday };
-    if (company && company.dayType === 'holiday' && company.name) {
-      info.holidayName = company.name;
+    if (company && company.dayType === 'holiday') {
+      const label = company.name || company.kindLabel || '';
+      if (label) {
+        info.holidayName = label;
+      }
     }
     return info;
   };

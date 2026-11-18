@@ -164,14 +164,15 @@ export function entryToSpBody(entry: Omit<IScheduleEntry, 'id'>, f: IEntryFields
   return body;
 }
 
-/** 会社休日リストの1行 → 会社休日。種別が読めない行は undefined */
+/** 会社休日リストの1行 → 会社休日。日付か種別が空欄の行は undefined。名称(Title)は空欄でもよい */
 export function mapHoliday(row: ISpRow, f: IHolidayFields): ICompanyHoliday | undefined {
   const date = spDateToKey(row[f.date]);
-  const dayType = parseCompanyDayType(text(row[f.dayType]));
+  const kindLabel = text(row[f.dayType]).trim();
+  const dayType = parseCompanyDayType(kindLabel);
   if (!date || !dayType) {
     return undefined;
   }
-  return { date, name: text(row[f.name]).trim(), dayType };
+  return { date, name: text(row[f.name]).trim(), dayType, kindLabel };
 }
 
 /** 休暇情報共有リストの1行 → 休暇。本人・日付・種類が読めない行は undefined */

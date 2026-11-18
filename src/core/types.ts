@@ -41,15 +41,17 @@ export interface IScheduleEntry {
   note?: string;
 }
 
-/** 会社休日リストの種別:休日/出勤日(土日だけど出勤の日) */
+/** 会社休日リストの種別を、休日あつかいか出勤日あつかいかに分けたもの */
 export type CompanyDayType = 'holiday' | 'workday';
 
 /** 会社休日(会社休日リストの1行) */
 export interface ICompanyHoliday {
   date: DateKey;
-  /** 名称(例 元日) */
+  /** 名称(例 元日)。空欄でもよい */
   name: string;
   dayType: CompanyDayType;
+  /** 種別の選択肢の文字そのまま(例 祝日、休業日、一斉有給、出勤日) */
+  kindLabel?: string;
 }
 
 /** 休暇の種類:1日/午前/午後/遅刻/早退 */

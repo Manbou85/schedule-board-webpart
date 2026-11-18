@@ -1,6 +1,6 @@
 # 引き継ぎメモ(次のセッション向け)
 
-最終更新:2026-11-17(ver 0.2.0。フェーズ1 完了、フェーズ2・3 のWEBパーツ部分を作成済み。開発者の実機確認待ち)
+最終更新:2026-11-18(ver 0.2.1。フェーズ1 完了、フェーズ2・3 のWEBパーツ部分を作成済み。開発者の実機確認待ち)
 
 **新しいセッションの Claude は、作業を始める前にこのファイルを最後まで読んでください。**
 
@@ -12,12 +12,12 @@
 3. 開発者に、実機確認の結果と、確認待ちの項目(「2.」)の回答を聞く。そこから続きを決める
 4. 画面を変えたら:`npm run build` → `npm run preview` → 確認用プレビュー(「4.」の URL)を上書きする
 5. 版を上げるとき:`package.json`・`package-lock.json`(先頭の2か所)・`config/package-solution.json`(2か所)をそろえる。
-   `docs/test-checklist.html` の「ver 0.2.0」の例(2か所)も直す
+   `docs/test-checklist.html` の「ver 0.2.1」の例(2か所)も直す
 6. 仕上がったら:作業ブランチにプッシュ → 開発者が「PRお願い」と言ったらプルリクエストを作る → 開発者がマージ →
    作業ブランチを main に合わせて(`git merge --ff-only origin/main`)プッシュしておく
 7. 毎回の作業の終わりに、「アーティファクト版で確認すること」「WEBパーツで確認が必要なこと」を分けて伝える(CLAUDE.md 3)
 
-## 1. いまの状況(ver 0.2.0)
+## 1. いまの状況(ver 0.2.1)
 
 ### できているもの
 | 部分 | 場所 | 内容 |
@@ -29,20 +29,28 @@
 | プレビュー | `preview/` | 架空の53名のダミーデータ、1ファイルのHTMLを作るスクリプト。「管理者として見る」「保存を失敗させる」の切り替え付き |
 | 手順書 | `docs/` | `LIST_SETUP.md`(リストの作り方・内部名の確かめ方・設定項目)、`DEPLOY.md`(登録・展開・うまくいかないとき)、`test-checklist.html`(実機テスト31項目)、`IMPROVEMENT_PLAN.md`(改修案) |
 
-- テスト:91件(`npm run build` で実行)
+- テスト:92件(`npm run build` で実行)
 - **SharePoint の実機では、まだ一度も動かしていない**(偽物の通信相手でのテストのみ)
 
 ## 2. 開発者の確認待ち(回答が来たら直すところ)
 | 項目 | 今の仮の値 | 直す場所 |
 | --- | --- | --- |
-| WorkerNameList の「No.」の内部名 | `No_x002e_` | `src/services/spConfig.ts` の `SP_FIELDS.workers` |
-| 休暇・休日出勤リストの列の内部名 | Date / AcquisitionTime / Name / Remarks、Date / StartTime / EndTime / WorkPlace / Name | `SP_FIELDS.leaves`・`holidayWorks` |
-| 休暇・休日出勤リストの実際の名前 | 休暇情報共有リスト / 休日出勤情報共有リスト | `spConfig.ts` の `DEFAULT_LIST_SETTINGS`(WEBパーツの設定でも変えられる) |
-| 会社休日:既存リストを参照(A)か、新しく作る(B)か | B(`Lists/CompanyHolidays`、列 Title / HolidayDate / DayType) | A なら `SP_FIELDS.holidays` と設定のサイトURL |
-| 行動予定リストの作成 | `docs/LIST_SETUP.md` のとおり | (作ってもらうだけ) |
+| 行動予定リスト・会社休日リストの作成 | `docs/LIST_SETUP.md` の「1.」「2.」のとおり | (作ってもらうだけ) |
 | ワンタップ登録「在社」の行き先 | 本社 | `src/core/entryForm.ts` の `DEFAULT_QUICK_ACTIONS` |
 
-- 確かめ方の URL は `docs/LIST_SETUP.md` の「3.」
+- 確かめ方は `docs/LIST_SETUP.md` の「3.」(列の名前をクリックして URL の `Field=` を見るのがかんたん)
+- 確認済み:WorkerNameList の列は計画どおり。「No.」の内部名は `No_x002e_`(2026-11-18)
+- 確認済み:休暇情報共有リスト(この名前のまま)。列は Date / AcquisitionTime / Name / Remarks で計画どおり。「Name: No.」は `Name_x003a__x0020_No_x002e_`(使わない)。
+  AcquisitionTime の選択肢は 1日/午前/午後/遅刻/早退 で `LEAVE_KIND_LABELS` と一致。Date は「日付のみ」
+- 確認済み:休日出勤情報共有リスト(この名前のまま)。列は Date / StartTime / EndTime / WorkPlace / Name で計画どおり。
+  StartTime・EndTime は選択肢、Date は「日付のみ」
+- 決定:会社休日は社内ポータルに**新しく作る**(既存の休日リストは別サイトのため使わない)。`Lists/CompanyHolidays`
+- 決定:会社休日の種別(DayType)は選択肢 祝日/休業日/一斉有給/出勤日。「出勤日」以外はすべて休日あつかい
+  (`parseCompanyDayType`)。名称(Title)は任意で、空欄なら見出しに種別の文字を出す
+- 祝日の自動反映は**今後の計画**(CLAUDE.md フェーズ5以降)。検討した案:
+  A. プログラムで祝日を計算/C. 管理者ボタンで計算 → リストに追加/B. WEBパーツから外部サービスを読む(外部通信のため不可)/
+  Exchange を Graph で読む(管理者の承認が必要・人ごとに予定表がちがうため不向き)。
+  **本命は Power Automate で取得 → 会社休日リストに「祝日」で追加**(WEBパーツの変更なし。開発者は取得できることを確認済み)
 - 実機でエラーが出たら、画面の「くわしい内容(管理者向け)」を共有してもらう(400 は列名、404 はリスト名のまちがいが多い)
 
 ## 3. これまでに決めたこと
