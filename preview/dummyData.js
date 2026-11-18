@@ -195,19 +195,20 @@ function createDummyData(today) {
 
   // ---- 会社休日 ----
   const holidays = [
-    // 実際の祝日・年末年始(2026〜2027年)
-    { date: '2026-11-03', name: '文化の日', dayType: 'holiday' },
-    { date: '2026-11-23', name: '勤労感謝の日', dayType: 'holiday' },
-    { date: '2026-12-29', name: '年末年始休暇', dayType: 'holiday' },
-    { date: '2026-12-30', name: '年末年始休暇', dayType: 'holiday' },
-    { date: '2026-12-31', name: '年末年始休暇', dayType: 'holiday' },
-    { date: '2027-01-01', name: '元日', dayType: 'holiday' },
-    { date: '2027-01-04', name: '年末年始休暇', dayType: 'holiday' },
-    { date: '2027-01-11', name: '成人の日', dayType: 'holiday' },
+    // 実際の祝日・年末年始(2026〜2027年)。種別は選択肢の文字(出勤日以外は休日あつかい)
+    // 名称が空欄の行は、見出しに種別の文字(例 休業日)が出る
+    { date: '2026-11-03', name: '文化の日', dayType: 'holiday', kindLabel: '祝日' },
+    { date: '2026-11-23', name: '勤労感謝の日', dayType: 'holiday', kindLabel: '祝日' },
+    { date: '2026-12-29', name: '', dayType: 'holiday', kindLabel: '休業日' },
+    { date: '2026-12-30', name: '', dayType: 'holiday', kindLabel: '休業日' },
+    { date: '2026-12-31', name: '', dayType: 'holiday', kindLabel: '休業日' },
+    { date: '2027-01-01', name: '元日', dayType: 'holiday', kindLabel: '祝日' },
+    { date: '2027-01-04', name: '', dayType: 'holiday', kindLabel: '休業日' },
+    { date: '2027-01-11', name: '成人の日', dayType: 'holiday', kindLabel: '祝日' },
     // いつ開いても見えるように、今週の前後に置くダミー
-    { date: d(-2), name: '出勤土曜', dayType: 'workday' },
-    { date: d(9), name: '創立記念日(ダミー)', dayType: 'holiday' },
-    { date: d(12), name: '出勤土曜', dayType: 'workday' }
+    { date: d(-2), name: '', dayType: 'workday', kindLabel: '出勤日' },
+    { date: d(9), name: '', dayType: 'holiday', kindLabel: '一斉有給' },
+    { date: d(12), name: '', dayType: 'workday', kindLabel: '出勤日' }
   ];
 
   return {

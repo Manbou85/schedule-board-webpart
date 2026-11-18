@@ -8,11 +8,12 @@ export const ENTRY_TYPE_LABELS: { [key in EntryType]: string } = {
   single: '単発'
 };
 
-/** 会社休日の種別の選択肢 */
-export const COMPANY_DAY_TYPE_LABELS: { [key in CompanyDayType]: string } = {
-  holiday: '休日',
-  workday: '出勤日'
-};
+/**
+ * 会社休日の種別のうち、出勤日あつかいになる選択肢。
+ * これ以外の選択肢(祝日・休業日・一斉有給など)は、すべて休日あつかい。
+ * そのため、リストの選択肢を増やしても WEBパーツの作り直しは不要。
+ */
+export const COMPANY_WORKDAY_LABEL = '出勤日';
 
 /** 休暇リストの AcquisitionTime の選択肢 */
 export const LEAVE_KIND_LABELS: { [key in LeaveKind]: string } = {
@@ -49,9 +50,13 @@ export function parseEntryType(label: string | undefined): EntryType | undefined
   return findKey(ENTRY_TYPE_LABELS, label);
 }
 
-/** '休日' → 'holiday'、'出勤日' → 'workday'。知らない値は undefined */
+/** '出勤日' → 'workday'、それ以外の選択肢(祝日・休業日など)→ 'holiday'。空欄は undefined */
 export function parseCompanyDayType(label: string | undefined): CompanyDayType | undefined {
-  return findKey(COMPANY_DAY_TYPE_LABELS, label);
+  const target = (label || '').normalize('NFKC').trim();
+  if (!target) {
+    return undefined;
+  }
+  return target === COMPANY_WORKDAY_LABEL ? 'workday' : 'holiday';
 }
 
 /** '1日' → 'fullDay' など。知らない値は undefined */

@@ -129,12 +129,20 @@ describe('リストの行 → 予定表のデータ', () => {
   });
 
   it('会社休日・休暇・休日出勤', () => {
-    expect(mapHoliday({ Title: '元日', HolidayDate: '2026-12-31T15:00:00Z', DayType: '休日' }, SP_FIELDS.holidays)).toEqual({
+    expect(mapHoliday({ Title: '元日', HolidayDate: '2026-12-31T15:00:00Z', DayType: '祝日' }, SP_FIELDS.holidays)).toEqual({
       date: '2027-01-01',
       name: '元日',
-      dayType: 'holiday'
+      dayType: 'holiday',
+      kindLabel: '祝日'
     });
-    expect(mapHoliday({ Title: 'x', HolidayDate: '2026-12-31T15:00:00Z', DayType: '?' }, SP_FIELDS.holidays)).toBeUndefined();
+    // 名称(Title)は空欄でもよい
+    expect(mapHoliday({ Title: null, HolidayDate: '2026-08-12T15:00:00Z', DayType: '休業日' }, SP_FIELDS.holidays)).toEqual({
+      date: '2026-08-13',
+      name: '',
+      dayType: 'holiday',
+      kindLabel: '休業日'
+    });
+    expect(mapHoliday({ Title: 'x', HolidayDate: '2026-12-31T15:00:00Z', DayType: '' }, SP_FIELDS.holidays)).toBeUndefined();
 
     expect(
       mapLeave({ Id: 5, NameId: 3, Date: '2026-11-16T15:00:00Z', AcquisitionTime: '午後', Remarks: '13:00から' }, SP_FIELDS.leaves)
