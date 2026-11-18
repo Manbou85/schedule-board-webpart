@@ -232,6 +232,9 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     }
   }, [today]);
   const [helpOpen, setHelpOpen] = React.useState(false);
+  // 「自分の行へ」ボタン:自分の行が見えなくなったときだけ出す(表が画面に見えているときに限る)
+  const tableAreaRef = React.useRef<HTMLDivElement>(null);
+  const [selfOutOfView, setSelfOutOfView] = React.useState(false);
   // 長期の予定を押したときの選択画面
   const [periodChoice, setPeriodChoice] = React.useState<{ entry: IScheduleEntry; date: DateKey } | undefined>(undefined);
   // 「ちょっと外出」の画面と、その候補(最近の外出先)
@@ -373,6 +376,32 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     });
     return map;
   }, [base, range, crew, days, cellRuleOptions, nowInfo]);
+
+  // 自分の行と表が画面に見えているかを見張る(IntersectionObserver:要素が見えるかどうかをブラウザが知らせてくれるしくみ)
+  React.useEffect(() => {
+    const area = tableAreaRef.current;
+    const selfEl = area ? (area.querySelector('[data-self-row]') as HTMLElement | null) : null;
+    if (!area || !selfEl || typeof IntersectionObserver === 'undefined') {
+      setSelfOutOfView(false);
+      return undefined;
+    }
+    let areaVisible = true;
+    let selfVisible = true;
+    const update = (): void => setSelfOutOfView(areaVisible && !selfVisible);
+    const observer = new IntersectionObserver((list) => {
+      list.forEach((e) => {
+        if (e.target === area) {
+          areaVisible = e.isIntersecting;
+        } else {
+          selfVisible = e.isIntersecting;
+        }
+      });
+      update();
+    });
+    observer.observe(area);
+    observer.observe(selfEl);
+    return () => observer.disconnect();
+  });
 
   if (error) {
     return (
@@ -685,7 +714,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         </div>
       )}
 
-      <div className={styles.tableArea + (loading ? ' ' + styles.tableLoading : '')} aria-busy={loading}>
+      <div ref={tableAreaRef} className={styles.tableArea + (loading ? ' ' + styles.tableLoading : '')} aria-busy={loading}>
       {!range ? (
         <p className={styles.message}>予定を読み込み中です…</p>
       ) : shown.length === 0 ? (
@@ -737,6 +766,23 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
       <div className={styles.toastArea} aria-live="polite">
         {toast && <div className={styles.toast}>{toast}</div>}
       </div>
+
+      {selfOutOfView && (
+        <button
+          type="button"
+          className={styles.toSelfButton}
+          onClick={() => {
+            const area = tableAreaRef.current;
+            const selfEl = area ? (area.querySelector('[data-self-row]') as HTMLElement | null) : null;
+            if (selfEl) {
+              selfEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }
+          }}
+        >
+          <Icon name="arrowUp" size={18} />
+          自分の行へ
+        </button>
+      )}
 
       {periodChoice && (
         <PeriodChoiceDialog

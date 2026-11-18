@@ -27,7 +27,8 @@ export type IconName =
   | 'chevronDown'
   | 'refresh' // 新しくする
   | 'help' // ヘルプ
-  | 'check'; // 帰社しました
+  | 'check' // 帰社しました
+  | 'arrowUp'; // 自分の行へ
 
 /** 線(path)と円(circle)の組み合わせで1つのアイコンを表す */
 interface IShape {
@@ -90,7 +91,8 @@ const SHAPES: { [name in IconName]: IShape } = {
   chevronDown: { paths: ['M5 9l7 7 7-7'] },
   refresh: { paths: ['M20 12a8 8 0 1 1-2.34-5.66', 'M20 4v5h-5'] },
   help: { paths: ['M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6', 'M12 17h.01'], circles: [[12, 12, 9]] },
-  check: { paths: ['M5 12.5l4.5 4.5L19 7.5'] }
+  check: { paths: ['M5 12.5l4.5 4.5L19 7.5'] },
+  arrowUp: { paths: ['M12 19V5', 'M6 11l6-6 6 6'] }
 };
 
 export interface IIconProps {

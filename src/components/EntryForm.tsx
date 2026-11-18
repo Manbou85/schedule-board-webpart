@@ -23,6 +23,7 @@ import { getCategoryStyle } from './categoryStyle';
 import { saveErrorMessage } from './errorMessages';
 import { formatMonthDay, formatWeekday } from './format';
 import { Icon } from './Icon';
+import { ModalPortal } from './ModalPortal';
 import styles from './ScheduleBoard.module.scss';
 
 export interface IEntryFormProps {
@@ -163,261 +164,263 @@ export const EntryForm: React.FC<IEntryFormProps> = (props) => {
     .slice(0, 6);
 
   return (
-    <div className={styles.overlay} onKeyDown={onKeyDown}>
-      <div className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="sb-entry-title">
-        <div className={styles.dialogHead}>
-          <h2 id="sb-entry-title" className={styles.dialogTitle} tabIndex={-1} ref={titleRef}>
-            {isEdit ? '予定を変更' : '予定を追加'}
-          </h2>
-          <button type="button" className={styles.iconButton} aria-label="閉じる" title="閉じる" onClick={() => close()}>
-            <Icon name="close" size={18} />
-          </button>
-        </div>
+    <ModalPortal>
+      <div className={styles.overlay} onKeyDown={onKeyDown}>
+        <div className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="sb-entry-title">
+          <div className={styles.dialogHead}>
+            <h2 id="sb-entry-title" className={styles.dialogTitle} tabIndex={-1} ref={titleRef}>
+              {isEdit ? '予定を変更' : '予定を追加'}
+            </h2>
+            <button type="button" className={styles.iconButton} aria-label="閉じる" title="閉じる" onClick={() => close()}>
+              <Icon name="close" size={18} />
+            </button>
+          </div>
 
-        <form
-          className={styles.dialogBody}
-          noValidate
-          onSubmit={(e) => {
-            e.preventDefault();
-            save(draft);
-          }}
-        >
-          {/* 担当者:管理者は選べる(代理登録)。一般の人は自分だけ */}
-          {isAdmin ? (
-            <label className={styles.field}>
-              <span className={styles.fieldLabel}>担当者</span>
-              <select
-                className={styles.input}
-                value={draft.workerId === undefined ? '' : String(draft.workerId)}
-                disabled={isEdit}
-                onChange={(e) => set({ workerId: e.target.value ? Number(e.target.value) : undefined })}
-              >
-                <option value="">選んでください</option>
-                {workers.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                    {w.id === selfId ? '(あなた)' : !w.account ? '(PCなし)' : ''}
-                  </option>
-                ))}
-              </select>
-              {shown.workerId && <span className={styles.fieldError}>{shown.workerId}</span>}
-            </label>
-          ) : (
-            <div className={styles.field}>
-              <span className={styles.fieldLabel}>担当者</span>
-              <span className={styles.staticValue}>
-                {worker ? worker.name : ''}
-                {draft.workerId === selfId ? '(あなた)' : ''}
-              </span>
+          <form
+            className={styles.dialogBody}
+            noValidate
+            onSubmit={(e) => {
+              e.preventDefault();
+              save(draft);
+            }}
+          >
+            {/* 担当者:管理者は選べる(代理登録)。一般の人は自分だけ */}
+            {isAdmin ? (
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>担当者</span>
+                <select
+                  className={styles.input}
+                  value={draft.workerId === undefined ? '' : String(draft.workerId)}
+                  disabled={isEdit}
+                  onChange={(e) => set({ workerId: e.target.value ? Number(e.target.value) : undefined })}
+                >
+                  <option value="">選んでください</option>
+                  {workers.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                      {w.id === selfId ? '(あなた)' : !w.account ? '(PCなし)' : ''}
+                    </option>
+                  ))}
+                </select>
+                {shown.workerId && <span className={styles.fieldError}>{shown.workerId}</span>}
+              </label>
+            ) : (
+              <div className={styles.field}>
+                <span className={styles.fieldLabel}>担当者</span>
+                <span className={styles.staticValue}>
+                  {worker ? worker.name : ''}
+                  {draft.workerId === selfId ? '(あなた)' : ''}
+                </span>
+              </div>
+            )}
+
+            {/* ワンタップ登録(新しく登録するときだけ) */}
+            {!isEdit && quickActions.length > 0 && draft.workerId !== undefined && (
+              <div className={styles.field}>
+                <span className={styles.fieldLabel}>ワンタップで登録</span>
+                <div className={styles.quickRow}>
+                  {quickActions.map((a) => {
+                    const st = getCategoryStyle(a.category);
+                    return (
+                      <button
+                        key={a.category}
+                        type="button"
+                        className={styles.quickButton}
+                        disabled={saving || !isValidDateKey(draft.startDate)}
+                        onClick={() => save(quickDraft(draft.workerId as number, draft.startDate, a))}
+                      >
+                        <Icon name={st.icon} color={st.color} size={18} />
+                        {dayText(draft.startDate, today)}は{a.category}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className={styles.field} role="radiogroup" aria-label="登録の種類">
+              <span className={styles.fieldLabel}>登録の種類</span>
+              <div className={styles.segment}>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={draft.entryType === 'single'}
+                  className={styles.segmentButton}
+                  onClick={() => setEntryType('single')}
+                >
+                  1日だけ
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={draft.entryType === 'period'}
+                  className={styles.segmentButton}
+                  onClick={() => setEntryType('period')}
+                >
+                  期間(長期の現場など)
+                </button>
+              </div>
             </div>
-          )}
 
-          {/* ワンタップ登録(新しく登録するときだけ) */}
-          {!isEdit && quickActions.length > 0 && draft.workerId !== undefined && (
-            <div className={styles.field}>
-              <span className={styles.fieldLabel}>ワンタップで登録</span>
-              <div className={styles.quickRow}>
-                {quickActions.map((a) => {
-                  const st = getCategoryStyle(a.category);
+            <div className={styles.field} role="radiogroup" aria-label="区分">
+              <span className={styles.fieldLabel}>区分</span>
+              <div className={styles.categoryGrid}>
+                {categories.map((c) => {
+                  const st = getCategoryStyle(c);
+                  const checked = draft.category === c;
                   return (
                     <button
-                      key={a.category}
+                      key={c}
                       type="button"
-                      className={styles.quickButton}
-                      disabled={saving || !isValidDateKey(draft.startDate)}
-                      onClick={() => save(quickDraft(draft.workerId as number, draft.startDate, a))}
+                      role="radio"
+                      aria-checked={checked}
+                      className={styles.categoryButton}
+                      style={checked ? { borderColor: st.color, background: st.background } : undefined}
+                      onClick={() => set({ category: c })}
                     >
                       <Icon name={st.icon} color={st.color} size={18} />
-                      {dayText(draft.startDate, today)}は{a.category}
+                      {c}
                     </button>
                   );
                 })}
               </div>
+              {shown.category && <span className={styles.fieldError}>{shown.category}</span>}
             </div>
-          )}
 
-          <div className={styles.field} role="radiogroup" aria-label="登録の種類">
-            <span className={styles.fieldLabel}>登録の種類</span>
-            <div className={styles.segment}>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={draft.entryType === 'single'}
-                className={styles.segmentButton}
-                onClick={() => setEntryType('single')}
-              >
-                1日だけ
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={draft.entryType === 'period'}
-                className={styles.segmentButton}
-                onClick={() => setEntryType('period')}
-              >
-                期間(長期の現場など)
-              </button>
-            </div>
-          </div>
-
-          <div className={styles.field} role="radiogroup" aria-label="区分">
-            <span className={styles.fieldLabel}>区分</span>
-            <div className={styles.categoryGrid}>
-              {categories.map((c) => {
-                const st = getCategoryStyle(c);
-                const checked = draft.category === c;
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    role="radio"
-                    aria-checked={checked}
-                    className={styles.categoryButton}
-                    style={checked ? { borderColor: st.color, background: st.background } : undefined}
-                    onClick={() => set({ category: c })}
-                  >
-                    <Icon name={st.icon} color={st.color} size={18} />
-                    {c}
-                  </button>
-                );
-              })}
-            </div>
-            {shown.category && <span className={styles.fieldError}>{shown.category}</span>}
-          </div>
-
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>行き先・現場名</span>
-            <input
-              type="text"
-              className={styles.input}
-              value={draft.title}
-              maxLength={255}
-              placeholder="例:〇〇新築工事"
-              aria-invalid={!!shown.title}
-              onChange={(e) => set({ title: e.target.value })}
-            />
-            {shown.title && <span className={styles.fieldError}>{shown.title}</span>}
-          </label>
-          {suggestions.length > 0 && (
-            <div className={styles.suggestRow}>
-              <span className={styles.fieldLabel}>最近の行き先:</span>
-              {suggestions.map((p) => (
-                <button key={p} type="button" className={styles.suggestChip} onClick={() => set({ title: p })}>
-                  {p}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className={styles.fieldRow}>
             <label className={styles.field}>
-              <span className={styles.fieldLabel}>{draft.entryType === 'single' ? '日付' : '開始日'}</span>
+              <span className={styles.fieldLabel}>行き先・現場名</span>
               <input
-                type="date"
+                type="text"
                 className={styles.input}
-                value={draft.startDate}
-                aria-invalid={!!shown.startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                value={draft.title}
+                maxLength={255}
+                placeholder="例:〇〇新築工事"
+                aria-invalid={!!shown.title}
+                onChange={(e) => set({ title: e.target.value })}
               />
-              {shown.startDate && <span className={styles.fieldError}>{shown.startDate}</span>}
+              {shown.title && <span className={styles.fieldError}>{shown.title}</span>}
             </label>
-            {draft.entryType === 'period' && (
+            {suggestions.length > 0 && (
+              <div className={styles.suggestRow}>
+                <span className={styles.fieldLabel}>最近の行き先:</span>
+                {suggestions.map((p) => (
+                  <button key={p} type="button" className={styles.suggestChip} onClick={() => set({ title: p })}>
+                    {p}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className={styles.fieldRow}>
               <label className={styles.field}>
-                <span className={styles.fieldLabel}>終了日</span>
+                <span className={styles.fieldLabel}>{draft.entryType === 'single' ? '日付' : '開始日'}</span>
                 <input
                   type="date"
                   className={styles.input}
-                  value={draft.endDate}
-                  min={draft.startDate}
-                  aria-invalid={!!shown.endDate}
-                  onChange={(e) => set({ endDate: e.target.value })}
+                  value={draft.startDate}
+                  aria-invalid={!!shown.startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
                 />
-                {shown.endDate && <span className={styles.fieldError}>{shown.endDate}</span>}
-                {canEndToday && (
-                  <button type="button" className={styles.linkButton + ' ' + styles.endTodayButton} onClick={() => set({ endDate: today })}>
-                    今日で終了にする
-                  </button>
-                )}
-                {isEdit && draft.entryType === 'period' && draft.endDate === today && initial.endDate !== today && (
-                  <span className={styles.fieldHint}>終了日を今日にしました。「保存」を押すと確定します。</span>
-                )}
+                {shown.startDate && <span className={styles.fieldError}>{shown.startDate}</span>}
               </label>
-            )}
-          </div>
-
-          <div className={styles.field}>
-            <span className={styles.fieldLabel}>時刻(任意)</span>
-            <div className={styles.timeRow}>
-              <input
-                type="time"
-                className={styles.input}
-                aria-label="開始時刻"
-                value={draft.startTime}
-                onChange={(e) => set({ startTime: e.target.value })}
-              />
-              <span aria-hidden="true">〜</span>
-              <input
-                type="time"
-                className={styles.input}
-                aria-label="終了・戻り時刻"
-                value={draft.endTime}
-                onChange={(e) => set({ endTime: e.target.value })}
-              />
+              {draft.entryType === 'period' && (
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>終了日</span>
+                  <input
+                    type="date"
+                    className={styles.input}
+                    value={draft.endDate}
+                    min={draft.startDate}
+                    aria-invalid={!!shown.endDate}
+                    onChange={(e) => set({ endDate: e.target.value })}
+                  />
+                  {shown.endDate && <span className={styles.fieldError}>{shown.endDate}</span>}
+                  {canEndToday && (
+                    <button type="button" className={styles.linkButton + ' ' + styles.endTodayButton} onClick={() => set({ endDate: today })}>
+                      今日で終了にする
+                    </button>
+                  )}
+                  {isEdit && draft.entryType === 'period' && draft.endDate === today && initial.endDate !== today && (
+                    <span className={styles.fieldHint}>終了日を今日にしました。「保存」を押すと確定します。</span>
+                  )}
+                </label>
+              )}
             </div>
-            {shown.time && <span className={styles.fieldError}>{shown.time}</span>}
-          </div>
 
-          <label className={styles.field}>
-            <span className={styles.fieldLabel}>メモ(任意)</span>
-            <textarea className={styles.input} rows={2} value={draft.note} onChange={(e) => set({ note: e.target.value })} />
-          </label>
-
-          {showErrors && hasErrors(errors) && (
-            <p className={styles.formAlert} role="alert">
-              入力していない項目があります。赤い文字のところを確かめてください。
-            </p>
-          )}
-          {failure && (
-            <p className={styles.formAlert} role="alert">
-              {failure}
-            </p>
-          )}
-
-          <div className={styles.dialogFoot}>
-            {confirmDelete ? (
-              <div className={styles.confirmBox} role="alertdialog" aria-label="削除の確認">
-                <span>この予定を削除しますか?元には戻せません。</span>
-                <div className={styles.footButtons}>
-                  <button type="button" className={styles.toolButton} disabled={saving} onClick={() => setConfirmDelete(false)}>
-                    やめる
-                  </button>
-                  <button type="button" className={styles.dangerButton} disabled={saving} onClick={remove}>
-                    {saving ? '削除しています…' : '削除する'}
-                  </button>
-                </div>
+            <div className={styles.field}>
+              <span className={styles.fieldLabel}>時刻(任意)</span>
+              <div className={styles.timeRow}>
+                <input
+                  type="time"
+                  className={styles.input}
+                  aria-label="開始時刻"
+                  value={draft.startTime}
+                  onChange={(e) => set({ startTime: e.target.value })}
+                />
+                <span aria-hidden="true">〜</span>
+                <input
+                  type="time"
+                  className={styles.input}
+                  aria-label="終了・戻り時刻"
+                  value={draft.endTime}
+                  onChange={(e) => set({ endTime: e.target.value })}
+                />
               </div>
-            ) : (
-              <>
-                {isEdit ? (
-                  <button type="button" className={styles.dangerLink} disabled={saving} onClick={() => setConfirmDelete(true)}>
-                    削除
-                  </button>
-                ) : (
-                  <span />
-                )}
-                <div className={styles.footButtons}>
-                  <button type="button" className={styles.toolButton} disabled={saving} onClick={() => close()}>
-                    キャンセル
-                  </button>
-                  <button type="submit" className={styles.primaryButton} disabled={saving}>
-                    {saving ? '保存しています…' : '保存'}
-                  </button>
-                </div>
-              </>
+              {shown.time && <span className={styles.fieldError}>{shown.time}</span>}
+            </div>
+
+            <label className={styles.field}>
+              <span className={styles.fieldLabel}>メモ(任意)</span>
+              <textarea className={styles.input} rows={2} value={draft.note} onChange={(e) => set({ note: e.target.value })} />
+            </label>
+
+            {showErrors && hasErrors(errors) && (
+              <p className={styles.formAlert} role="alert">
+                入力していない項目があります。赤い文字のところを確かめてください。
+              </p>
             )}
-          </div>
-        </form>
+            {failure && (
+              <p className={styles.formAlert} role="alert">
+                {failure}
+              </p>
+            )}
+
+            <div className={styles.dialogFoot}>
+              {confirmDelete ? (
+                <div className={styles.confirmBox} role="alertdialog" aria-label="削除の確認">
+                  <span>この予定を削除しますか?元には戻せません。</span>
+                  <div className={styles.footButtons}>
+                    <button type="button" className={styles.toolButton} disabled={saving} onClick={() => setConfirmDelete(false)}>
+                      やめる
+                    </button>
+                    <button type="button" className={styles.dangerButton} disabled={saving} onClick={remove}>
+                      {saving ? '削除しています…' : '削除する'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {isEdit ? (
+                    <button type="button" className={styles.dangerLink} disabled={saving} onClick={() => setConfirmDelete(true)}>
+                      削除
+                    </button>
+                  ) : (
+                    <span />
+                  )}
+                  <div className={styles.footButtons}>
+                    <button type="button" className={styles.toolButton} disabled={saving} onClick={() => close()}>
+                      キャンセル
+                    </button>
+                    <button type="submit" className={styles.primaryButton} disabled={saving}>
+                      {saving ? '保存しています…' : '保存'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 };

@@ -111,7 +111,11 @@ export const WeekGrid: React.FC<IWeekGridProps> = (props) => {
                   const cells = rows.get(w.id) || [];
                   const editable = canEdit(w.id);
                   return (
-                    <tr key={w.id} className={w.id === selfId ? styles.selfRow : undefined}>
+                    <tr
+                      key={w.id}
+                      className={w.id === selfId ? styles.selfRow : undefined}
+                      data-self-row={w.id === selfId ? 'true' : undefined}
+                    >
                       <th scope="row" className={styles.nameCell}>
                         <span className={styles.workerName}>{w.name}</span>
                         {w.id === selfId && <span className={styles.selfMark}>あなた</span>}

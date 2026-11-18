@@ -114,7 +114,7 @@
     <div class="fields">
       <label class="f" for="tester">テストした人<input id="tester" type="text" placeholder="例:企画室 山田"></label>
       <label class="f" for="date">テストした日<input id="date" type="date"></label>
-      <label class="f" for="ver">テストした版(WEBパーツの右下の「ver」)<input id="ver" type="text" placeholder="例:ver 0.5.5"></label>
+      <label class="f" for="ver">テストした版(WEBパーツの右下の「ver」)<input id="ver" type="text" placeholder="例:ver 0.5.7"></label>
     </div>
     <p class="print-only" id="print-meta"></p>
     <div class="counts" id="counts"></div>
@@ -137,7 +137,7 @@
     <h2>はじめる前に</h2>
     <ol class="prep">
       <li><code>docs/LIST_SETUP.md</code> の手順で<strong>行動予定リスト</strong>(と会社休日リスト)を作り、<code>docs/DEPLOY.md</code> の手順で WEBパーツをテスト用ページに置きます。</li>
-      <li>予定表の右下に小さく出ている<strong>「ver 0.5.5」</strong>のような番号を、上の「テストした版」に書いてください。</li>
+      <li>予定表の右下に小さく出ている<strong>「ver 0.5.7」</strong>のような番号を、上の「テストした版」に書いてください。</li>
       <li>「B. 予定の表示ルール」は、テスト用の予定を自分で登録して確かめます。休暇・休日出勤は<strong>総務のリストにテスト用の行</strong>が必要です(総務の方にお願いするか、試していないでOK)。</li>
       <li>「E. 権限」は、<strong>一般社員のアカウント</strong>と<strong>管理者グループの人</strong>の2人で確かめます。</li>
       <li>確認が終わったら、テスト用に登録した予定・総務のリストの行は削除してください。</li>
@@ -326,6 +326,12 @@ const GROUPS = [
       { id: 'G15', title: '週・日を切り替えても、スクロールの位置が残る',
         how: ['表を下のほうへスクロールして、だれか1人を見る', '「>」「<」で週を切り替える。日表示でも「>」「<」を押す'],
         expect: '読み込み中は表が少し薄くなり、終わると同じあたりの人が見えたまま新しい週(日)が出る。一番上に戻らない' },
+      { id: 'G16', title: '「自分の行へ」ボタン',
+        how: ['表を下のほうへスクロールして、自分の行を見えなくする', '右下に出た「自分の行へ」を押す', 'スマホの日表示でも同じように試す'],
+        expect: '自分の行が見えなくなったときだけボタンが出て、押すと自分の行まで戻り、ボタンが消える。予定表より下へページをスクロールしたときは出ない' },
+      { id: 'G17', title: '登録画面などが見切れない(ノートPC・表示倍率125%)',
+        how: ['会社のノートPC(表示倍率125%)で「予定を追加」を開く', '「ちょっと外出」「?(使い方)」、長期の帯を押したときの画面も開く'],
+        expect: '画面の上(「予定を追加」の見出しと × ボタン)が、SharePoint の見出しや検索欄に隠れずに見える。下の「保存」も押せる' },
     ]
   },
 ];
