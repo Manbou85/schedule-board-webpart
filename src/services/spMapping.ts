@@ -10,6 +10,7 @@ import {
   ILeave,
   IScheduleEntry,
   IWorker,
+  normalizeCategory,
   parseCompanyDayType,
   parseEntryType,
   parseLeaveKind
@@ -151,12 +152,16 @@ export function mapEntry(row: ISpRow, f: IEntryFields): IScheduleEntry | undefin
   if (id === undefined || workerId === undefined || !entryType || !startDate) {
     return undefined;
   }
+  // 区分の古い呼び方(「休み」など)は新しい呼び方にする。行き先が区分と同じ文字(ワンタップ登録の「休み」)なら行き先も
+  const rawCategory = text(row[f.category]).trim();
+  const category = normalizeCategory(rawCategory);
+  const rawTitle = text(row[f.title]).trim();
   const entry: IScheduleEntry = {
     id,
     workerId,
-    title: text(row[f.title]).trim(),
+    title: rawTitle === rawCategory ? category : rawTitle,
     entryType,
-    category: text(row[f.category]).trim(),
+    category,
     startDate,
     endDate: spDateToKey(row[f.endDate]) || startDate
   };

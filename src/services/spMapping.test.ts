@@ -120,6 +120,18 @@ describe('リストの行 → 予定表のデータ', () => {
     });
   });
 
+  it('行動予定:前に登録した区分「休み」は「休暇」として読む(行き先が「休み」なら行き先も)', () => {
+    const f = SP_FIELDS.entries;
+    const base = { Id: 12, WorkerId: 1, EntryType: '単発', Category: '休み', StartDate: '2026-11-16T15:00:00Z' };
+    const quick = mapEntry({ ...base, Title: '休み' }, f);
+    expect(quick && quick.category).toBe('休暇');
+    expect(quick && quick.title).toBe('休暇');
+    // 行き先に別の文字が入っていれば、そのまま
+    const other = mapEntry({ ...base, Title: '通院' }, f);
+    expect(other && other.category).toBe('休暇');
+    expect(other && other.title).toBe('通院');
+  });
+
   it('行動予定:担当者・種別・開始日が読めない行は出さない', () => {
     const f = SP_FIELDS.entries;
     const rows = [

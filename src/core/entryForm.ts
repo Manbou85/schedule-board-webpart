@@ -148,7 +148,7 @@ export interface IQuickAction {
  */
 export const DEFAULT_QUICK_ACTIONS: IQuickAction[] = [
   { category: '在社', title: '本社' },
-  { category: '休み', title: '休み' }
+  { category: '休暇', title: '休暇' }
 ];
 
 /** ワンタップ登録で保存する予定 */

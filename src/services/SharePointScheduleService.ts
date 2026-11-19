@@ -2,7 +2,7 @@
 // ログイン中のユーザーの権限で読み書きする。本当の制限はリストの権限設定で行う。
 
 import { SPHttpClient, SPHttpClientResponse } from '@microsoft/sp-http';
-import { DateKey, IScheduleEntry, IWorker, overlapsRange } from '../core';
+import { DateKey, IScheduleEntry, IWorker, listCategoryValue, normalizeCategories, overlapsRange } from '../core';
 import { ICurrentUser, IRangeData, IScheduleDataService } from './IScheduleDataService';
 import { ISpFieldConfig, ISpListSettings, SP_FIELDS } from './spConfig';
 import {
@@ -74,6 +74,8 @@ export class SharePointScheduleService implements IScheduleDataService {
   private readonly _userEmail: string;
   private readonly _lists: ISpListSettings;
   private readonly _f: ISpFieldConfig;
+  /** 区分の列の選択肢(リストの設定のまま。書き込むときに古い呼び方へ戻すかどうかの判定に使う) */
+  private _listCategories: string[] = [];
 
   public constructor(options: ISharePointServiceOptions) {
     this._client = options.spHttpClient;
@@ -100,7 +102,9 @@ export class SharePointScheduleService implements IScheduleDataService {
         "')?$select=Choices"
     );
     const choices = json && json.Choices;
-    return Array.isArray(choices) ? choices.filter((c: unknown) => typeof c === 'string') : [];
+    this._listCategories = Array.isArray(choices) ? choices.filter((c: unknown) => typeof c === 'string') : [];
+    // 古い呼び方(「休み」など)は新しい呼び方(「休暇」)にして画面に出す
+    return normalizeCategories(this._listCategories);
   }
 
   public async getCurrentUser(): Promise<ICurrentUser> {
@@ -260,7 +264,7 @@ export class SharePointScheduleService implements IScheduleDataService {
   public async createEntry(entry: Omit<IScheduleEntry, 'id'>): Promise<IScheduleEntry> {
     const response = await this._client.post(this._list(this._lists.entriesList) + '/items', SPHttpClient.configurations.v1, {
       headers: JSON_HEADERS,
-      body: JSON.stringify(entryToSpBody(entry, this._f.entries))
+      body: JSON.stringify(entryToSpBody(this._toListEntry(entry), this._f.entries))
     });
     if (!response.ok) {
       throw await readError(response);
@@ -275,7 +279,7 @@ export class SharePointScheduleService implements IScheduleDataService {
       SPHttpClient.configurations.v1,
       {
         headers: { ...JSON_HEADERS, 'IF-MATCH': '*', 'X-HTTP-Method': 'MERGE' },
-        body: JSON.stringify(entryToSpBody(entry, this._f.entries))
+        body: JSON.stringify(entryToSpBody(this._toListEntry(entry), this._f.entries))
       }
     );
     if (!response.ok) {
@@ -293,6 +297,12 @@ export class SharePointScheduleService implements IScheduleDataService {
     if (!response.ok) {
       throw await readError(response);
     }
+  }
+
+  /** 書き込む前に、区分をリストの選択肢にある呼び方にする(選択肢がまだ「休み」のままなら「休み」で書く) */
+  private _toListEntry<T extends Omit<IScheduleEntry, 'id'>>(entry: T): T {
+    const category = listCategoryValue(entry.category, this._listCategories);
+    return category === entry.category ? entry : { ...entry, category };
   }
 
   private _list(listRef: string): string {
