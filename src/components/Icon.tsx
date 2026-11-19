@@ -28,6 +28,7 @@ export type IconName =
   | 'chevronDown'
   | 'refresh' // 新しくする
   | 'help' // ヘルプ
+  | 'settings' // 表示設定(歯車)
   | 'arrowUp'; // 自分の行へ
 
 /** 線(path)と円(circle)の組み合わせで1つのアイコンを表す */
@@ -94,7 +95,12 @@ const SHAPES: { [name in IconName]: IShape } = {
   chevronDown: { paths: ['M5 9l7 7 7-7'] },
   refresh: { paths: ['M20 12a8 8 0 1 1-2.34-5.66', 'M20 4v5h-5'] },
   help: { paths: ['M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6', 'M12 17h.01'], circles: [[12, 12, 9]] },
-  arrowUp: { paths: ['M12 19V5', 'M6 11l6-6 6 6'] }
+  arrowUp: { paths: ['M12 19V5', 'M6 11l6-6 6 6'] },
+  // 歯車:8枚の歯(外側 9.6・内側 7.2)+まん中の穴
+  settings: {
+    paths: ['M10.1 5.0 L10.5 2.5 L13.5 2.5 L13.9 5.0 L15.6 5.8 L17.6 4.2 L19.8 6.4 L18.2 8.4 L19.0 10.1 L21.5 10.5 L21.5 13.5 L19.0 13.9 L18.2 15.6 L19.8 17.6 L17.6 19.8 L15.6 18.2 L13.9 19.0 L13.5 21.5 L10.5 21.5 L10.1 19.0 L8.4 18.2 L6.4 19.8 L4.2 17.6 L5.8 15.6 L5.0 13.9 L2.5 13.5 L2.5 10.5 L5.0 10.1 L5.8 8.4 L4.2 6.4 L6.4 4.2 L8.4 5.8z'],
+    circles: [[12, 12, 3]]
+  }
 };
 
 export interface IIconProps {
