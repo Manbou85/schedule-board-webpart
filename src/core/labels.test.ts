@@ -1,4 +1,4 @@
-import { parseCompanyDayType, parseEntryType, parseLeaveKind } from './labels';
+import { listCategoryValue, normalizeCategories, normalizeCategory, parseCompanyDayType, parseEntryType, parseLeaveKind } from './labels';
 
 describe('リストの選択肢の読み取り', () => {
   it('登録種別', () => {
@@ -27,5 +27,32 @@ describe('リストの選択肢の読み取り', () => {
     expect(parseLeaveKind('遅刻')).toBe('late');
     expect(parseLeaveKind('早退')).toBe('early');
     expect(parseLeaveKind('半日')).toBeUndefined();
+  });
+});
+
+describe('区分の呼び方を「休暇」にそろえる(ver 0.7.0)', () => {
+  it('古い呼び方「休み」は「休暇」にする。ほかの区分はそのまま', () => {
+    expect(normalizeCategory('休み')).toBe('休暇');
+    expect(normalizeCategory(' 休み ')).toBe('休暇');
+    expect(normalizeCategory('休暇')).toBe('休暇');
+    expect(normalizeCategory('在社')).toBe('在社');
+  });
+
+  it('選択肢の一覧も読み替え、同じ名前が2つになったら1つにする(順番はそのまま)', () => {
+    expect(normalizeCategories(['現場', '在社', '休み', 'その他'])).toEqual(['現場', '在社', '休暇', 'その他']);
+    expect(normalizeCategories(['現場', '休み', '休暇'])).toEqual(['現場', '休暇']);
+  });
+
+  it('書き込むとき:リストの選択肢に「休暇」があれば「休暇」で書く', () => {
+    expect(listCategoryValue('休暇', ['現場', '休暇'])).toBe('休暇');
+  });
+
+  it('書き込むとき:リストの選択肢がまだ「休み」のままなら「休み」で書く(SharePoint が受け付けるように)', () => {
+    expect(listCategoryValue('休暇', ['現場', '休み'])).toBe('休み');
+    expect(listCategoryValue('在社', ['在社', '休み'])).toBe('在社');
+  });
+
+  it('選択肢が読めていないときは、そのまま書く', () => {
+    expect(listCategoryValue('休暇', [])).toBe('休暇');
   });
 });

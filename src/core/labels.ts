@@ -63,3 +63,47 @@ export function parseCompanyDayType(label: string | undefined): CompanyDayType |
 export function parseLeaveKind(label: string | undefined): LeaveKind | undefined {
   return findKey(LEAVE_KIND_LABELS, label);
 }
+
+/**
+ * 区分の古い呼び方 → 新しい呼び方(ver 0.7.0)。
+ * 総務の呼び方に合わせて、本人が入れる「休み」を「休暇」にそろえた(開発者の要望)。
+ * リストの選択肢を変えたあとも、前に登録した予定(区分「休み」のまま残る)を「休暇」として扱うために使う。
+ */
+export const CATEGORY_ALIASES: { [oldName: string]: string } = {
+  休み: '休暇'
+};
+
+/** 区分の名前を新しい呼び方にする(古い呼び方でなければそのまま) */
+export function normalizeCategory(category: string): string {
+  const c = category.trim();
+  return Object.prototype.hasOwnProperty.call(CATEGORY_ALIASES, c) ? CATEGORY_ALIASES[c] : c;
+}
+
+/** 区分の選択肢の一覧を新しい呼び方にする(同じ名前が2つになったら1つにする。順番はそのまま) */
+export function normalizeCategories(choices: string[]): string[] {
+  const result: string[] = [];
+  choices.forEach((c) => {
+    const n = normalizeCategory(c);
+    if (n && result.indexOf(n) < 0) {
+      result.push(n);
+    }
+  });
+  return result;
+}
+
+/**
+ * リストに書き込む区分の値。リストの選択肢がまだ古い呼び方のまま(例「休み」)なら、古い呼び方で書く
+ * (選択肢にない値は SharePoint が受け付けないため。選択肢を変える前に新しい版を入れても保存できるように)
+ */
+export function listCategoryValue(category: string, listChoices: string[]): string {
+  if (listChoices.length === 0 || listChoices.indexOf(category) >= 0) {
+    return category;
+  }
+  let value = category;
+  Object.keys(CATEGORY_ALIASES).forEach((oldName) => {
+    if (CATEGORY_ALIASES[oldName] === category && listChoices.indexOf(oldName) >= 0) {
+      value = oldName;
+    }
+  });
+  return value;
+}

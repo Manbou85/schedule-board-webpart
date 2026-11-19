@@ -18,7 +18,6 @@ const STYLES: { [category: string]: ICategoryStyle } = {
   外出: { icon: 'car', color: '#00807a', background: '#d9f2f0' },
   出張: { icon: 'suitcase', color: '#7a45b0', background: '#eee5f7' },
   研修: { icon: 'book', color: '#3b7d23', background: '#e3f1dc' },
-  休み: { icon: 'moon', color: '#6b6b6b', background: '#ececec' },
   その他: { icon: 'pin', color: '#8a6d00', background: '#f7efcf' }
 };
 
@@ -27,6 +26,9 @@ export const DEFAULT_CATEGORY_STYLE: ICategoryStyle = { icon: 'tag', color: '#5c
 
 /** 休暇・休日出勤(総務のリスト)の見た目 */
 export const LEAVE_STYLE: ICategoryStyle = { icon: 'sun', color: '#b0256a', background: '#fbe3ef' };
+
+// 本人が入れる区分「休暇」も、総務の休暇と同じ見た目(ver 0.7.0。呼び方を「休暇」にそろえ、見た目も1つにした。開発者回答)
+STYLES['休暇'] = LEAVE_STYLE;
 export const HOLIDAY_WORK_STYLE: ICategoryStyle = { icon: 'calendarCheck', color: '#a4262c', background: '#fde7e9' };
 
 export function getCategoryStyle(category: string): ICategoryStyle {

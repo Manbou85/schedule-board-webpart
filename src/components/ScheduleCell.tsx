@@ -2,7 +2,7 @@
 // どれを表示するかは core の resolveCell で決まっているので、ここでは見た目だけを作る。
 
 import * as React from 'react';
-import { DateKey, formatTimeRange, ICell, ILeaveBadge, IScheduleEntry } from '../core';
+import { DateKey, formatTimeRange, ICell, ILeaveBadge, IScheduleEntry, LEAVE_CATEGORY } from '../core';
 import { getCategoryStyle, HOLIDAY_WORK_STYLE, LEAVE_STYLE } from './categoryStyle';
 import { finishedLabel, formatPeriod } from './format';
 import { Icon } from './Icon';
@@ -86,6 +86,14 @@ export const LeaveBadge: React.FC<{ badge: ILeaveBadge; showRemarks?: boolean }>
   );
 };
 
+/**
+ * 区分名を出さなくてよい予定か。区分も行き先も「休暇」(ワンタップ登録など)のときは、
+ * 総務の休暇と同じく「休暇」の1行だけにする(ver 0.7.0。見た目を総務の休暇とそろえる。開発者回答)
+ */
+function hideCategoryLabel(entry: IScheduleEntry): boolean {
+  return entry.category === LEAVE_CATEGORY && entry.title === entry.category;
+}
+
 const SingleEntry: React.FC<{ entry: IScheduleEntry; onEdit?: (entry: IScheduleEntry) => void; finished?: boolean }> = ({
   entry,
   onEdit,
@@ -103,7 +111,9 @@ const SingleEntry: React.FC<{ entry: IScheduleEntry; onEdit?: (entry: IScheduleE
     >
       <Icon name={st.icon} color={st.color} className={styles.icon} />
       <span className={styles.entryText}>
-        <span className={styles.categoryLabel}>{finished ? finishedLabel(entry.category) : entry.category}</span>
+        {(finished || !hideCategoryLabel(entry)) && (
+          <span className={styles.categoryLabel}>{finished ? finishedLabel(entry.category) : entry.category}</span>
+        )}
         <span className={styles.place}>{entry.title}</span>
         {time && <span className={styles.time}>{time}</span>}
       </span>
@@ -158,7 +168,7 @@ export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, jo
         <>
           <Icon name={st.icon} color={st.color} className={styles.icon} />
           <span className={styles.entryText}>
-            <span className={styles.categoryLabel}>{c.entry.category}</span>
+            {!hideCategoryLabel(c.entry) && <span className={styles.categoryLabel}>{c.entry.category}</span>}
             <span className={styles.place}>{c.entry.title}</span>
             {time && <span className={styles.time}>{time}</span>}
           </span>

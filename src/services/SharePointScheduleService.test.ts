@@ -132,6 +132,26 @@ describe('SharePoint に書き込む', () => {
     expect(JSON.parse(calls[0].options.body || '{}')).toMatchObject({ WorkerId: 3, EntryType: '単発', StartDate: '2026-11-17T00:00:00Z' });
   });
 
+  it('区分「休暇」:リストの選択肢がまだ「休み」なら「休み」で書き、「休暇」に変えたあとは「休暇」で書く', async () => {
+    const leave = { ...entry, category: '休暇', title: '休暇' };
+    const old = makeService([
+      { match: "getbyinternalnameortitle('Category')", json: { Choices: ['在社', '休み'] } },
+      { match: "ScheduleEntries')/items", json: { Id: 5 } }
+    ]);
+    // 画面には「休暇」として出す
+    expect(await old.service.getCategories()).toEqual(['在社', '休暇']);
+    await old.service.createEntry(leave);
+    expect(JSON.parse(old.calls[1].options.body || '{}')).toMatchObject({ Category: '休み' });
+
+    const renamed = makeService([
+      { match: "getbyinternalnameortitle('Category')", json: { Choices: ['在社', '休暇'] } },
+      { match: "ScheduleEntries')/items", json: { Id: 6 } }
+    ]);
+    await renamed.service.getCategories();
+    await renamed.service.createEntry(leave);
+    expect(JSON.parse(renamed.calls[1].options.body || '{}')).toMatchObject({ Category: '休暇' });
+  });
+
   it('変更は MERGE、削除は DELETE(どちらも IF-MATCH: *)', async () => {
     const { service, calls } = makeService([{ match: 'items(7)', json: {} }]);
     await service.updateEntry({ ...entry, id: 7 });

@@ -79,7 +79,7 @@ export const PeriodChoiceDialog: React.FC<IPeriodChoiceDialogProps> = (props) =>
               <Icon name="plus" size={20} />
               <span>
                 <strong>{dayText}だけ、別の予定を追加</strong>
-                <span className={styles.choiceNote}>外出・出張・休みなど。この日はこちらが優先して出ます</span>
+                <span className={styles.choiceNote}>外出・出張・休暇など。この日はこちらが優先して出ます</span>
               </span>
             </button>
             {entry.readOnly ? (

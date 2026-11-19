@@ -11,7 +11,7 @@ export type IconName =
   | 'car' // 外出
   | 'suitcase' // 出張
   | 'book' // 研修
-  | 'moon' // 休み
+  | 'moon' // 以前の区分「休み」(ver 0.7.0 で「休暇」にそろえたため、今は使っていない)
   | 'pin' // その他
   | 'tag' // 対応表にない区分
   | 'sun' // 休暇

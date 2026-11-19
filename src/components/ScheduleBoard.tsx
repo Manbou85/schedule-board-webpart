@@ -552,7 +552,10 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const filtering = shown.length !== base.workers.length;
 
   const departments = orderDepartments(groupByDepartment(base.workers), departmentOrder).map((g) => g.department);
-  const categoryOptions = base.categories.concat([LEAVE_CATEGORY, HOLIDAY_WORK_CATEGORY]);
+  // 区分の選択肢に「休暇」があれば(ver 0.7.0 から)、総務の休暇とあわせて1つにする
+  const categoryOptions = base.categories.concat(
+    [LEAVE_CATEGORY, HOLIDAY_WORK_CATEGORY].filter((c) => base.categories.indexOf(c) < 0)
+  );
   const thisWeek = startOfWeek(today);
   const openDay = (d: DateKey): void => {
     setDate(d);
