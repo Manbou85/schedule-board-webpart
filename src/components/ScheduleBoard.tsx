@@ -5,6 +5,7 @@ import * as React from 'react';
 import {
   addDays,
   canEditWorker,
+  fitTableHeight,
   NO_ENTRY_STATUS,
   summarizeStatus,
   crewToEntries,
@@ -108,6 +109,31 @@ export type ViewMode = 'week' | 'day';
 /** スマホ幅かどうか(最初の表示を決めるときだけ使う) */
 function isNarrowScreen(): boolean {
   return typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
+}
+
+/** 予定表の高さを渡す CSS の変数の名前 */
+const TABLE_HEIGHT_VAR = '--sb-table-height';
+
+/**
+ * ページのスクロールする入れ物を探す(SharePoint ではページの中の div、プレビューではブラウザの画面そのもの)。
+ * 見つからなければ undefined(ブラウザの画面がスクロールする)。
+ * 横だけ隠す設定の入れ物も「縦はスクロールできる」あつかいになり、実際には中身に合わせて伸びるだけのことがあるため、
+ * 下の端が画面の下の端と同じ入れ物(=画面の高さに収まっている入れ物)だけを選ぶ
+ */
+function findScrollParent(el: HTMLElement): HTMLElement | undefined {
+  const viewportBottom = document.documentElement.clientHeight;
+  let p = el.parentElement;
+  while (p && p !== document.body && p !== document.documentElement) {
+    const overflowY = window.getComputedStyle(p).overflowY;
+    if (
+      (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay') &&
+      Math.abs(p.getBoundingClientRect().bottom - viewportBottom) <= 2
+    ) {
+      return p;
+    }
+    p = p.parentElement;
+  }
+  return undefined;
 }
 
 interface ILoadedRange {
@@ -265,6 +291,57 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const [todayEntries, setTodayEntries] = React.useState<IScheduleEntry[] | undefined>(undefined);
   // 「予定を登録しました」などのお知らせ
   const [toast, setToast] = React.useState('');
+
+  // 予定表の高さを、画面の残りの高さに合わせる(ページ全体と予定表のスクロールが二重にならないように。ver 0.6.7)
+  // 高さは CSS の変数 --sb-table-height で予定表に渡す(画面を作り直さずに済むように、要素に直接書く)
+  const rootRef = React.useRef<HTMLDivElement>(null);
+  // WEBパーツより下にあるもの(ページの下の余白など)の高さ。ページがはみ出したときに測り直す
+  const pageBelowRef = React.useRef(24);
+  const fitHeight = React.useCallback((): void => {
+    const root = rootRef.current;
+    const area = tableAreaRef.current;
+    if (!root || !area) {
+      return;
+    }
+    const scroller = findScrollParent(root);
+    let contentTop: number;
+    let visibleHeight: number;
+    let scrollHeight: number;
+    if (scroller) {
+      contentTop = scroller.getBoundingClientRect().top + scroller.clientTop - scroller.scrollTop;
+      visibleHeight = scroller.clientHeight;
+      scrollHeight = scroller.scrollHeight;
+    } else {
+      contentTop = -(window.pageYOffset || 0);
+      visibleHeight = document.documentElement.clientHeight;
+      scrollHeight = document.documentElement.scrollHeight;
+    }
+    const rootRect = root.getBoundingClientRect();
+    const areaRect = area.getBoundingClientRect();
+    if (scrollHeight > visibleHeight + 1) {
+      pageBelowRef.current = Math.max(0, scrollHeight - (rootRect.bottom - contentTop));
+    }
+    const height = fitTableHeight({
+      visibleHeight,
+      tableTop: areaRect.top - contentTop,
+      belowTable: rootRect.bottom - areaRect.bottom + pageBelowRef.current,
+      viewportWidth: window.innerWidth
+    });
+    const value = height === undefined ? '' : height + 'px';
+    if (root.style.getPropertyValue(TABLE_HEIGHT_VAR) !== value) {
+      if (value) {
+        root.style.setProperty(TABLE_HEIGHT_VAR, value);
+      } else {
+        root.style.removeProperty(TABLE_HEIGHT_VAR);
+      }
+    }
+  }, []);
+  // 表示が変わるたび(週・日の切り替え、読み込み、絞り込み、部署の開閉など)と、画面の大きさが変わったときに測り直す
+  React.useLayoutEffect(fitHeight);
+  React.useEffect(() => {
+    window.addEventListener('resize', fitHeight);
+    return () => window.removeEventListener('resize', fitHeight);
+  }, [fitHeight]);
 
   React.useEffect(() => {
     if (!toast) {
@@ -575,7 +652,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const rootClass = styles.scheduleBoard + (compact ? ' ' + styles.compact : '');
 
   return (
-    <div className={rootClass}>
+    <div ref={rootRef} className={rootClass}>
       <div className={styles.titleRow}>
         {title ? <h2 className={styles.boardTitle}>{title}</h2> : <span />}
         <div className={styles.titleTools}>
