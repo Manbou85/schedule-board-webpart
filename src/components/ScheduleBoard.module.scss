@@ -149,8 +149,8 @@ $control: 36px; // ボタン・入力欄の高さ
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px 12px;
+  // 左から:登録のボタン → 週・日と日付の移動 …… 右:探す・絞り込み・表示設定・ヘルプ(ver 0.8.0)
+  gap: 8px 16px;
   margin-bottom: 8px;
   position: relative; // スマホでポップアップを横いっぱいに出すための基準
 }
@@ -168,6 +168,13 @@ $control: 36px; // ボタン・入力欄の高さ
   align-items: center;
   gap: 6px;
   min-width: 0;
+}
+
+// 右のまとまり:右端に寄せる。狭いときは、まず検索欄が縮む(22em より狭くなったら次の行へ)
+.toolGroup {
+  flex: 1 1 22em;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
 .iconButton,
@@ -292,9 +299,9 @@ $control: 36px; // ボタン・入力欄の高さ
 .searchBox {
   position: relative;
   display: flex;
+  flex: 0 1 15em;
   align-items: center;
-  width: 15em;
-  min-width: 0;
+  min-width: 7em;
 }
 
 .searchIcon {
@@ -1661,8 +1668,17 @@ textarea.input {
 // ---- スマホ:左のまとまり(週・日+日付の移動)を1行に収める ----
 @media (max-width: 640px) {
   .leftGroup {
+    order: -1; // スマホでは日付の移動を一番上に(PC では登録のボタンが左端)
     width: 100%;
     gap: 6px;
+  }
+
+  .toolGroup {
+    flex: 1 1 100%;
+  }
+
+  .searchBox {
+    flex: 1;
   }
 
   .navGroup {
@@ -1820,27 +1836,107 @@ textarea.input {
   }
 }
 
-// ---- 絞り込みの中の「行の高さ」 ----
-.densityRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 4px;
+// ---- 表示の大きさ「大きめ」(ver 0.8.0。社員が「表示設定」で切り替える)----
+// 予定表の文字と行を大きくする(ツールバーと人数のまとめはそのまま)。
+// 列の幅は文字の大きさ(em)で決まるので、文字を大きくすると列も一緒に広がる
+.large {
+  .grid,
+  .dayList {
+    font-size: 17px;
+  }
+
+  .cell {
+    height: 64px;
+    padding: 5px 0;
+  }
+
+  .nameCell {
+    padding: 8px 10px;
+  }
+
+  .workerName {
+    font-size: 17px;
+  }
+
+  .selfMark,
+  .todayMark,
+  .holidayName,
+  .workdayName {
+    font-size: 13px;
+  }
+
+  .groupButton {
+    min-height: 40px;
+    font-size: 16px;
+  }
+
+  .dayDate {
+    font-size: 18px;
+  }
+
+  .categoryLabel {
+    font-size: 13px;
+  }
+
+  .place {
+    font-size: 16px;
+  }
+
+  .time,
+  .holidayWorkBadge,
+  .leaveBadge,
+  .badgeRemarks {
+    font-size: 14px;
+  }
+
+  .icon {
+    width: 21px;
+    height: 21px;
+  }
+
+  .single,
+  .leave {
+    margin-bottom: 4px;
+    padding: 6px 10px;
+  }
+
+  .band {
+    min-height: 48px;
+    padding: 6px 10px;
+  }
+
+  .joinPrev {
+    padding-left: 18px; // 余白4px+線4px+10px
+  }
+
+  .joinNext {
+    padding-right: 14px;
+  }
+
+  .dayRow {
+    min-height: 64px;
+  }
+
+  .dayPlace {
+    font-size: 17px;
+  }
+
+  .dayNote,
+  .badgeRemarksInline {
+    font-size: 15px;
+  }
 }
 
-.densityLabel {
-  font-size: 14px;
-}
-
-.densityRow .segment {
-  flex: none;
-}
-
-.densityRow .segmentButton {
-  min-height: 34px;
-  padding: 2px 10px;
+// ---- 表示設定の中の「表示の大きさ」 ----
+.densitySegment .segmentButton {
+  min-height: 36px;
+  padding: 2px 6px;
   white-space: nowrap;
+}
+
+.densityNote {
+  font-size: 12px;
+  color: $sub;
 }
 
 // ---- 「自分の行へ」ボタン:自分の行が見えなくなったときだけ、画面の右下に出す ----

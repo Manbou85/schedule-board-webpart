@@ -5,6 +5,7 @@ import * as React from 'react';
 import {
   addDays,
   canEditWorker,
+  Density,
   fitTableHeight,
   NO_ENTRY_STATUS,
   summarizeStatus,
@@ -46,6 +47,7 @@ import {
   weekDates
 } from '../core';
 import { IRangeData, IScheduleDataService } from '../services/IScheduleDataService';
+import { DisplayPopover } from './DisplayPopover';
 import { ALL, FilterPopover } from './FilterPopover';
 import { DatePickButton } from './DatePickButton';
 import { DayList } from './DayList';
@@ -99,8 +101,8 @@ function isPageHidden(): boolean {
 
 /** 表示の設定を覚えておく場所(WEBパーツではブラウザ、プレビューでは覚えない) */
 export interface IViewPrefsStore {
-  loadCompact(): boolean | undefined;
-  saveCompact(compact: boolean): void;
+  loadDensity(): Density | undefined;
+  saveDensity(density: Density): void;
 }
 
 /** 週間表示/日表示 */
@@ -216,15 +218,15 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const [errorInfo, setErrorInfo] = React.useState<string>('');
   const [criteria, setCriteria] = React.useState<IFilterCriteria>({});
   const [pinSelf, setPinSelf] = React.useState<boolean>(pinSelfByDefault);
-  // 行の高さ(社員がそれぞれ選ぶ。初期値は「ふつう」。WEBパーツではブラウザに覚えておく)
-  const [compact, setCompactState] = React.useState<boolean>(() => {
-    const saved = props.prefsStore ? props.prefsStore.loadCompact() : undefined;
-    return saved === true;
+  // 表示の大きさ(コンパクト/ふつう/大きめ。社員がそれぞれ選ぶ。初期値は「ふつう」。WEBパーツではブラウザに覚えておく)
+  const [density, setDensityState] = React.useState<Density>(() => {
+    const saved = props.prefsStore ? props.prefsStore.loadDensity() : undefined;
+    return saved || 'normal';
   });
-  const setCompact = (value: boolean): void => {
-    setCompactState(value);
+  const setDensity = (value: Density): void => {
+    setDensityState(value);
     if (props.prefsStore) {
-      props.prefsStore.saveCompact(value);
+      props.prefsStore.saveDensity(value);
     }
   };
   const [collapsed, setCollapsed] = React.useState<string[]>([]);
@@ -652,7 +654,8 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     );
   };
 
-  const rootClass = styles.scheduleBoard + (compact ? ' ' + styles.compact : '');
+  const rootClass =
+    styles.scheduleBoard + (density === 'compact' ? ' ' + styles.compact : density === 'large' ? ' ' + styles.large : '');
 
   return (
     <div ref={rootRef} className={rootClass}>
@@ -673,7 +676,42 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         </div>
       </div>
       <div className={styles.toolbar}>
-        {/* 左:表示の切り替え(週・日)と日付の移動。よく使う操作を左にまとめる */}
+        {/* 左端:よく使う登録のボタン(ver 0.8.0 で左端へ。SharePoint リストの「新しいアイテムを追加」などと同じ場所。
+            画面の幅や日付の文字の長さが変わっても位置が動かない)。スマホでは日付の移動の下に、横幅いっぱいの1行で出す */}
+          {(canQuickOut || canAdd) && (
+            <div className={styles.actionGroup}>
+          {canQuickOut &&
+            (activeOuting ? (
+              <button
+                type="button"
+                className={styles.returnNowButton}
+                disabled={returning}
+                title={'外出中:' + activeOuting.title + (activeOuting.endTime ? '(' + activeOuting.endTime + ' 戻り予定)' : '')}
+                onClick={markReturned}
+              >
+                {/* 会社に戻る=在社と同じ建物(「ちょっと外出」の車と対になる。開発者回答) */}
+                <Icon name="building" size={18} />
+                {returning ? '登録しています…' : '帰社しました'}
+              </button>
+            ) : (
+              <button type="button" className={styles.quickOutButton} onClick={openQuickOut}>
+                <Icon name="car" size={18} />
+                ちょっと外出
+              </button>
+            ))}
+              {canAdd && (
+                <button
+                  type="button"
+                  className={styles.addButton}
+                  onClick={() => openAdd(base.selfId, addDefaultDate)}
+                >
+                  <Icon name="plus" size={18} />
+                  <span className={styles.toolButtonText}>予定を追加</span>
+                </button>
+              )}
+            </div>
+          )}
+        {/* 表示の切り替え(週・日)と日付の移動 */}
         <div className={styles.leftGroup}>
             <div className={styles.viewSwitch} role="group" aria-label="表示の切り替え">
               <button type="button" className={styles.viewButton} aria-pressed={view === 'week'} onClick={() => setView('week')}>
@@ -722,42 +760,8 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         </div>
         </div>
 
-        {/* 右:登録・探す・絞り込み・ヘルプ */}
+        {/* 右:探す・絞り込み・表示設定・ヘルプ */}
         <div className={styles.toolGroup}>
-          {/* よく使う登録のボタン(スマホでは横幅いっぱいの1行にする) */}
-          {(canQuickOut || canAdd) && (
-            <div className={styles.actionGroup}>
-          {canQuickOut &&
-            (activeOuting ? (
-              <button
-                type="button"
-                className={styles.returnNowButton}
-                disabled={returning}
-                title={'外出中:' + activeOuting.title + (activeOuting.endTime ? '(' + activeOuting.endTime + ' 戻り予定)' : '')}
-                onClick={markReturned}
-              >
-                {/* 会社に戻る=在社と同じ建物(「ちょっと外出」の車と対になる。開発者回答) */}
-                <Icon name="building" size={18} />
-                {returning ? '登録しています…' : '帰社しました'}
-              </button>
-            ) : (
-              <button type="button" className={styles.quickOutButton} onClick={openQuickOut}>
-                <Icon name="car" size={18} />
-                ちょっと外出
-              </button>
-            ))}
-              {canAdd && (
-                <button
-                  type="button"
-                  className={styles.addButton}
-                  onClick={() => openAdd(base.selfId, addDefaultDate)}
-                >
-                  <Icon name="plus" size={18} />
-                  <span className={styles.toolButtonText}>予定を追加</span>
-                </button>
-              )}
-            </div>
-          )}
           <label className={styles.searchBox}>
             <Icon name="search" size={18} className={styles.searchIcon} />
             <span className={styles.srOnly}>名前・現場名で探す</span>
@@ -774,13 +778,15 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
             category={category}
             departments={departments}
             categories={categoryOptions}
-            pinSelf={pinSelf}
-            hasSelf={base.selfId !== undefined}
             onDepartmentChange={(v) => setCriteria({ ...criteria, departments: v ? [v] : [] })}
             onCategoryChange={(v) => setCriteria({ ...criteria, categories: v ? [v] : [] })}
+          />
+          <DisplayPopover
+            density={density}
+            onDensityChange={setDensity}
+            pinSelf={pinSelf}
+            hasSelf={base.selfId !== undefined}
             onPinSelfChange={setPinSelf}
-            compact={compact}
-            onCompactChange={setCompact}
           />
           <button
             type="button"

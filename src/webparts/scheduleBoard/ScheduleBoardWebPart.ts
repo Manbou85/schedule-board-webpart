@@ -11,7 +11,7 @@ import {
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 
-import { DEFAULT_CELL_RULE_OPTIONS, DEFAULT_CREW_DEPARTMENTS, DEFAULT_EXCLUDED_DEPARTMENTS } from '../../core';
+import { DEFAULT_CELL_RULE_OPTIONS, DEFAULT_CREW_DEPARTMENTS, DEFAULT_EXCLUDED_DEPARTMENTS, Density, parseDensity } from '../../core';
 import { ScheduleBoard, IScheduleBoardProps, IViewPrefsStore } from '../../components/ScheduleBoard';
 import { SharePointScheduleService } from '../../services/SharePointScheduleService';
 import { DEFAULT_LIST_SETTINGS, ISpListSettings } from '../../services/spConfig';
@@ -35,22 +35,23 @@ export interface IScheduleBoardWebPartProps extends Partial<ISpListSettings> {
 }
 
 /**
- * 表示の設定(行の高さ)を、このブラウザに覚えておく。
+ * 表示の設定(表示の大きさ:コンパクト/ふつう/大きめ)を、このブラウザに覚えておく。
  * 使えないブラウザ(保存が禁止されている など)では、覚えずに「ふつう」で表示する。
+ * ver 0.7 までは「行の高さ」(COMPACT_KEY)で覚えていたので、新しい値がなければそちらを読む
  */
+const DENSITY_KEY = 'scheduleBoard.density';
 const COMPACT_KEY = 'scheduleBoard.compact';
 export const browserPrefsStore: IViewPrefsStore = {
-  loadCompact: (): boolean | undefined => {
+  loadDensity: (): Density | undefined => {
     try {
-      const v = window.localStorage.getItem(COMPACT_KEY);
-      return v === null ? undefined : v === '1';
+      return parseDensity(window.localStorage.getItem(DENSITY_KEY), window.localStorage.getItem(COMPACT_KEY));
     } catch {
       return undefined;
     }
   },
-  saveCompact: (compact: boolean): void => {
+  saveDensity: (density: Density): void => {
     try {
-      window.localStorage.setItem(COMPACT_KEY, compact ? '1' : '0');
+      window.localStorage.setItem(DENSITY_KEY, density);
     } catch {
       // 覚えられなくても表示は切り替わるので、何もしない
     }
