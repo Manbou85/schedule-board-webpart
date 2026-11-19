@@ -636,6 +636,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
             {dateText.substring(6)}
             {view === 'day' && date === today && <span className={styles.todayChip}>今日</span>}
             {view === 'day' && range && !loading && day && day.isHoliday && <span className={styles.holidayChip}>{day.holidayName || '休日'}</span>}
+            {view === 'day' && range && !loading && day && day.workdayName && <span className={styles.workdayChip}>{day.workdayName}</span>}
           </div>
           <DatePickButton value={date} onChange={setDate} />
         </div>

@@ -235,7 +235,8 @@ $control: 36px; // ボタン・入力欄の高さ
 }
 
 .todayChip,
-.holidayChip {
+.holidayChip,
+.workdayChip {
   padding: 0 8px;
   font-size: 12px;
   font-weight: 600;
@@ -251,6 +252,12 @@ $control: 36px; // ボタン・入力欄の高さ
 .holidayChip {
   color: #c50f1f;
   background: #fde7e9;
+}
+
+// 土日を出勤日にした日(休日の赤とまちがえないよう、落ち着いた青)
+.workdayChip {
+  color: $accent;
+  background: #ebf3fc;
 }
 
 .datePick {
@@ -603,11 +610,16 @@ $control: 36px; // ボタン・入力欄の高さ
   border-radius: 10px;
 }
 
-.holidayName {
+.holidayName,
+.workdayName {
   display: block !important;
   font-size: 12px;
   font-weight: normal;
   color: #c50f1f;
+}
+
+.workdayName {
+  color: $accent;
 }
 
 .holiday {
@@ -1684,7 +1696,8 @@ textarea.input {
   }
 
   .leftGroup .todayChip,
-  .leftGroup .holidayChip {
+  .leftGroup .holidayChip,
+  .leftGroup .workdayChip {
     padding: 0 6px;
     font-size: 11px;
     line-height: 18px;

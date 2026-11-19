@@ -79,6 +79,7 @@ export const WeekGrid: React.FC<IWeekGridProps> = (props) => {
                   </span>
                   {d.date === today && <span className={styles.todayMark}>今日</span>}
                   {d.holidayName && <span className={styles.holidayName}>{d.holidayName}</span>}
+                  {d.workdayName && <span className={styles.workdayName}>{d.workdayName}</span>}
                 </button>
               </th>
             ))}
