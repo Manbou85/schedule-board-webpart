@@ -33,6 +33,7 @@ import {
   groupByDepartment,
   groupByWorker,
   orderDepartments,
+  promoteWithinDepartment,
   HOLIDAY_WORK_CATEGORY,
   ICell,
   ICellRuleOptions,
@@ -82,6 +83,8 @@ export interface IScheduleBoardProps {
   helpContact?: string;
   /** 部署の並び順(書いた部署から順に。空なら No. 順のまま) */
   departmentOrder?: string[];
+  /** 部署の中で先頭に並べる人(名前。例:社長。書いた順) */
+  frontWorkerNames?: string[];
   /** 作業員の行き先リストを反映する部署(空なら全員。WEBパーツの設定。初期値は「作業員」) */
   crewDepartments?: string[];
   /** 「行の高さ」などの表示の設定を覚えておく場所。省略すると覚えない(開き直すと「ふつう」に戻る) */
@@ -548,7 +551,9 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     groups.push({ key: SELF_GROUP, label: 'あなた', workers: self, collapsible: false });
   }
   const departmentOrder = props.departmentOrder || [];
-  orderDepartments(groupByDepartment(usePin ? shown.filter((w) => w.id !== base.selfId) : shown), departmentOrder).forEach((g) => {
+  // 指定した人(社長など)は、自分の部署の一番上に
+  const ordered = promoteWithinDepartment(shown, props.frontWorkerNames || []);
+  orderDepartments(groupByDepartment(usePin ? ordered.filter((w) => w.id !== base.selfId) : ordered), departmentOrder).forEach((g) => {
     groups.push({ key: g.department, label: g.department || '(部署なし)', workers: g.workers, collapsible: true });
   });
   const filtering = shown.length !== base.workers.length;

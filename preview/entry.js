@@ -51,6 +51,8 @@ function PreviewControls() {
         today,
         version,
         title: '行動予定表',
+        // WEBパーツの設定「部署の中で先頭に並べる人」の確かめ用:役員の3人目(No. は最後)を役員の一番上に出す
+        frontWorkerNames: ['上野 達也'],
         helpContact: '例:システム担当 ◯◯(内線 123)\nプレビューでは、WEBパーツの設定に書いた文字がここに出ます。'
       })
     )

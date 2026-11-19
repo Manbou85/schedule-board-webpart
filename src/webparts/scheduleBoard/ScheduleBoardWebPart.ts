@@ -26,6 +26,8 @@ export interface IScheduleBoardWebPartProps extends Partial<ISpListSettings> {
   helpContact?: string;
   /** 部署の並び順(「、」や改行で区切る。空欄なら No. 順) */
   departmentOrder?: string;
+  /** 部署の中で先頭に並べる人(名前。「、」や改行で区切る。例:社長) */
+  frontWorkerNames?: string;
   /** 予定表から外す部署(「、」や改行で区切って複数) */
   excludedDepartments?: string;
   /** 「自分を一番上に表示」を最初からオンにする */
@@ -105,6 +107,7 @@ export default class ScheduleBoardWebPart extends BaseClientSideWebPart<ISchedul
       title: p.title === undefined ? DEFAULT_TITLE : p.title,
       helpContact: p.helpContact,
       departmentOrder: splitList(p.departmentOrder),
+      frontWorkerNames: splitList(p.frontWorkerNames),
       prefsStore: browserPrefsStore,
       // 一度も設定していなければ「作業員」。空欄にしたら全員
       crewDepartments: p.crewDepartments === undefined ? DEFAULT_CREW_DEPARTMENTS : splitList(p.crewDepartments)
@@ -161,6 +164,14 @@ export default class ScheduleBoardWebPart extends BaseClientSideWebPart<ISchedul
                   placeholder: '例:\n役員\n企画室\n建築部',
                   multiline: true,
                   rows: 5
+                }),
+                PropertyPaneTextField('frontWorkerNames', {
+                  label: '部署の中で先頭に並べる人',
+                  description:
+                    '予定表に出ている名前を、1行に1人ずつ書きます(例:社長)。書いた人は、自分の部署の一番上に並びます。同じ部署に何人か書けば、書いた順です',
+                  placeholder: '例:\n山田 太郎',
+                  multiline: true,
+                  rows: 3
                 }),
                 PropertyPaneTextField('excludedDepartments', {
                   label: '予定表に出さない部署',

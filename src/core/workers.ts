@@ -1,5 +1,6 @@
 // 予定表に出す人の整理(退職者の除外・並び順・部署ごとのまとまり・自分の判定)
 
+import { nameKey } from './crew';
 import { IWorker } from './types';
 
 /** 除外する部署の初期値(WEBパーツの設定で変更できるようにする) */
@@ -66,6 +67,31 @@ export function orderDepartments<T extends { department: string }>(groups: T[], 
     .map((g, i) => ({ g, i }))
     .sort((a, b) => rank(a.g) - rank(b.g) || a.i - b.i)
     .map((x) => x.g);
+}
+
+/**
+ * 指定した人を、自分の部署の中で先頭に並べる(WEBパーツの設定「部署の中で先頭に並べる人」。例:社長。ver 0.8.3)。
+ * - 名前は予定表に出ている名前(WorkerName)。全角・半角・空白のちがいは気にしない
+ * - 書いた順に並ぶ(同じ部署に2人書けば、書いた順)。書かなかった人は今までの順(No. 順)
+ * - 部署の並び(最初の人の位置)は変えない。名前が合わない行は使わない
+ */
+export function promoteWithinDepartment(workers: IWorker[], names: string[]): IWorker[] {
+  const keys = names.map(nameKey).filter((k) => !!k);
+  if (keys.length === 0) {
+    return workers;
+  }
+  const rank = (w: IWorker): number => {
+    const i = keys.indexOf(nameKey(w.name));
+    return i >= 0 ? i : keys.length;
+  };
+  const result: IWorker[] = [];
+  groupByDepartment(workers).forEach((g) => {
+    g.workers
+      .map((w, i) => ({ w, i }))
+      .sort((a, b) => rank(a.w) - rank(b.w) || a.i - b.i)
+      .forEach((x) => result.push(x.w));
+  });
+  return result;
 }
 
 /** ログイン中のユーザー(メールアドレスなど)と M365User が一致する人を探す。大文字・小文字は区別しない */
