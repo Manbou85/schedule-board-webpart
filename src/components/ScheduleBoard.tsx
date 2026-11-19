@@ -764,12 +764,12 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         <div className={styles.toolGroup}>
           <label className={styles.searchBox}>
             <Icon name="search" size={18} className={styles.searchIcon} />
-            <span className={styles.srOnly}>名前・現場名で探す</span>
+            <span className={styles.srOnly}>名前・行き先で探す</span>
             <input
               type="search"
               className={styles.searchInput}
               value={criteria.keyword || ''}
-              placeholder="名前・現場名で探す"
+              placeholder="名前・行き先で探す"
               onChange={(e) => setCriteria({ ...criteria, keyword: e.target.value })}
             />
           </label>
