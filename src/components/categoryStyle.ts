@@ -13,7 +13,7 @@ export interface ICategoryStyle {
 }
 
 const STYLES: { [category: string]: ICategoryStyle } = {
-  現場: { icon: 'helmet', color: '#c25e00', background: '#fdebd8' },
+  現場: { icon: 'cone', color: '#c25e00', background: '#fdebd8' },
   在社: { icon: 'building', color: '#0f6cbd', background: '#e0eefb' },
   外出: { icon: 'car', color: '#00807a', background: '#d9f2f0' },
   出張: { icon: 'suitcase', color: '#7a45b0', background: '#eee5f7' },

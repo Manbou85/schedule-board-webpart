@@ -736,7 +736,8 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
                 title={'外出中:' + activeOuting.title + (activeOuting.endTime ? '(' + activeOuting.endTime + ' 戻り予定)' : '')}
                 onClick={markReturned}
               >
-                <Icon name="check" size={18} />
+                {/* 会社に戻る=在社と同じ建物(「ちょっと外出」の車と対になる。開発者回答) */}
+                <Icon name="building" size={18} />
                 {returning ? '登録しています…' : '帰社しました'}
               </button>
             ) : (
