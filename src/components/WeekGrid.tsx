@@ -132,6 +132,7 @@ export const WeekGrid: React.FC<IWeekGridProps> = (props) => {
                               cell={cell}
                               joinsPrev={samePeriod(cells[i - 1], cell)}
                               joinsNext={samePeriod(cell, cells[i + 1])}
+                              isToday={days[i].date === today}
                               onEdit={editable ? onEdit : undefined}
                             />
                           </div>

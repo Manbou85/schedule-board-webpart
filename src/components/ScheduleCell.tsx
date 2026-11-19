@@ -14,6 +14,8 @@ export interface IScheduleCellProps {
   joinsPrev: boolean;
   /** 次の日も同じ長期の予定(帯が右につながる) */
   joinsNext: boolean;
+  /** 今日のマスか(帯の続きでも、今日の列には行き先を出す) */
+  isToday?: boolean;
   /** 編集できる人の行のとき:予定を押したら編集フォームを開く(長期の予定は、押した日も渡す) */
   onEdit?: (entry: IScheduleEntry, date?: DateKey) => void;
 }
@@ -121,7 +123,7 @@ const SingleEntry: React.FC<{ entry: IScheduleEntry; onEdit?: (entry: IScheduleE
   );
 };
 
-export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, joinsNext, onEdit }) => {
+export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, joinsNext, isToday, onEdit }) => {
   const c = cell.content;
   let body: React.ReactNode;
 
@@ -184,10 +186,12 @@ export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, jo
           title={c.entry.category + ':' + c.entry.title + '(' + formatPeriod(c.entry.startDate, c.entry.endDate) + ')'}
         >
           {joinsPrev ? (
-            // 帯の続き:文字は見えなくする(高さをそろえるため場所は取る)。読み上げ用には残す
+            // 帯の続き:文字は見えなくする(高さをそろえるため場所は取る)。読み上げ用には残す。
+            // ただし今日の列では、アイコンと行き先だけ見せる(区分名は省いた短い形で「続き」とわかるように。ver 0.8.1)。
+            // 今日の列を上から見るだけで、全員の今日の行き先がわかるようにするため(開発者の要望)
             <>
               <span className={styles.srOnly}>{c.entry.category + ' ' + c.entry.title}</span>
-              <span className={styles.ghost} aria-hidden="true">
+              <span className={styles.ghost + (isToday ? ' ' + styles.ghostToday : '')} aria-hidden="true">
                 {text}
               </span>
             </>

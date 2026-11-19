@@ -798,6 +798,12 @@ span.groupButton {
   visibility: hidden;
 }
 
+// 帯の続きでも、今日の列ではアイコンと行き先だけ見せる(区分名・時刻は見えないまま場所だけ取るので、高さは変わらない。ver 0.8.1)
+.ghostToday .icon,
+.ghostToday .place {
+  visibility: visible;
+}
+
 // 休日の長期予定はうすく(帯のつながりは見えるように)
 .dimmed {
   opacity: 0.4;
