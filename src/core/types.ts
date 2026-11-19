@@ -100,6 +100,8 @@ export interface IDayInfo {
   isHoliday: boolean;
   /** 会社休日リストの名称(元日 など)。あれば */
   holidayName?: string;
+  /** 土日を会社休日リストで「出勤日」にした日の見出しの文字(名称、空欄なら種別の文字)。あれば */
+  workdayName?: string;
 }
 
 /** 休暇の「午前休」などのバッジ */

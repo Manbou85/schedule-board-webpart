@@ -30,6 +30,22 @@ describe('休日の判定', () => {
     expect(calendar('2026-11-21').holidayName).toBeUndefined();
   });
 
+  it('土日を「出勤日」にした日は、見出しに名称(空欄なら種別の文字)を出す', () => {
+    expect(calendar('2026-11-21').workdayName).toBe('出勤土曜');
+    const c = createHolidayCalendar([
+      { date: '2026-11-28', name: '', dayType: 'workday', kindLabel: '出勤日' },
+      { date: '2026-11-29', name: '', dayType: 'workday' },
+      { date: '2026-11-25', name: '', dayType: 'workday', kindLabel: '出勤日' }
+    ]);
+    expect(c('2026-11-28').workdayName).toBe('出勤日');
+    // 種別の文字も読めないときは「出勤日」
+    expect(c('2026-11-29').workdayName).toBe('出勤日');
+    // 平日の「出勤日」は見た目が変わらないので出さない
+    expect(c('2026-11-25').workdayName).toBeUndefined();
+    // 休日・ふつうの日には付かない
+    expect(c('2026-11-30').workdayName).toBeUndefined();
+  });
+
   it('名称が空欄なら、種別の文字(例 休業日)を見出しに出す', () => {
     const c = createHolidayCalendar([
       { date: '2026-08-13', name: '', dayType: 'holiday', kindLabel: '休業日' },
@@ -46,5 +62,6 @@ describe('休日の判定', () => {
       { date: '2026-12-05', name: 'まちがい', dayType: 'holiday' }
     ]);
     expect(c('2026-12-05').isHoliday).toBe(false);
+    expect(c('2026-12-05').workdayName).toBe('出勤土曜');
   });
 });
