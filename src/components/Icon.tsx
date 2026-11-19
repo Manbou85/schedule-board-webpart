@@ -1,12 +1,13 @@
 // 画面で使うアイコン(線で描いた単色の SVG)
 // - 絵文字は OS によって絵柄・色がばらばらになるため、自前で描いたものにそろえる
 // - 24×24 のマス目に、線の太さ 1.75 で描く。色は文字の色(currentColor)を受け継ぐ
+// - 一部だけ塗りつぶすアイコンもある(カラーコーンの上下のしま。小さくても形がわかるように)
 // - 外部のフォントや画像は読み込まない
 
 import * as React from 'react';
 
 export type IconName =
-  | 'helmet' // 現場
+  | 'cone' // 現場(カラーコーン。ver 0.7.1 でヘルメットから変更:小さい画面でもわかるように)
   | 'building' // 在社
   | 'car' // 外出
   | 'suitcase' // 出張
@@ -27,19 +28,21 @@ export type IconName =
   | 'chevronDown'
   | 'refresh' // 新しくする
   | 'help' // ヘルプ
-  | 'check' // 帰社しました
   | 'arrowUp'; // 自分の行へ
 
 /** 線(path)と円(circle)の組み合わせで1つのアイコンを表す */
 interface IShape {
   paths: string[];
   circles?: [number, number, number][];
+  /** 線と同じ色で塗りつぶす部分 */
+  fills?: string[];
 }
 
 const SHAPES: { [name in IconName]: IShape } = {
-  helmet: {
-    // 工事用ヘルメット:丸い頭の部分+前後のつば+まん中の2本の筋
-    paths: ['M4.5 15.5V14a7.5 7.5 0 0 1 15 0v1.5', 'M2.5 15.5h19v2.5h-19z', 'M10 6.8V11M14 6.8V11']
+  cone: {
+    // カラーコーン:台形の本体+台座。上と下を塗り、まん中の帯は白く残す(本物のコーンの反射帯のように。開発者の要望)
+    fills: ['M9.8 4h4.4l2 6.5H7.8z', 'M6.4 15h11.2L19 19.5H5z'],
+    paths: ['M9.8 4h4.4L19 19.5H5z', 'M7.8 10.5h8.4', 'M6.4 15h11.2', 'M3 19.5h18']
   },
   building: {
     paths: ['M5 21V4h10v17', 'M15 9h4v12', 'M3 21h18', 'M8.5 8h.01M11.5 8h.01M8.5 12h.01M11.5 12h.01M8.5 16h.01M11.5 16h.01']
@@ -91,7 +94,6 @@ const SHAPES: { [name in IconName]: IShape } = {
   chevronDown: { paths: ['M5 9l7 7 7-7'] },
   refresh: { paths: ['M20 12a8 8 0 1 1-2.34-5.66', 'M20 4v5h-5'] },
   help: { paths: ['M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6', 'M12 17h.01'], circles: [[12, 12, 9]] },
-  check: { paths: ['M5 12.5l4.5 4.5L19 7.5'] },
   arrowUp: { paths: ['M12 19V5', 'M6 11l6-6 6 6'] }
 };
 
@@ -122,6 +124,9 @@ export const Icon: React.FC<IIconProps> = ({ name, size = 18, className, color }
       focusable="false"
       style={{ flex: 'none', display: 'block' }}
     >
+      {(shape.fills || []).map((d, i) => (
+        <path key={'f' + i} d={d} fill={color || 'currentColor'} stroke="none" />
+      ))}
       {shape.paths.map((d, i) => (
         <path key={i} d={d} />
       ))}
