@@ -512,8 +512,12 @@ $control: 36px; // ボタン・入力欄の高さ
 }
 
 .gridScroll {
+  // 中の「見えない文字」(srOnly・位置を絶対指定)の基準をこの箱にする。
+  // 基準が箱の外だと、箱で切り取られずにページ全体を下へ伸ばし、スクロールが二重になっていた(ver 0.6.7)
+  position: relative;
   overflow: auto;
-  max-height: 75vh;
+  // 画面の残りの高さ(ScheduleBoard.tsx で測って入れる)。合わせないときは画面の75%
+  max-height: var(--sb-table-height, 75vh);
   border: 1px solid #e6e6e6;
   border-radius: 8px;
   background: #fff;
@@ -862,7 +866,8 @@ button.leaveBadge {
 // ---- 日表示 ----
 .dayList {
   // 週間表示と同じく、予定表の中だけでスクロールする(ツールバーや人数のまとめが見えたままになるように。開発者の要望)
-  max-height: 75vh;
+  max-height: var(--sb-table-height, 75vh);
+  position: relative; // 見えない文字の基準をこの箱にする(上の .gridScroll と同じ理由)
   overflow: auto;
   border: 1px solid #e6e6e6;
   border-radius: 8px;
