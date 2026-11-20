@@ -1,4 +1,4 @@
-import { crewCategory, crewToEntries, nameKey } from './crew';
+import { classifyCrewTitle, crewCategory, crewToEntries, nameKey } from './crew';
 import { ICrewAssignment, IWorker } from './types';
 
 const workers: IWorker[] = [
@@ -69,5 +69,50 @@ describe('作業員の行き先に「休暇」と書かれたとき(総務に申
     expect(entries[0].category).toBe('休暇');
     expect(entries[0].title).toBe('休暇 0.5日');
     expect(entries[0].readOnly).toBe(true);
+  });
+});
+
+describe('作業員の行き先の文字の読み分け(ver 0.9.0)', () => {
+  const kind = (t: string): string => {
+    const k = classifyCrewTitle(t);
+    return k.type === 'badge' ? k.kind : k.type;
+  };
+
+  it('早退・遅刻は札', () => {
+    expect(kind('早退 15時')).toBe('early');
+    expect(kind('遅刻 10時')).toBe('late');
+  });
+
+  it('午前休・午後休、「休暇」+午前/午後/AM/PM は半日の札(大文字・小文字、全角も気にしない)', () => {
+    expect(kind('午前休')).toBe('morning');
+    expect(kind('午後休 通院')).toBe('afternoon');
+    expect(kind('休暇 PM')).toBe('afternoon');
+    expect(kind('休暇 am')).toBe('morning');
+    expect(kind('休暇 ＰＭ')).toBe('afternoon');
+    expect(kind('午後 休暇')).toBe('afternoon');
+  });
+
+  it('午前・午後がわからない休暇は1日の休暇。両方書いてあっても1日', () => {
+    expect(kind('休暇')).toBe('leave');
+    expect(kind('休暇 0.5日')).toBe('leave');
+    expect(kind('休暇 AM〜PM')).toBe('leave');
+  });
+
+  it('それ以外は現場(午前・午後だけでは札にしない)', () => {
+    expect(kind('〇〇新築工事')).toBe('site');
+    expect(kind('午後 〇〇現場')).toBe('site');
+    expect(kind('PMビル改修')).toBe('site');
+  });
+
+  it('札の行は予定にせず、期間の毎日に札を作る(書いた文字は補足)', () => {
+    const { entries, leaves } = crewToEntries(
+      [crew(30, '山田 太郎', { title: '早退 15時', startDate: '2026-11-17', endDate: '2026-11-18' })],
+      workers
+    );
+    expect(entries).toEqual([]);
+    expect(leaves.map((l) => [l.date, l.kind, l.remarks, l.fromCrew])).toEqual([
+      ['2026-11-17', 'early', '早退 15時', true],
+      ['2026-11-18', 'early', '早退 15時', true]
+    ]);
   });
 });

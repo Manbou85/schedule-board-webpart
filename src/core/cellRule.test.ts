@@ -227,6 +227,63 @@ describe('作業員の行き先リスト(別サイト)', () => {
   });
 });
 
+describe('作業員の行き先が同じ日に2行以上(ver 0.9.0)', () => {
+  // ID はリストの ID をマイナスにしたもの(-5 が先に登録、-9 があと)
+  const longA: IScheduleEntry = { ...period('2026-11-10', '2026-11-30', 'A現場(長期)'), id: -5, readOnly: true };
+  const dayB: IScheduleEntry = { ...period('2026-11-17', '2026-11-17', 'B現場'), id: -9, readOnly: true };
+
+  it('すべて出す:早く始まった行を帯に、ほかは帯の下の箱に', () => {
+    const cell = resolveCell(TUE, W, data({ crew: [dayB, longA] }));
+    expect(cell.content).toEqual({ kind: 'period', entry: longA, dimmed: false, finished: [], extras: [dayB] });
+    expect(cellPlaces(cell)).toEqual(['A現場(長期)', 'B現場']);
+  });
+
+  it('同じ日に始まる行は、登録の早い順(先に登録した行が帯)', () => {
+    const a: IScheduleEntry = { ...dayB, id: -20, title: '先に登録' };
+    const b: IScheduleEntry = { ...dayB, id: -21, title: 'あとで登録' };
+    const cell = resolveCell(TUE, W, data({ crew: [b, a] }));
+    expect(cell.content).toEqual({ kind: 'period', entry: a, dimmed: false, finished: [], extras: [b] });
+  });
+
+  it('「休暇」の行があれば、その日は休暇だけを出す', () => {
+    const off: IScheduleEntry = { ...dayB, id: -30, title: '休暇', category: '休暇' };
+    const cell = resolveCell(TUE, W, data({ crew: [longA, off] }));
+    expect(cell.content).toEqual({ kind: 'period', entry: off, dimmed: false, finished: [] });
+  });
+
+  it('休日は、作業員の行き先をどれも出さない', () => {
+    const sat: IScheduleEntry = { ...dayB, startDate: '2026-11-21', endDate: '2026-11-21' };
+    expect(resolveCell(SAT, W, data({ crew: [longA, sat] })).content).toEqual({ kind: 'empty' });
+  });
+});
+
+describe('作業員の行き先から作った札(早退・遅刻・午前休・午後休)', () => {
+  const crewEarly: ILeave = { id: -900, workerId: W, date: '2026-11-17', kind: 'early', remarks: '早退 15時', fromCrew: true };
+  const site = period('2026-11-01', '2026-11-30');
+
+  it('現場の帯はそのまま、札を重ねる(書いた文字は補足)', () => {
+    const cell = resolveCell(TUE, W, data({ entries: [site], leaves: [crewEarly] }));
+    expect(cell.content.kind).toBe('period');
+    expect(cell.badges).toEqual([{ kind: 'early', label: '早退', remarks: '早退 15時' }]);
+  });
+
+  it('総務が同じ種類を入力したら、総務の札だけを出す', () => {
+    const cell = resolveCell(TUE, W, data({ entries: [site], leaves: [crewEarly, leave('2026-11-17', 'early', '15:00退社')] }));
+    expect(cell.badges).toEqual([{ kind: 'early', label: '早退', remarks: '15:00退社' }]);
+  });
+
+  it('総務が「1日」を入力したら、休暇だけ(札は出さない)', () => {
+    const cell = resolveCell(TUE, W, data({ entries: [site], leaves: [crewEarly, leave('2026-11-17', 'fullDay')] }));
+    expect(cell.content.kind).toBe('leave');
+    expect(cell.badges).toEqual([]);
+  });
+
+  it('午前休・午後休の札がある人は、区分「休暇」にも入る', () => {
+    const pm: ILeave = { ...crewEarly, kind: 'afternoon', remarks: '休暇 PM' };
+    expect(cellCategories(resolveCell(TUE, W, data({ entries: [site], leaves: [pm] })))).toEqual(['現場', '休暇']);
+  });
+});
+
 describe('担当者ごとの振り分けと、検索用の文字', () => {
   it('担当者ごとにデータを分ける', () => {
     const a = single('2026-11-17', 'a');

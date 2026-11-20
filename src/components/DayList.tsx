@@ -121,6 +121,25 @@ const DayCell: React.FC<{ cell: ICell | undefined; onEdit?: (entry: IScheduleEnt
           dimmed={c.dimmed}
         />
       );
+      // 作業員の行き先の、同じ日のほかの行(2現場目など。ver 0.9.0)
+      if (c.extras && c.extras.length > 0) {
+        body = (
+          <>
+            {body}
+            {c.extras.map((e) => (
+              <Detail
+                key={e.id}
+                entry={e}
+                onEdit={onEdit ? (x) => onEdit(x, cell.date) : undefined}
+                st={getCategoryStyle(e.category)}
+                label={e.category + '(作業員の行き先)'}
+                place={e.title}
+                meta={entryMeta(e, true)}
+              />
+            ))}
+          </>
+        );
+      }
       if (c.finished.length > 0) {
         body = (
           <>

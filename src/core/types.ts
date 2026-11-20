@@ -78,6 +78,11 @@ export interface ILeave {
   kind: LeaveKind;
   /** 時間などの補足(Remarks) */
   remarks?: string;
+  /**
+   * 作業員の行き先リストに「早退」「遅刻」「休暇 午後」などと書かれた行から作ったもの(ver 0.9.0)。
+   * 総務の休暇リストに同じ種類があれば、そちらだけを出す
+   */
+  fromCrew?: boolean;
 }
 
 /** 休日出勤(総務の休日出勤情報共有リストの1行) */
@@ -124,7 +129,8 @@ export type CellContent =
   /** underlying:単発の予定に隠れている、その日の長期の予定(人数のまとめで「今どこか」を決めるときに使う) */
   | { kind: 'single'; entries: IScheduleEntry[]; finishedIds: number[]; underlying?: IScheduleEntry }
   /** finished:今日の単発予定がすべて終わったとき、長期の予定の下に薄く出す終わった予定 */
-  | { kind: 'period'; entry: IScheduleEntry; dimmed: boolean; finished: IScheduleEntry[] }
+  /** extras:同じ日の、作業員の行き先のほかの行(2現場目など。ver 0.9.0)。帯の下に小さな箱で出す */
+  | { kind: 'period'; entry: IScheduleEntry; dimmed: boolean; finished: IScheduleEntry[]; extras?: IScheduleEntry[] }
   | { kind: 'empty' };
 
 /** 1マスの表示内容(中身+重ねて出すバッジ) */
