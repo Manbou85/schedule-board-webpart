@@ -1,4 +1,4 @@
-import { crewToEntries, nameKey } from './crew';
+import { crewCategory, crewToEntries, nameKey } from './crew';
 import { ICrewAssignment, IWorker } from './types';
 
 const workers: IWorker[] = [
@@ -52,5 +52,22 @@ describe('作業員の行き先リスト', () => {
     // 部署の指定が空なら全員
     expect(crewToEntries(list, workers, []).entries.map((e) => e.workerId)).toEqual([1, 3]);
     expect(crewToEntries(list, workers).entries.map((e) => e.workerId)).toEqual([1, 3]);
+  });
+});
+
+describe('作業員の行き先に「休暇」と書かれたとき(総務に申請する前)', () => {
+  it('「休暇」の文字が入っていれば区分は休暇、それ以外は現場', () => {
+    expect(crewCategory('休暇')).toBe('休暇');
+    expect(crewCategory('休暇 0.5日')).toBe('休暇');
+    expect(crewCategory('休暇(〜11/22)')).toBe('休暇');
+    expect(crewCategory('〇〇新築工事')).toBe('現場');
+    expect(crewCategory('')).toBe('現場');
+  });
+
+  it('予定にするときも、行き先の文字はそのまま・区分だけ休暇にする', () => {
+    const { entries } = crewToEntries([crew(8, '山田 太郎', { title: '休暇 0.5日' })], workers);
+    expect(entries[0].category).toBe('休暇');
+    expect(entries[0].title).toBe('休暇 0.5日');
+    expect(entries[0].readOnly).toBe(true);
   });
 });

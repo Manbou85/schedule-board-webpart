@@ -4,12 +4,25 @@
 //   (全角・半角や、名字と名前のあいだの空白のちがいは気にしない)
 // - 期間(開始日〜終了日)の予定として、行動予定表の「長期の予定」と同じく帯で表示する
 // - 表示の優先:総務の休暇 > 総務の休日出勤 > 単発の予定 > 作業員の行き先 > 長期の予定(cellRule.ts)
+// - 行き先に「休暇」の文字が入っていれば、区分を「休暇」にする(ver 0.8.4。総務に申請する前に先に書かれることがあるため)
 
+import { LEAVE_CATEGORY } from './cellRule';
 import { normalizeEndDate } from './dateUtils';
 import { ICrewAssignment, IScheduleEntry, IWorker } from './types';
 
 /** 作業員の行き先を表示するときの区分(アイコンと色) */
 export const CREW_CATEGORY = '現場';
+
+/**
+ * 行き先にこの文字が入っていれば「休暇」として扱う(例「休暇」「休暇 0.5日」「休暇(〜11/22)」)。
+ * 行き先は手入力でまちまちなため、ぴったり同じでなく「含まれていれば」にした(開発者回答。別のアプリの文字色の設定と同じ考え方)
+ */
+export const CREW_LEAVE_WORD = '休暇';
+
+/** 作業員の行き先の区分:「休暇」の文字が入っていれば休暇、それ以外は現場(全角・半角のちがいは気にしない) */
+export function crewCategory(title: string): string {
+  return (title || '').normalize('NFKC').indexOf(CREW_LEAVE_WORD) >= 0 ? LEAVE_CATEGORY : CREW_CATEGORY;
+}
 
 /** 作業員の行き先リストを反映する部署の初期値(開発者回答:作業員のみ。WEBパーツの設定で変えられる) */
 export const DEFAULT_CREW_DEPARTMENTS = ['作業員'];
@@ -57,7 +70,7 @@ export function crewToEntries(
       workerId: worker.id,
       title: a.title.trim(),
       entryType: 'period',
-      category: CREW_CATEGORY,
+      category: crewCategory(a.title),
       startDate: a.startDate,
       endDate: normalizeEndDate(a.startDate, a.endDate),
       readOnly: true

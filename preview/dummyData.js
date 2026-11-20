@@ -202,6 +202,8 @@ function createDummyData(today) {
     crewAssignments.push({ id: crewId++, workerName: nameOverride || w.name, title, startDate: start, endDate: end });
   // 名前の空白が全角でも突き合わせられることの確認
   crewSite(crewWorkers[0], SITES_BUILD[1], d(-10), d(20), crewWorkers[0].name.replace(' ', '\u3000'));
+  // 総務に申請する前に、行き先に「休暇」と書かれた日 → 区分を休暇として表示・集計する(ver 0.8.4)
+  crewSite(crewWorkers[0], '休暇 0.5日', d(3), d(3));
   // 週の途中で現場が切り替わる
   crewSite(crewWorkers[1], SITES_CIVIL[1], d(-5), d(2));
   crewSite(crewWorkers[1], SITES_CIVIL[3], d(3), d(30));
