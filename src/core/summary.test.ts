@@ -1,82 +1,53 @@
-import { cellStatus, NO_ENTRY_STATUS, summarizeStatus } from './summary';
-import { ICell, IScheduleEntry, IWorker } from './types';
+import { NO_ENTRY_STATUS, summarizeCategories } from './summary';
+import { ICell, ILeaveBadge, IScheduleEntry, IWorker } from './types';
 
 const DATE = '2026-11-18';
 let nextId = 1;
 function entry(category: string, extra: Partial<IScheduleEntry> = {}): IScheduleEntry {
   return { id: nextId++, workerId: 1, title: 'x', entryType: 'single', category, startDate: DATE, endDate: DATE, ...extra };
 }
-function cell(content: ICell['content'], date: string = DATE): ICell {
-  return { date, workerId: 1, isHoliday: false, content, badges: [] };
+function cell(content: ICell['content'], badges: ILeaveBadge[] = []): ICell {
+  return { date: DATE, workerId: 1, isHoliday: false, content, badges };
 }
-const now = { date: DATE, time: '10:30' };
 
-describe('1人の状態(人数のまとめ)', () => {
-  it('休暇・休日出勤・長期の予定・何もなし', () => {
-    expect(cellStatus(cell({ kind: 'leave', leave: { id: 1, workerId: 1, date: DATE, kind: 'fullDay' } }))).toBe('休暇');
-    expect(
-      cellStatus(cell({ kind: 'holidayWork', holidayWork: { id: 1, workerId: 1, date: DATE, workPlace: '本社' }, timeText: '' }))
-    ).toBe('休日出勤');
-    expect(cellStatus(cell({ kind: 'period', entry: entry('現場', { entryType: 'period' }), dimmed: false, finished: [] }))).toBe('現場');
-    expect(cellStatus(cell({ kind: 'empty' }))).toBe(NO_ENTRY_STATUS);
-  });
-
-  it('今日の単発予定は、今の時刻に始まっていて終わっていないもの', () => {
-    const out = entry('外出', { startTime: '10:00', endTime: '11:00' });
-    const later = entry('研修', { startTime: '13:00', endTime: '16:00' });
-    expect(cellStatus(cell({ kind: 'single', entries: [out, later], finishedIds: [] }), now)).toBe('外出');
-  });
-
-  it('まだ始まっていない予定だけなら、長期の予定。それもなければ予定なし', () => {
-    const later = entry('外出', { startTime: '15:00' });
-    const site = entry('現場', { entryType: 'period' });
-    expect(cellStatus(cell({ kind: 'single', entries: [later], finishedIds: [], underlying: site }), now)).toBe('現場');
-    expect(cellStatus(cell({ kind: 'single', entries: [later], finishedIds: [] }), now)).toBe(NO_ENTRY_STATUS);
-  });
-
-  it('終わった予定は数えない。時刻のない予定は1日中', () => {
-    const done = entry('外出', { startTime: '09:00', endTime: '10:00' });
-    const allDay = entry('在社');
-    expect(cellStatus(cell({ kind: 'single', entries: [done, allDay], finishedIds: [done.id] }), now)).toBe('在社');
-    expect(cellStatus(cell({ kind: 'single', entries: [done], finishedIds: [done.id] }), now)).toBe(NO_ENTRY_STATUS);
-  });
-
-  it('今日以外の日は、その日のはじめの予定', () => {
-    const a = entry('出張', { startDate: '2026-11-20', endDate: '2026-11-20', startTime: '08:00' });
-    const b = entry('外出', { startDate: '2026-11-20', endDate: '2026-11-20', startTime: '13:00' });
-    expect(cellStatus(cell({ kind: 'single', entries: [a, b], finishedIds: [] }, '2026-11-20'), now)).toBe('出張');
-  });
-});
-
-describe('人数のまとめ', () => {
-  const workers: IWorker[] = [1, 2, 3, 4].map((id) => ({ id, name: 'n' + id, no: '0' + id, department: 'd' }));
+describe('人数のまとめのボタン(その日にその区分の予定がある人)', () => {
+  const workers: IWorker[] = [1, 2, 3, 4, 5].map((id) => ({ id, name: 'n' + id, no: '0' + id, department: 'd' }));
   const rows = new Map<number, ICell[]>([
     [1, [cell({ kind: 'period', entry: entry('現場', { entryType: 'period' }), dimmed: false, finished: [] })]],
     [2, [cell({ kind: 'single', entries: [entry('在社')], finishedIds: [] })]],
     [3, [cell({ kind: 'leave', leave: { id: 9, workerId: 3, date: DATE, kind: 'fullDay' } })]],
-    [4, [cell({ kind: 'empty' })]]
+    [4, [cell({ kind: 'empty' })]],
+    // 午前は現場、午後休(総務の午後・作業員の「休暇 PM」)→ 現場にも休暇にも出る
+    [
+      5,
+      [cell({ kind: 'period', entry: entry('現場', { entryType: 'period' }), dimmed: false, finished: [] }, [{ kind: 'afternoon', label: '午後休' }])]
+    ]
   ]);
 
-  it('区分の選択肢の順に並べ、休日出勤・予定なしはうしろ。0人の区分は出さない。総務の休暇は「休暇」として数える', () => {
-    expect(summarizeStatus(workers, rows, 0, ['在社', '外出', '現場'], now)).toEqual([
-      { status: '在社', count: 1, workerIds: [2] },
-      { status: '現場', count: 1, workerIds: [1] },
-      { status: '休暇', count: 1, workerIds: [3] },
-      { status: '予定なし', count: 1, workerIds: [4] }
+  it('区分の選択肢の順に並べ、休日出勤・予定なしはうしろ。予定がある人がいない区分は出さない', () => {
+    expect(summarizeCategories(workers, rows, 0, ['在社', '外出', '現場'])).toEqual([
+      { status: '在社', workerIds: [2] },
+      { status: '現場', workerIds: [1, 5] },
+      { status: '休暇', workerIds: [3, 5] },
+      { status: NO_ENTRY_STATUS, workerIds: [4] }
     ]);
   });
 
-  it('総務の「休暇」と本人の区分「休暇」は、あわせて「休暇」(選択肢の「休暇」の位置に)', () => {
-    const r = new Map<number, ICell[]>(rows);
-    r.set(4, [cell({ kind: 'single', entries: [entry('休暇')], finishedIds: [] })]);
-    expect(summarizeStatus(workers, r, 0, ['在社', '休暇', '現場'], now)).toEqual([
-      { status: '在社', count: 1, workerIds: [2] },
-      { status: '休暇', count: 2, workerIds: [3, 4] },
-      { status: '現場', count: 1, workerIds: [1] }
-    ]);
+  it('「休暇」は区分の選択肢にあればその位置に', () => {
+    expect(summarizeCategories(workers, rows, 0, ['在社', '休暇', '現場']).map((s) => s.status)).toEqual(['在社', '休暇', '現場', '予定なし']);
   });
 
-  it('選択肢にない区分も数える(作業員の行き先の「現場」など)', () => {
-    expect(summarizeStatus(workers, rows, 0, ['在社'], now).map((s) => s.status)).toEqual(['在社', '休暇', '現場', '予定なし']);
+  it('作業員の2現場目(帯の下の箱)の区分も入る', () => {
+    const r = new Map<number, ICell[]>([
+      [1, [cell({ kind: 'period', entry: entry('現場', { entryType: 'period' }), dimmed: false, finished: [], extras: [entry('出張')] })]]
+    ]);
+    expect(summarizeCategories([workers[0]], r, 0, []).map((s) => s.status)).toEqual(['現場', '出張']);
+  });
+
+  it('早退・遅刻の札だけでは休暇に入らない', () => {
+    const r = new Map<number, ICell[]>([
+      [1, [cell({ kind: 'period', entry: entry('現場', { entryType: 'period' }), dimmed: false, finished: [] }, [{ kind: 'early', label: '早退' }])]]
+    ]);
+    expect(summarizeCategories([workers[0]], r, 0, []).map((s) => s.status)).toEqual(['現場']);
   });
 });

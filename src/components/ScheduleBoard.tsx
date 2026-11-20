@@ -8,7 +8,7 @@ import {
   Density,
   fitTableHeight,
   NO_ENTRY_STATUS,
-  summarizeStatus,
+  summarizeCategories,
   crewToEntries,
   DEFAULT_CREW_DEPARTMENTS,
   draftFromEntry,
@@ -462,7 +462,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     () =>
       base && range
         ? crewToEntries(range.crewAssignments || [], base.workers, crewDeptKey ? crewDeptKey.split('\n') : [])
-        : { entries: [], unmatched: [] },
+        : { entries: [], leaves: [], unmatched: [] },
     [base, range, crewDeptKey]
   );
 
@@ -472,7 +472,13 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     if (!base || !range) {
       return map;
     }
-    const byWorker = groupByWorker({ entries: range.entries, leaves: range.leaves, holidayWorks: range.holidayWorks, crew: crew.entries });
+    // 作業員の行き先に「早退」「午後休」などと書かれた行は、総務の休暇と同じ札にして重ねる(ver 0.9.0)
+    const byWorker = groupByWorker({
+      entries: range.entries,
+      leaves: range.leaves.concat(crew.leaves),
+      holidayWorks: range.holidayWorks,
+      crew: crew.entries
+    });
     base.workers.forEach((w) => {
       map.set(w.id, resolveRow(days, w.id, byWorker.get(w.id) || EMPTY_WORKER_DATA, cellRuleOptions, nowInfo));
     });
@@ -524,7 +530,8 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   }
 
   const filtered = filterWorkers(base.workers, rows, criteria);
-  // 人数のまとめ:日表示はその日、週間表示は今日がその週にあれば今日(なければ出さない)
+  // 人数のまとめのボタン(ver 0.9.0 から数は出さず、押すとその区分の予定がある人だけにしぼる):
+  // 日表示はその日、週間表示は今日がその週にあれば今日(なければ出さない)
   let summaryIndex = -1;
   if (range && !loading) {
     if (shownView === 'day') {
@@ -538,7 +545,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     }
   }
   const summaryDate = summaryIndex >= 0 ? days[summaryIndex].date : '';
-  const summary = summaryIndex >= 0 ? summarizeStatus(filtered, rows, summaryIndex, base.categories, nowInfo) : [];
+  const summary = summaryIndex >= 0 ? summarizeCategories(filtered, rows, summaryIndex, base.categories) : [];
   const activeStatus = summary.filter((s) => s.status === statusFilter)[0];
   const shown = activeStatus ? filtered.filter((w) => activeStatus.workerIds.indexOf(w.id) >= 0) : filtered;
   const summaryLabel = summaryDate
@@ -821,9 +828,9 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         </div>
       )}
 
-      {/* 人数のまとめ:押すと、その状態の人だけにしぼる(もう一度押すと元に戻る) */}
+      {/* 区分のボタン:押すと、その日にその区分の予定がある人だけにしぼる(もう一度押すと元に戻る)。数は出さない(ver 0.9.0) */}
       {summary.length > 0 && (
-        <div className={styles.summaryRow} role="group" aria-label={'人数のまとめ(' + summaryLabel + ')'}>
+        <div className={styles.summaryRow} role="group" aria-label={'区分でしぼり込む(' + summaryLabel + ')'}>
           <span className={styles.summaryLabel}>{summaryLabel}</span>
           {summary.map((s) => {
             const st = statusStyle(s.status);
@@ -834,13 +841,12 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
                 type="button"
                 className={styles.summaryChip}
                 aria-pressed={pressed}
-                title={pressed ? 'もう一度押すと、しぼり込みを外します' : s.status + 'の人だけを表示します'}
+                title={pressed ? 'もう一度押すと、しぼり込みを外します' : summaryLabel + 'に「' + s.status + '」の予定がある人だけを表示します'}
                 style={pressed ? { borderColor: st.color, background: st.background } : undefined}
                 onClick={() => setStatusFilter(pressed ? '' : s.status)}
               >
                 <Icon name={st.icon} color={st.color} size={16} />
                 {s.status}
-                <span className={styles.summaryCount}>{s.count}</span>人
               </button>
             );
           })}
