@@ -202,6 +202,10 @@ export const ScheduleCell: React.FC<IScheduleCellProps> = ({ cell, joinsPrev, jo
         {c.finished.map((e) => (
           <SingleEntry key={e.id} entry={e} onEdit={onEdit} finished={true} />
         ))}
+        {/* 作業員の行き先の、同じ日のほかの行(2現場目など。ver 0.9.0) */}
+        {(c.extras || []).map((e) => (
+          <SingleEntry key={e.id} entry={e} onEdit={onEdit ? (x) => onEdit(x, cell.date) : undefined} />
+        ))}
         </>
       );
       break;

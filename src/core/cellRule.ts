@@ -7,6 +7,8 @@
 //   4. 休日(出勤なし)             → 空欄(長期の予定・作業員の行き先は出さない。開発者回答 2026-11-19)
 //   5. 平日で長期の予定あり         → 長期の予定を通常表示
 //      ※ 作業員の行き先リスト(別サイト)に登録があれば、行動予定表の長期の予定より優先する
+//      ※ 作業員の行き先が同じ日に2行以上あれば、すべて出す(早く始まった行を帯に、ほかは帯の下に小さな箱。ver 0.9.0)。
+//         ただし「休暇」の行があれば、その日は休暇だけを出す(総務の「1日」休暇と同じ考え方)
 //   6. 何もなし                     → 空欄
 // 休暇の「午前」「午後」「遅刻」「早退」は、上の表示にバッジとして重ねる。
 //
@@ -17,6 +19,10 @@ import { formatTimeRange, isDateInPeriod } from './dateUtils';
 import { LEAVE_BADGE_LABELS } from './labels';
 import { INow, isFinishedEntry } from './quickOut';
 import { DateKey, ICell, IDayInfo, IHolidayWork, ILeave, ILeaveBadge, IScheduleEntry, LeaveKind } from './types';
+
+/** 区分で絞り込むときに使う呼び名。休暇は「休暇」、休日出勤は「休日出勤」とする */
+export const LEAVE_CATEGORY = '休暇';
+export const HOLIDAY_WORK_CATEGORY = '休日出勤';
 
 export interface ICellRuleOptions {
   /**
@@ -69,6 +75,19 @@ function pickPeriod(periods: IScheduleEntry[]): IScheduleEntry | undefined {
   return best;
 }
 
+/**
+ * 作業員の行き先の、その日の行を並べる:開始日の早い順 → 登録の早い順。
+ * (ID はリストの ID をマイナスにしたものなので、ID が大きいほど登録が早い)
+ */
+function sortCrewRows(rows: IScheduleEntry[]): IScheduleEntry[] {
+  return rows.slice().sort((a, b) => (a.startDate < b.startDate ? -1 : a.startDate > b.startDate ? 1 : b.id - a.id));
+}
+
+/** 作業員の行き先から作った札は、総務の休暇リストに同じ種類があれば出さない(総務の登録を正とする) */
+function dropCrewDuplicates(leaves: ILeave[]): ILeave[] {
+  return leaves.filter((l) => !l.fromCrew || !leaves.some((o) => !o.fromCrew && o.kind === l.kind));
+}
+
 function makeBadges(leaves: ILeave[]): ILeaveBadge[] {
   const badges: ILeaveBadge[] = [];
   BADGE_ORDER.forEach((kind) => {
@@ -100,15 +119,19 @@ export function resolveCell(
   now?: INow
 ): ICell {
   const date: DateKey = day.date;
-  const leaves = data.leaves.filter((l) => l.workerId === workerId && l.date === date);
+  const leaves = dropCrewDuplicates(data.leaves.filter((l) => l.workerId === workerId && l.date === date));
   const holidayWorks = data.holidayWorks.filter((h) => h.workerId === workerId && h.date === date);
   const todays = data.entries.filter(
     (e) => e.workerId === workerId && isDateInPeriod(date, e.startDate, e.endDate)
   );
   const singles = todays.filter((e) => e.entryType === 'single').sort(compareSingle);
-  const crew = pickPeriod(
+  // 作業員の行き先:その日の行をすべて使う。「休暇」の行があればそれだけ、なければ早く始まった行を帯に、ほかは箱で
+  const crewRows = sortCrewRows(
     (data.crew || []).filter((e) => e.workerId === workerId && isDateInPeriod(date, e.startDate, e.endDate))
   );
+  const crewLeave = crewRows.filter((e) => e.category === LEAVE_CATEGORY)[0];
+  const crew = crewLeave || crewRows[0];
+  const crewExtras = crewLeave ? [] : crewRows.slice(1);
   // 長期の予定:作業員の行き先があればそちらを優先
   const period = crew || pickPeriod(todays.filter((e) => e.entryType === 'period'));
 
@@ -171,7 +194,10 @@ export function resolveCell(
   // 4. 休日(出勤なし)は、長期の予定があっても空欄
   // 5. 平日の長期の予定
   if (workingPeriod) {
-    cell.content = { kind: 'period', entry: workingPeriod, dimmed: false, finished };
+    cell.content =
+      crewExtras.length > 0
+        ? { kind: 'period', entry: workingPeriod, dimmed: false, finished, extras: crewExtras }
+        : { kind: 'period', entry: workingPeriod, dimmed: false, finished };
     return cell;
   }
 
@@ -220,29 +246,38 @@ export function cellPlaces(cell: ICell): string[] {
     case 'single':
       return c.entries.map((e) => e.title);
     case 'period':
-      return [c.entry.title];
+      return [c.entry.title].concat((c.extras || []).map((e) => e.title));
     default:
       return [];
   }
 }
 
-/** 区分で絞り込むときに使う呼び名。休暇は「休暇」、休日出勤は「休日出勤」とする */
-export const LEAVE_CATEGORY = '休暇';
-export const HOLIDAY_WORK_CATEGORY = '休日出勤';
 
-/** マスに表示されている区分 */
+/**
+ * マスに出ている区分(区分の絞り込み・人数のまとめのボタンで使う。「その日にその区分の予定がある人」)。
+ * 作業員の行き先の2行目以降と、半日の休暇(午前休・午後休の札)も含める(ver 0.9.0)。同じ区分は1つにまとめる
+ */
 export function cellCategories(cell: ICell): string[] {
   const c = cell.content;
+  let list: string[];
   switch (c.kind) {
     case 'leave':
-      return [LEAVE_CATEGORY];
+      list = [LEAVE_CATEGORY];
+      break;
     case 'holidayWork':
-      return [HOLIDAY_WORK_CATEGORY];
+      list = [HOLIDAY_WORK_CATEGORY];
+      break;
     case 'single':
-      return c.entries.map((e) => e.category);
+      list = c.entries.map((e) => e.category);
+      break;
     case 'period':
-      return [c.entry.category];
+      list = [c.entry.category].concat((c.extras || []).concat(c.finished).map((e) => e.category));
+      break;
     default:
-      return [];
+      list = [];
   }
+  if (cell.badges.some((b) => b.kind === 'morning' || b.kind === 'afternoon')) {
+    list.push(LEAVE_CATEGORY);
+  }
+  return list.filter((x, i) => list.indexOf(x) === i);
 }

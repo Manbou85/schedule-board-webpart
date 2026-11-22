@@ -202,6 +202,16 @@ function createDummyData(today) {
     crewAssignments.push({ id: crewId++, workerName: nameOverride || w.name, title, startDate: start, endDate: end });
   // 名前の空白が全角でも突き合わせられることの確認
   crewSite(crewWorkers[0], SITES_BUILD[1], d(-10), d(20), crewWorkers[0].name.replace(' ', '\u3000'));
+  // 総務に申請する前に、行き先に「休暇」と書かれた日 → 区分を休暇として表示・集計する(ver 0.8.4)
+  crewSite(crewWorkers[0], '休暇 0.5日', d(3), d(3));
+  // ver 0.9.0:作業員の行き先の札と、同じ日の2行
+  // 「休暇 PM」は午後休の札(現場の帯はそのまま)。同じ日に総務も「午後」を入れた → 総務の札だけ出る
+  crewSite(crewWorkers[0], '休暇 PM', d(4), d(4));
+  leave(crewWorkers[0], d(4), 'afternoon', '13:00から');
+  // 同じ日に2現場(長期の現場の帯+その日だけの応援の現場)
+  crewSite(crewWorkers[1], '駅前ロータリー整備(応援)', d(1), d(1));
+  // 「早退 15時」は早退の札(現場の帯はそのまま)
+  crewSite(crewWorkers[3], '早退 15時', d(2), d(2));
   // 週の途中で現場が切り替わる
   crewSite(crewWorkers[1], SITES_CIVIL[1], d(-5), d(2));
   crewSite(crewWorkers[1], SITES_CIVIL[3], d(3), d(30));

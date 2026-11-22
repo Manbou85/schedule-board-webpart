@@ -1,4 +1,13 @@
-import { excludeDepartments, findSelf, groupByDepartment, moveSelfToTop, orderDepartments, sortWorkers, DEFAULT_EXCLUDED_DEPARTMENTS } from './workers';
+import {
+  excludeDepartments,
+  findSelf,
+  groupByDepartment,
+  moveSelfToTop,
+  orderDepartments,
+  promoteWithinDepartment,
+  sortWorkers,
+  DEFAULT_EXCLUDED_DEPARTMENTS
+} from './workers';
 import { IWorker } from './types';
 
 const workers: IWorker[] = [
@@ -57,5 +66,36 @@ describe('部署の並び順', () => {
 
   it('リストにない部署名を書いても困らない', () => {
     expect(names(orderDepartments(groups, ['営業部', '企画室']))).toEqual(['企画室', '役員', '総務部', '建築部']);
+  });
+});
+
+describe('部署の中で先頭に並べる人(例:社長)', () => {
+  const list: IWorker[] = [
+    { id: 11, name: '青木 健太', no: '0101', department: '役員' },
+    { id: 12, name: '石川 誠', no: '0102', department: '役員' },
+    { id: 13, name: '上野 達也', no: '0103', department: '役員' },
+    { id: 21, name: '大西 美咲', no: '0201', department: '総務部' },
+    { id: 22, name: '岡本 恵', no: '0202', department: '総務部' }
+  ];
+  const ids = (ws: IWorker[]): number[] => ws.map((w) => w.id);
+
+  it('指定した人を、自分の部署の一番上に出す(部署の並びは変えない)', () => {
+    expect(ids(promoteWithinDepartment(list, ['上野 達也']))).toEqual([13, 11, 12, 21, 22]);
+    expect(groupByDepartment(promoteWithinDepartment(list, ['岡本 恵'])).map((g) => g.department)).toEqual(['役員', '総務部']);
+    expect(ids(promoteWithinDepartment(list, ['岡本 恵']))).toEqual([11, 12, 13, 22, 21]);
+  });
+
+  it('全角・半角・空白のちがいは気にしない', () => {
+    expect(ids(promoteWithinDepartment(list, ['上野達也']))).toEqual([13, 11, 12, 21, 22]);
+    expect(ids(promoteWithinDepartment(list, ['上野　達也']))).toEqual([13, 11, 12, 21, 22]);
+  });
+
+  it('同じ部署に複数書けば、書いた順に並ぶ', () => {
+    expect(ids(promoteWithinDepartment(list, ['上野 達也', '石川 誠']))).toEqual([13, 12, 11, 21, 22]);
+  });
+
+  it('指定が空・名前が合わないときは今までどおり', () => {
+    expect(ids(promoteWithinDepartment(list, []))).toEqual([11, 12, 13, 21, 22]);
+    expect(ids(promoteWithinDepartment(list, ['', '名簿にない人']))).toEqual([11, 12, 13, 21, 22]);
   });
 });

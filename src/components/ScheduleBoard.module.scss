@@ -2071,12 +2071,6 @@ textarea.input {
   outline-offset: 1px;
 }
 
-.summaryCount {
-  margin-left: 2px;
-  font-size: 15px;
-  font-weight: 700;
-}
-
 @media (max-width: 640px) {
   // スマホでは横にスクロールして見る(何行にもならないように)
   .summaryRow {
