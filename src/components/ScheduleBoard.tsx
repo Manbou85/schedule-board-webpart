@@ -461,9 +461,12 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const crew = React.useMemo(
     () =>
       base && range
-        ? crewToEntries(range.crewAssignments || [], base.workers, crewDeptKey ? crewDeptKey.split('\n') : [])
+        ? crewToEntries(range.crewAssignments || [], base.workers, crewDeptKey ? crewDeptKey.split('\n') : [], {
+            start: days[0].date,
+            end: days[days.length - 1].date
+          })
         : { entries: [], leaves: [], unmatched: [] },
-    [base, range, crewDeptKey]
+    [base, range, crewDeptKey, days]
   );
 
   // 全員ぶんのマスを作る(表示ルールは core の resolveRow)

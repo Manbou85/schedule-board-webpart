@@ -10,7 +10,7 @@
 
 import { LEAVE_CATEGORY } from './cellRule';
 import { addDays, normalizeEndDate } from './dateUtils';
-import { ICrewAssignment, ILeave, IScheduleEntry, IWorker, LeaveKind } from './types';
+import { DateKey, ICrewAssignment, ILeave, IScheduleEntry, IWorker, LeaveKind } from './types';
 
 /** 作業員の行き先を表示するときの区分(アイコンと色) */
 export const CREW_CATEGORY = '現場';
@@ -69,6 +69,12 @@ export function classifyCrewTitle(title: string): CrewRowKind {
 /** 札の行を、日ごとの札にするときの上限(まちがって長い期間を書かれても重くならないように) */
 const MAX_BADGE_DAYS = 62;
 
+/** 表示中の期間(札を作る日をこの中だけにする) */
+export interface ICrewPeriod {
+  start: DateKey;
+  end: DateKey;
+}
+
 /** 作業員の行き先リストを反映する部署の初期値(開発者回答:作業員のみ。WEBパーツの設定で変えられる) */
 export const DEFAULT_CREW_DEPARTMENTS = ['作業員'];
 
@@ -86,7 +92,8 @@ export function nameKey(name: string): string {
 export function crewToEntries(
   list: ICrewAssignment[],
   workers: IWorker[],
-  departments: string[] = []
+  departments: string[] = [],
+  shown?: ICrewPeriod
 ): { entries: IScheduleEntry[]; leaves: ILeave[]; unmatched: string[] } {
   const targets = departments.map((d) => d.normalize('NFKC').trim()).filter((d) => !!d);
   const byName = new Map<string, IWorker>();
@@ -115,8 +122,11 @@ export function crewToEntries(
     const endDate = normalizeEndDate(a.startDate, a.endDate);
     const kind = classifyCrewTitle(title);
     if (kind.type === 'badge') {
-      // 札:その期間の毎日に、総務の休暇と同じ形の札を作る(書いた文字は補足に)
-      for (let d = a.startDate, i = 0; d <= endDate && i < MAX_BADGE_DAYS; d = addDays(d, 1), i++) {
+      // 札:その期間の毎日に、総務の休暇と同じ形の札を作る(書いた文字は補足に)。
+      // 表示中の期間がわかれば、その中の日だけ作る(長い期間の行でも、今見ている週に札が出るように)
+      const from = shown && shown.start > a.startDate ? shown.start : a.startDate;
+      const to = shown && shown.end < endDate ? shown.end : endDate;
+      for (let d = from, i = 0; d <= to && i < MAX_BADGE_DAYS; d = addDays(d, 1), i++) {
         leaves.push({ id: -(a.id * 100 + i), workerId: worker.id, date: d, kind: kind.kind, remarks: title, fromCrew: true });
       }
       return;

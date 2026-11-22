@@ -119,7 +119,10 @@ export function resolveCell(
   now?: INow
 ): ICell {
   const date: DateKey = day.date;
-  const leaves = dropCrewDuplicates(data.leaves.filter((l) => l.workerId === workerId && l.date === date));
+  // 作業員の行き先から作った札は、休日には出さない(休日は作業員の行き先そのものを出さないのと同じ)
+  const leaves = dropCrewDuplicates(
+    data.leaves.filter((l) => l.workerId === workerId && l.date === date && !(l.fromCrew && day.isHoliday))
+  );
   const holidayWorks = data.holidayWorks.filter((h) => h.workerId === workerId && h.date === date);
   const todays = data.entries.filter(
     (e) => e.workerId === workerId && isDateInPeriod(date, e.startDate, e.endDate)

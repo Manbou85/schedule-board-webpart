@@ -278,6 +278,12 @@ describe('作業員の行き先から作った札(早退・遅刻・午前休・
     expect(cell.badges).toEqual([]);
   });
 
+  it('休日には、作業員の行き先から作った札を出さない(総務の札は出す)', () => {
+    const satCrew: ILeave = { ...crewEarly, date: '2026-11-21' };
+    expect(resolveCell(SAT, W, data({ leaves: [satCrew] })).badges).toEqual([]);
+    expect(resolveCell(SAT, W, data({ leaves: [leave('2026-11-21', 'late')] })).badges.map((b) => b.kind)).toEqual(['late']);
+  });
+
   it('午前休・午後休の札がある人は、区分「休暇」にも入る', () => {
     const pm: ILeave = { ...crewEarly, kind: 'afternoon', remarks: '休暇 PM' };
     expect(cellCategories(resolveCell(TUE, W, data({ entries: [site], leaves: [pm] })))).toEqual(['現場', '休暇']);
