@@ -218,6 +218,8 @@ function createDummyData(today) {
   // 総務の休暇・休日出勤が優先されることの確認
   crewSite(crewWorkers[2], SITES_BUILD[3], d(-3), d(10));
   leave(crewWorkers[2], d(1), 'fullDay');
+  // 「休暇(午後から現場)」は午後に仕事をするので午前休の札(ver 0.9.3。以前は午後休の札になっていた)
+  crewSite(crewWorkers[2], '休暇(午後から現場)', d(3), d(3));
   holidayWork(crewWorkers[2], d(5), SITES_BUILD[3]);
   // 行動予定表の長期の予定より作業員の行き先が優先、単発の予定は作業員の行き先より優先
   period(crewWorkers[3], '(行動予定表の長期の予定:作業員の行き先が優先)', d(-30), d(30));

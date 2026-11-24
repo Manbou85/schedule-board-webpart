@@ -90,6 +90,22 @@ describe('作業員の行き先の文字の読み分け(ver 0.9.0)', () => {
     expect(kind('休暇 AM〜PM')).toBe('leave');
   });
 
+  it('「休暇」+午前・午後のあとに仕事の言葉 → 仕事をしない残りの半日が休暇(ver 0.9.3)', () => {
+    expect(kind('休暇(午後から現場)')).toBe('morning');
+    expect(kind('休暇(午後から出勤)')).toBe('morning');
+    expect(kind('休暇 PM現場')).toBe('morning');
+    expect(kind('休暇(午前は現場)')).toBe('afternoon');
+    expect(kind('AM 〇〇現場、PM 休暇')).toBe('afternoon');
+    expect(kind('午前休暇、午後から現場')).toBe('morning');
+  });
+
+  it('仕事の言葉がない・区切りや「休」をはさむときは、今までどおりの読み分け', () => {
+    expect(kind('午後から休暇')).toBe('afternoon');
+    expect(kind('休暇 午後 通院')).toBe('afternoon');
+    expect(kind('午後休暇、現場')).toBe('afternoon');
+    expect(kind('休暇(AM現場、PM出勤)')).toBe('leave');
+  });
+
   it('それ以外は現場(午前・午後だけでは札にしない)', () => {
     expect(kind('〇〇新築工事')).toBe('site');
     expect(kind('午後 〇〇現場')).toBe('site');
