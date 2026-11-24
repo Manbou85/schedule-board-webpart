@@ -21,11 +21,6 @@ export const CREW_CATEGORY = '現場';
  */
 export const CREW_LEAVE_WORD = '休暇';
 
-/** 作業員の行き先の区分:「休暇」の文字が入っていれば休暇、それ以外は現場(全角・半角のちがいは気にしない) */
-export function crewCategory(title: string): string {
-  return (title || '').normalize('NFKC').indexOf(CREW_LEAVE_WORD) >= 0 ? LEAVE_CATEGORY : CREW_CATEGORY;
-}
-
 /** 作業員の行き先の1行が何を表すか:現場(帯)/1日の休暇(帯)/札(早退・遅刻・午前休・午後休) */
 export type CrewRowKind = { type: 'site' } | { type: 'leave' } | { type: 'badge'; kind: LeaveKind };
 
