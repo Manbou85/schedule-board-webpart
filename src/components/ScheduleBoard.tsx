@@ -9,6 +9,7 @@ import {
   fitTableHeight,
   NO_ENTRY_STATUS,
   summarizeCategories,
+  summaryDateFor,
   crewToEntries,
   DEFAULT_CREW_DEPARTMENTS,
   draftFromEntry,
@@ -281,8 +282,14 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     }
   }, [today]);
   const [helpOpen, setHelpOpen] = React.useState(false);
-  // 人数のまとめで選んだ状態(例 外出)。その状態の人だけにしぼる。空ならしぼらない
-  const [statusFilter, setStatusFilter] = React.useState('');
+  // 区分のボタンでのしぼり込み:どの区分を、どの日のボタンで押したか(ver 0.9.2 から日も覚える)
+  const [statusFilter, setStatusFilter] = React.useState<{ status: string; date: DateKey } | undefined>(undefined);
+  // 見ている日(ボタンの対象の日)が変わったら、しぼり込みを外す。
+  // 外さないと、ボタンのない週へ行って戻ったときに、見えないしぼり込みが残っていた(レビューの指摘)
+  const currentSummaryDate = summaryDateFor(view, date, today);
+  React.useEffect(() => {
+    setStatusFilter((f) => (f && f.date !== currentSummaryDate ? undefined : f));
+  }, [currentSummaryDate]);
   // 「自分の行へ」ボタン:自分の行が見えなくなったときだけ出す(表が画面に見えているときに限る)
   const tableAreaRef = React.useRef<HTMLDivElement>(null);
   const [selfOutOfView, setSelfOutOfView] = React.useState(false);
@@ -549,7 +556,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   }
   const summaryDate = summaryIndex >= 0 ? days[summaryIndex].date : '';
   const summary = summaryIndex >= 0 ? summarizeCategories(filtered, rows, summaryIndex, base.categories) : [];
-  const activeStatus = summary.filter((s) => s.status === statusFilter)[0];
+  const activeStatus = statusFilter && statusFilter.date === summaryDate ? summary.filter((s) => s.status === statusFilter.status)[0] : undefined;
   const shown = activeStatus ? filtered.filter((w) => activeStatus.workerIds.indexOf(w.id) >= 0) : filtered;
   const summaryLabel = summaryDate
     ? (summaryDate === today ? '今日 ' : '') + formatMonthDay(summaryDate) + '(' + formatWeekday(summaryDate) + ')'
@@ -846,7 +853,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
                 aria-pressed={pressed}
                 title={pressed ? 'もう一度押すと、しぼり込みを外します' : summaryLabel + 'に「' + s.status + '」の予定がある人だけを表示します'}
                 style={pressed ? { borderColor: st.color, background: st.background } : undefined}
-                onClick={() => setStatusFilter(pressed ? '' : s.status)}
+                onClick={() => setStatusFilter(pressed ? undefined : { status: s.status, date: summaryDate })}
               >
                 <Icon name={st.icon} color={st.color} size={16} />
                 {s.status}
@@ -874,7 +881,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
             </button>
           )}
           {activeStatus && (
-            <button type="button" className={styles.chip} onClick={() => setStatusFilter('')}>
+            <button type="button" className={styles.chip} onClick={() => setStatusFilter(undefined)}>
               {summaryLabel}:{activeStatus.status}
               <Icon name="close" size={14} />
               <span className={styles.srOnly}>(外す)</span>
@@ -888,7 +895,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
             className={styles.linkButton}
             onClick={() => {
               setCriteria({});
-              setStatusFilter('');
+              setStatusFilter(undefined);
             }}
           >
             すべて解除

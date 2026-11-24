@@ -1,4 +1,4 @@
-import { NO_ENTRY_STATUS, summarizeCategories } from './summary';
+import { NO_ENTRY_STATUS, summarizeCategories, summaryDateFor } from './summary';
 import { ICell, ILeaveBadge, IScheduleEntry, IWorker } from './types';
 
 const DATE = '2026-11-18';
@@ -49,5 +49,21 @@ describe('人数のまとめのボタン(その日にその区分の予定があ
       [1, [cell({ kind: 'period', entry: entry('現場', { entryType: 'period' }), dimmed: false, finished: [] }, [{ kind: 'early', label: '早退' }])]]
     ]);
     expect(summarizeCategories([workers[0]], r, 0, []).map((s) => s.status)).toEqual(['現場']);
+  });
+});
+
+describe('区分のボタンが対象にする日', () => {
+  const today = '2026-11-18'; // 水曜
+
+  it('週間表示:今日がその週にあれば今日、なければ出さない', () => {
+    expect(summaryDateFor('week', '2026-11-16', today)).toBe(today);
+    expect(summaryDateFor('week', '2026-11-22', today)).toBe(today);
+    expect(summaryDateFor('week', '2026-11-23', today)).toBe('');
+    expect(summaryDateFor('week', '2026-11-15', today)).toBe('');
+  });
+
+  it('日表示:その日', () => {
+    expect(summaryDateFor('day', '2026-11-25', today)).toBe('2026-11-25');
+    expect(summaryDateFor('day', today, today)).toBe(today);
   });
 });

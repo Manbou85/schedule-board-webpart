@@ -6,7 +6,8 @@
 // (午前は現場で午後休の人は、「現場」でも「休暇」でも出る)。
 
 import { cellCategories, HOLIDAY_WORK_CATEGORY, LEAVE_CATEGORY } from './cellRule';
-import { ICell, IWorker } from './types';
+import { startOfWeek } from './dateUtils';
+import { DateKey, ICell, IWorker } from './types';
 
 /** 予定が何もない人 */
 export const NO_ENTRY_STATUS = '予定なし';
@@ -56,4 +57,15 @@ export function summarizeCategories(workers: IWorker[], rows: Map<number, ICell[
     }
   });
   return result;
+}
+
+/**
+ * 区分のボタンが対象にする日。日表示はその日、週間表示は今日がその週にあれば今日、なければ ''(ボタンを出さない)。
+ * ボタンでしぼったあと、この日が変わったらしぼり込みを外す(別の週へ行って戻ったときに、見えないしぼり込みが残らないように。ver 0.9.2)
+ */
+export function summaryDateFor(view: 'week' | 'day', date: DateKey, today: DateKey): DateKey {
+  if (view === 'day') {
+    return date;
+  }
+  return startOfWeek(today) === startOfWeek(date) ? today : '';
 }

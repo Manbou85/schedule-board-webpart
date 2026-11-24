@@ -1,6 +1,6 @@
 # 引き継ぎメモ(次のセッション向け)
 
-最終更新:2026-11-22(ver 0.9.1。フェーズ1〜3 完了。テスト用ページで実機運用中、全社展開の前の仕上げ段階)
+最終更新:2026-11-24(ver 0.9.2。フェーズ1〜3 完了。テスト用ページで実機運用中、全社展開の前の仕上げ段階)
 
 **新しいセッションの Claude は、作業を始める前にこのファイルを最後まで読んでください。**
 
@@ -12,24 +12,24 @@
 3. 開発者に、実機確認の結果と、次にやりたいこと(「2.」の候補)を聞く。そこから続きを決める
 4. 画面を変えたら:`npm run build` → `npm run preview` → 確認用プレビュー(「4.」の URL)を上書きする
 5. 版を上げるとき:`package.json`・`package-lock.json`(先頭の2か所)・`config/package-solution.json`(2か所)をそろえる。
-   `docs/test-checklist.html` の「ver 0.9.1」の例(2か所)も直す
+   `docs/test-checklist.html` の「ver 0.9.2」の例(2か所)も直す
 6. 仕上がったら:作業ブランチにプッシュ → 開発者が「PRお願い」と言ったらプルリクエストを作る → 開発者がマージ →
    作業ブランチを main に合わせて(`git merge --ff-only origin/main`)プッシュしておく
 7. 毎回の作業の終わりに、「アーティファクト版で確認すること」「WEBパーツで確認が必要なこと」を分けて伝える(CLAUDE.md 3)
 
-## 1. いまの状況(ver 0.9.1)
+## 1. いまの状況(ver 0.9.2)
 
 ### できているもの
 | 部分 | 場所 | 内容 |
 | --- | --- | --- |
-| 計算(テスト付き) | `src/core` | 6-2 の表示ルール(`cellRule.ts`。終わった今日の予定を薄くする判定も)、期間・週・休日の判定、検索・絞り込み、対象者の整理と部署の並び順(`workers.ts`)、登録フォームの入力チェック(`entryForm.ts`)、ちょっと外出・帰社しました(`quickOut.ts`) |
-| 画面 | `src/components` | 週間表示(`WeekGrid.tsx`)、日表示(`DayList.tsx`)、ツールバーと絞り込みのポップアップ(`ScheduleBoard.tsx`・`FilterPopover.tsx`)、登録フォーム(`EntryForm.tsx`)、ちょっと外出(`QuickOutDialog.tsx`)、使い方(`HelpDialog.tsx`)、帯を押したときの選択(`PeriodChoiceDialog.tsx`)、線画アイコン(`Icon.tsx`)、版の表示 |
+| 計算(テスト付き) | `src/core` | 6-2 の表示ルール(`cellRule.ts`。終わった今日の予定を薄くする判定、作業員の行き先の全件表示も)、期間・週・休日の判定、検索・絞り込み、対象者の整理と部署の並び順・先頭に並べる人(`workers.ts`)、登録フォームの入力チェック(`entryForm.ts`)、ちょっと外出・帰社しました(`quickOut.ts`)、作業員の行き先の読み分け(`crew.ts`)、区分のボタン(`summary.ts`)、予定表の高さ合わせ(`fitHeight.ts`)、表示の大きさ(`viewPrefs.ts`)、区分の呼び方の読み替え(`labels.ts`) |
+| 画面 | `src/components` | 週間表示(`WeekGrid.tsx`)、日表示(`DayList.tsx`)、ツールバーと絞り込み・表示設定のポップアップ(`ScheduleBoard.tsx`・`FilterPopover.tsx`・`DisplayPopover.tsx`・共通部品 `ToolPopover.tsx`)、登録フォーム(`EntryForm.tsx`)、ちょっと外出(`QuickOutDialog.tsx`)、使い方(`HelpDialog.tsx`)、帯を押したときの選択(`PeriodChoiceDialog.tsx`)、線画アイコン(`Icon.tsx`)、版の表示 |
 | データの読み書き | `src/services` | 約束(`IScheduleDataService.ts`)、プレビュー用(`MemoryScheduleService.ts`)、SharePoint 用(`SharePointScheduleService.ts`・`spMapping.ts`)、列の内部名(`spConfig.ts`) |
 | WEBパーツ本体 | `src/webparts/scheduleBoard` | 組み立てと日本語の設定画面 |
 | プレビュー | `preview/` | 架空の53名のダミーデータ、1ファイルのHTMLを作るスクリプト。「管理者として見る」「保存を失敗させる」の切り替え付き |
-| 手順書 | `docs/` | `LIST_SETUP.md`(リストの作り方・内部名の確かめ方・設定項目)、`DEPLOY.md`(登録・展開・うまくいかないとき)、`test-checklist.html`(実機テスト51項目)、`IMPROVEMENT_PLAN.md`(改修案) |
+| 手順書 | `docs/` | `LIST_SETUP.md`(リストの作り方・内部名の確かめ方・設定項目)、`DEPLOY.md`(登録・展開・うまくいかないとき)、`test-checklist.html`(実機テスト56項目)、`IMPROVEMENT_PLAN.md`(改修案) |
 
-- テスト:160件(`npm run build` で実行)
+- テスト:162件(`npm run build` で実行)
 - **SharePoint の実機で動作中**(テスト用ページ `SitePages/Schedule-Board.aspx`、全幅のセクション)。実機テスト(`docs/test-checklist.html`)は開発者が実施済み。
   行動予定リスト・会社休日リストは作成済み、インデックス(行動予定リスト・作業員の行き先リストの日付列)も設定済み
 - 会社でいちばん多い画面:ノートPC・表示倍率125%・ブラウザ全画面(高さが低いので、重ねる画面などはこの大きさで確かめる)
@@ -40,6 +40,9 @@
 **次の候補**(開発者に聞いて決める)
 - 全社展開の準備:本番のポータルのページに置く、社員へのお知らせ文、ほかの社員のPCでの見え方の確認
 - 機能追加の候補:祝日の自動登録(Power Automate の手順書)、繰り返しの予定、印刷用の表示 など(CLAUDE.md フェーズ5以降)
+- コードレビュー(2026-11-22、PR #20 の範囲)で**直さなかった指摘**(開発者判断。必要になったら):
+  午前・午後の読み分けが逆になる書き方(例「休暇(午後から現場)」→午後休の札になる)、使わなくなった `crewCategory`(`crew.ts`)、
+  作業員の札の補足で「早退」などの文字がくり返される(例 札「早退」+補足「早退 15時」)
 - Teams のタブは後回し(開発者回答:SharePoint がやっと定着してきたので)
 - 開発者は「機能追加」を好む。見た目の大きな改修は案Aで済み
 
@@ -215,6 +218,10 @@
   - 直さなかった指摘(開発者判断):午前・午後の読み分けが逆になる書き方(例「休暇(午後から現場)」)、使わなくなった `crewCategory`、
     札の補足で「早退」の文字がくり返される、区分のボタンでしぼったまま別の週へ行くと戻ったときにしぼり込みが残る(前からある)
   - 実機で確認済み(開発者 2026-11-22)
+- ver 0.9.2(2026-11-24):**区分のボタンでしぼったまま別の週へ行くと、戻ったときに見えないしぼり込みが残っていた**のを直した(レビューの指摘・開発者の依頼)。
+  しぼり込みに「どの日のボタンで押したか」を覚えさせ(`statusFilter` の `date`)、ボタンの対象の日(`core/summary.ts` の `summaryDateFor`)が変わったら外す。
+  今日の週表示 ⇔ 日表示(今日)の行き来では同じ日なので残る
+  - 実機で確認済み(開発者 2026-11-24)
 - スマホ幅では最初に日表示(CLAUDE.md 6-7)
 - 6-2:総務の「1日」休暇と単発予定が重なったら**休暇を優先**で決定(WEBパーツの設定で切り替え可能)
 - 自分たちで作るリストは **URL(`Lists/〜`)で探す**(表示名を「行動予定」に変えても動くように)。既存のリストは名前で探す
