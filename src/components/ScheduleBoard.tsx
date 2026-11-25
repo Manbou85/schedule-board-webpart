@@ -88,6 +88,8 @@ export interface IScheduleBoardProps {
   frontWorkerNames?: string[];
   /** 作業員の行き先リストを反映する部署(空なら全員。WEBパーツの設定。初期値は「作業員」) */
   crewDepartments?: string[];
+  /** 部署とは別に、作業員の行き先を反映する人(名前で指定。どの部署の人でもよい) */
+  crewWorkerNames?: string[];
   /** 「行の高さ」などの表示の設定を覚えておく場所。省略すると覚えない(開き直すと「ふつう」に戻る) */
   prefsStore?: IViewPrefsStore;
 }
@@ -465,15 +467,16 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
 
   // 作業員の行き先(別サイトのリスト)を、名前で WorkerNameList の人に結びつける
   const crewDeptKey = (props.crewDepartments || DEFAULT_CREW_DEPARTMENTS).join('\n');
+  const crewNameKey = (props.crewWorkerNames || []).join('\n');
   const crew = React.useMemo(
     () =>
       base && range
         ? crewToEntries(range.crewAssignments || [], base.workers, crewDeptKey ? crewDeptKey.split('\n') : [], {
             start: days[0].date,
             end: days[days.length - 1].date
-          })
+          }, crewNameKey ? crewNameKey.split('\n') : [])
         : { entries: [], leaves: [], unmatched: [] },
-    [base, range, crewDeptKey, days]
+    [base, range, crewDeptKey, crewNameKey, days]
   );
 
   // 全員ぶんのマスを作る(表示ルールは core の resolveRow)

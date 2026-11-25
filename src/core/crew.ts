@@ -21,9 +21,29 @@ export const CREW_CATEGORY = '現場';
  */
 export const CREW_LEAVE_WORD = '休暇';
 
-/** 作業員の行き先の区分:「休暇」の文字が入っていれば休暇、それ以外は現場(全角・半角のちがいは気にしない) */
-export function crewCategory(title: string): string {
-  return (title || '').normalize('NFKC').indexOf(CREW_LEAVE_WORD) >= 0 ? LEAVE_CATEGORY : CREW_CATEGORY;
+
+/**
+ * 午前・午後のあとに仕事の言葉が続いていれば、仕事をする半日を返す(例「午後から現場」→ pm、「AM現場」→ am)。
+ * あいだに区切り(、。()/ など)や「休」があれば続いていないとみなす(「午前休み、現場」は仕事の半日にしない)。
+ * 両方の半日に仕事の言葉があるときや、見つからないときは undefined。
+ * t は normalize('NFKC') と toUpperCase() 済みの文字
+ */
+function workingHalf(t: string): 'am' | 'pm' | undefined {
+  // 仕事の言葉:現場・出勤・出社・在社・勤務(足すときは次の行の最後のかっこの中に「|言葉」を足す)
+  const pattern = /(午前|午後|AM|PM)[^、,。.()[\]/・休]*?(現場|出勤|出社|在社|勤務)/g;
+  let am = false;
+  let pm = false;
+  for (let m = pattern.exec(t); m; m = pattern.exec(t)) {
+    if (m[1] === '午前' || m[1] === 'AM') {
+      am = true;
+    } else {
+      pm = true;
+    }
+  }
+  if (am === pm) {
+    return undefined;
+  }
+  return am ? 'am' : 'pm';
 }
 
 /** 作業員の行き先の1行が何を表すか:現場(帯)/1日の休暇(帯)/札(早退・遅刻・午前休・午後休) */
@@ -33,9 +53,11 @@ export type CrewRowKind = { type: 'site' } | { type: 'leave' } | { type: 'badge'
  * 行き先の文字から、何の行かを決める(全角・半角、AM/PM の大文字・小文字は気にしない)。
  *  1. 「早退」→ 早退の札 / 「遅刻」→ 遅刻の札
  *  2. 「午前休」→ 午前休の札 / 「午後休」→ 午後休の札
- *  3. 「休暇」+「午前」か「AM」→ 午前休の札 / 「休暇」+「午後」か「PM」→ 午後休の札(両方あるときは1日の休暇)
- *  4. 「休暇」→ 1日の休暇(「休暇 0.5日」のように午前・午後がわからないものも)
- *  5. それ以外 → 現場
+ *  3. 「休暇」+「午後から現場」のように、午前・午後のあとに仕事の言葉(現場・出勤など)が続く →
+ *     仕事をするのはその半日なので、休暇は残りの半日(「休暇(午後から現場)」→ 午前休の札。ver 0.9.3)
+ *  4. 「休暇」+「午前」か「AM」→ 午前休の札 / 「休暇」+「午後」か「PM」→ 午後休の札(両方あるときは1日の休暇)
+ *  5. 「休暇」→ 1日の休暇(「休暇 0.5日」のように午前・午後がわからないものも)
+ *  6. それ以外 → 現場
  */
 export function classifyCrewTitle(title: string): CrewRowKind {
   const t = (title || '').normalize('NFKC').toUpperCase();
@@ -53,6 +75,13 @@ export function classifyCrewTitle(title: string): CrewRowKind {
     return { type: 'badge', kind: 'afternoon' };
   }
   if (has(CREW_LEAVE_WORD)) {
+    const work = workingHalf(t);
+    if (work === 'pm') {
+      return { type: 'badge', kind: 'morning' };
+    }
+    if (work === 'am') {
+      return { type: 'badge', kind: 'afternoon' };
+    }
     const am = has('午前') || has('AM');
     const pm = has('午後') || has('PM');
     if (am && !pm) {
@@ -87,15 +116,18 @@ export function nameKey(name: string): string {
  * 作業員の行き先 → 予定表の予定(読み取り専用の長期の予定)。
  * 名前が WorkerNameList の誰とも合わない行は使わない(unmatched に名前を返す)。
  * departments を指定すると、その部署の人の行だけを使う(ほかの部署の人の行は、知らせずに使わない)。空なら全員。
+ * names に書いた人は、部署に関係なく使う(現場作業に呼ばれることがある人など。どの部署でもよい。ver 0.9.4)。
  * ID は行動予定と重ならないよう、マイナスにする。
  */
 export function crewToEntries(
   list: ICrewAssignment[],
   workers: IWorker[],
   departments: string[] = [],
-  shown?: ICrewPeriod
+  shown?: ICrewPeriod,
+  names: string[] = []
 ): { entries: IScheduleEntry[]; leaves: ILeave[]; unmatched: string[] } {
   const targets = departments.map((d) => d.normalize('NFKC').trim()).filter((d) => !!d);
+  const extraKeys = names.map(nameKey).filter((k) => !!k);
   const byName = new Map<string, IWorker>();
   workers.forEach((w) => {
     const key = nameKey(w.name);
@@ -115,8 +147,12 @@ export function crewToEntries(
       }
       return;
     }
-    if (targets.length > 0 && targets.indexOf(worker.department.normalize('NFKC').trim()) < 0) {
-      return; // 反映しない部署の人(行動予定表の予定を使う)
+    if (
+      targets.length > 0 &&
+      targets.indexOf(worker.department.normalize('NFKC').trim()) < 0 &&
+      extraKeys.indexOf(nameKey(worker.name)) < 0
+    ) {
+      return; // 反映しない部署の人で、名前の指定もない(行動予定表の予定を使う)
     }
     const title = a.title.trim();
     const endDate = normalizeEndDate(a.startDate, a.endDate);

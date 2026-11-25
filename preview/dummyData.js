@@ -218,6 +218,8 @@ function createDummyData(today) {
   // 総務の休暇・休日出勤が優先されることの確認
   crewSite(crewWorkers[2], SITES_BUILD[3], d(-3), d(10));
   leave(crewWorkers[2], d(1), 'fullDay');
+  // 「休暇(午後から現場)」は午後に仕事をするので午前休の札(ver 0.9.3。以前は午後休の札になっていた)
+  crewSite(crewWorkers[2], '休暇(午後から現場)', d(3), d(3));
   holidayWork(crewWorkers[2], d(5), SITES_BUILD[3]);
   // 行動予定表の長期の予定より作業員の行き先が優先、単発の予定は作業員の行き先より優先
   period(crewWorkers[3], '(行動予定表の長期の予定:作業員の行き先が優先)', d(-30), d(30));
@@ -225,6 +227,8 @@ function createDummyData(today) {
   single(crewWorkers[3], '本社(安全講習)', d(3), '研修');
   // 作業員以外の人もリストに入っているが、反映するのは「作業員」の部署だけ(建築部の人の行は使わない)
   crewSite(build[4], '(作業員以外の人の行:表示されない)', d(-5), d(10));
+  // 管理部の1人目は、設定「作業員の行き先を反映する人」に名前があるので、現場に呼ばれた水曜だけ現場が出る(ver 0.9.4)
+  crewSite(byDept('管理部')[0], SITES_CIVIL[0] + '(応援)', d(2), d(2));
   // WorkerNameList にいない名前(管理者には知らせが出る)
   crewAssignments.push({ id: crewId++, workerName: '名簿にない 作業員', title: SITES_CIVIL[0], startDate: d(0), endDate: d(5) });
 

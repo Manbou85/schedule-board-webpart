@@ -1,4 +1,4 @@
-import { classifyCrewTitle, crewCategory, crewToEntries, nameKey } from './crew';
+import { classifyCrewTitle, crewToEntries, nameKey } from './crew';
 import { ICrewAssignment, IWorker } from './types';
 
 const workers: IWorker[] = [
@@ -53,17 +53,17 @@ describe('作業員の行き先リスト', () => {
     expect(crewToEntries(list, workers, []).entries.map((e) => e.workerId)).toEqual([1, 3]);
     expect(crewToEntries(list, workers).entries.map((e) => e.workerId)).toEqual([1, 3]);
   });
+
+  it('名前で指定した人は、部署がちがっても使う(全角・半角・空白は気にしない。ver 0.9.4)', () => {
+    const list = [crew(1, '山田 太郎'), crew(2, '高橋 花子'), crew(3, '佐藤 次郎')];
+    const withName = crewToEntries(list, workers, ['作業員'], undefined, ['高橋　花子', '']);
+    expect(withName.entries.map((e) => e.workerId)).toEqual([1, 3, 2]);
+    // 名前の指定がなければ、今までどおり作業員だけ
+    expect(crewToEntries(list, workers, ['作業員'], undefined, []).entries.map((e) => e.workerId)).toEqual([1, 2]);
+  });
 });
 
 describe('作業員の行き先に「休暇」と書かれたとき(総務に申請する前)', () => {
-  it('「休暇」の文字が入っていれば区分は休暇、それ以外は現場', () => {
-    expect(crewCategory('休暇')).toBe('休暇');
-    expect(crewCategory('休暇 0.5日')).toBe('休暇');
-    expect(crewCategory('休暇(〜11/22)')).toBe('休暇');
-    expect(crewCategory('〇〇新築工事')).toBe('現場');
-    expect(crewCategory('')).toBe('現場');
-  });
-
   it('予定にするときも、行き先の文字はそのまま・区分だけ休暇にする', () => {
     const { entries } = crewToEntries([crew(8, '山田 太郎', { title: '休暇 0.5日' })], workers);
     expect(entries[0].category).toBe('休暇');
@@ -96,6 +96,22 @@ describe('作業員の行き先の文字の読み分け(ver 0.9.0)', () => {
     expect(kind('休暇')).toBe('leave');
     expect(kind('休暇 0.5日')).toBe('leave');
     expect(kind('休暇 AM〜PM')).toBe('leave');
+  });
+
+  it('「休暇」+午前・午後のあとに仕事の言葉 → 仕事をしない残りの半日が休暇(ver 0.9.3)', () => {
+    expect(kind('休暇(午後から現場)')).toBe('morning');
+    expect(kind('休暇(午後から出勤)')).toBe('morning');
+    expect(kind('休暇 PM現場')).toBe('morning');
+    expect(kind('休暇(午前は現場)')).toBe('afternoon');
+    expect(kind('AM 〇〇現場、PM 休暇')).toBe('afternoon');
+    expect(kind('午前休暇、午後から現場')).toBe('morning');
+  });
+
+  it('仕事の言葉がない・区切りや「休」をはさむときは、今までどおりの読み分け', () => {
+    expect(kind('午後から休暇')).toBe('afternoon');
+    expect(kind('休暇 午後 通院')).toBe('afternoon');
+    expect(kind('午後休暇、現場')).toBe('afternoon');
+    expect(kind('休暇(AM現場、PM出勤)')).toBe('leave');
   });
 
   it('それ以外は現場(午前・午後だけでは札にしない)', () => {
