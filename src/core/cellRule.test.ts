@@ -131,7 +131,7 @@ describe('1マスの表示ルール(6-2)', () => {
     expect(cell.content).toEqual({ kind: 'leave', leave: lv });
   });
 
-  it('【要確認】の設定を切り替えると、単発の予定が休暇より優先になる(休日出勤よりは下)', () => {
+  it('設定を「単発の予定を優先」に切り替えると、単発の予定が休暇より優先になる(休日出勤よりは下)', () => {
     const lv = leave('2026-11-17', 'fullDay');
     const s = single('2026-11-17', '外出');
     const opt = { leaveBeforeSingle: false };
@@ -143,6 +143,12 @@ describe('1マスの表示ルール(6-2)', () => {
     });
     // 単発がなければ、休暇が長期の予定より優先
     expect(resolveCell(TUE, W, data({ entries: [longSite], leaves: [lv] }), opt).content).toEqual({ kind: 'leave', leave: lv });
+    // 休日出勤と重なっても、休暇は休日出勤より下にならない(以前は休日出勤が出ていた)
+    const hw = holidayWork('2026-11-17', '本社');
+    expect(resolveCell(TUE, W, data({ entries: [longSite], leaves: [lv], holidayWorks: [hw] }), opt).content).toEqual({
+      kind: 'leave',
+      leave: lv
+    });
   });
 
   it('午前・午後・遅刻・早退は、表示の上にバッジとして重ねる(補足つき)', () => {

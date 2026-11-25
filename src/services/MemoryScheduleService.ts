@@ -22,6 +22,8 @@ export class PreviewSaveError extends Error {
 export class MemoryScheduleService implements IScheduleDataService {
   /** true のあいだ、登録・変更・削除がすべて失敗する(プレビューの確認用) */
   public failSaves: boolean = false;
+  /** true のあいだ、予定の読み込み(週・日の切り替え、読み直し)が失敗する(プレビューの確認用) */
+  public failLoads: boolean = false;
   /** 読み込みにかける時間(ミリ秒)。プレビューで SharePoint の読み込みの待ち時間をまねるため */
   public latencyMs = 0;
 
@@ -51,6 +53,12 @@ export class MemoryScheduleService implements IScheduleDataService {
   }
 
   public getRange(start: DateKey, end: DateKey): Promise<IRangeData> {
+    if (this.failLoads) {
+      const err = new Error('プレビュー:読み込みを失敗させています(通信が切れたときのまね)');
+      return this.latencyMs > 0
+        ? new Promise<IRangeData>((_resolve, reject) => setTimeout(() => reject(err), this.latencyMs))
+        : Promise.reject(err);
+    }
     const d = this._data;
     const inRange = (date: DateKey): boolean => start <= date && date <= end;
     const crew = (d.crewAssignments || []).filter((c) => overlapsRange(c.startDate, c.endDate, start, end));

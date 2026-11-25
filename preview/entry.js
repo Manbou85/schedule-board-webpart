@@ -21,6 +21,7 @@ const selfAccount = data.currentUser.account;
 function PreviewControls() {
   const [admin, setAdmin] = React.useState(false);
   const [fail, setFail] = React.useState(false);
+  const [failLoad, setFailLoad] = React.useState(false);
   const toggleAdmin = (on) => {
     service.setCurrentUser({ account: selfAccount, isAdmin: on });
     setAdmin(on);
@@ -28,6 +29,10 @@ function PreviewControls() {
   const toggleFail = (on) => {
     service.failSaves = on;
     setFail(on);
+  };
+  const toggleFailLoad = (on) => {
+    service.failLoads = on;
+    setFailLoad(on);
   };
   return h(
     React.Fragment,
@@ -37,7 +42,8 @@ function PreviewControls() {
       { className: 'pv-controls' },
       h('span', { className: 'pv-controls-title' }, 'プレビューの切り替え:'),
       h('label', null, h('input', { type: 'checkbox', checked: admin, onChange: (e) => toggleAdmin(e.target.checked) }), ' 管理者として見る(全員の予定を編集・代理登録)'),
-      h('label', null, h('input', { type: 'checkbox', checked: fail, onChange: (e) => toggleFail(e.target.checked) }), ' 保存を失敗させる(エラー表示の確認用)')
+      h('label', null, h('input', { type: 'checkbox', checked: fail, onChange: (e) => toggleFail(e.target.checked) }), ' 保存を失敗させる(エラー表示の確認用)'),
+      h('label', null, h('input', { type: 'checkbox', checked: failLoad, onChange: (e) => toggleFailLoad(e.target.checked) }), ' 読み込みを失敗させる(通信が切れたときの確認用)')
     ),
     h(
       'div',

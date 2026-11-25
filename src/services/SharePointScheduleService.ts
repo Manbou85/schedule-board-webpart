@@ -128,7 +128,9 @@ export class SharePointScheduleService implements IScheduleDataService {
         '/items?$select=' +
         ['Id', e.title, lookupIdField(e.worker), e.entryType, e.category, e.startDate, e.endDate, e.startTime, e.endTime, e.note].join(',') +
         '&$filter=' +
-        encodeURIComponent(e.startDate + " le datetime'" + b.to + "' and " + e.endDate + " ge datetime'" + b.from + "'") +
+        // 「終了日が表示の初日以降」を先に書く(SharePoint は先頭の条件で 5,000 件のしきい値を判定するため。
+        // 「開始日が表示の最終日以前」を先にすると、過去の予定がすべて当てはまり、5,000 件を超えると読めなくなる)
+        encodeURIComponent(e.endDate + " ge datetime'" + b.from + "' and " + e.startDate + " le datetime'" + b.to + "'") +
         '&$top=' +
         PAGE_SIZE
     );
@@ -202,7 +204,8 @@ export class SharePointScheduleService implements IScheduleDataService {
               '/items?$select=' +
               ['Id', c.worker, c.title, c.startDate, c.endDate].join(',') +
               '&$filter=' +
-              encodeURIComponent(c.startDate + " le datetime'" + b.to + "' and " + c.endDate + " ge datetime'" + b.from + "'") +
+              // 予定のリストと同じく、しきい値のため「終了日」の条件を先に書く
+              encodeURIComponent(c.endDate + " ge datetime'" + b.from + "' and " + c.startDate + " le datetime'" + b.to + "'") +
               '&$top=' +
               PAGE_SIZE
           ).then((rows) => {

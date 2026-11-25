@@ -96,7 +96,9 @@ export function quickOutEntry(
 
 /**
  * いま外出中の予定を探す(「帰社しました」ボタンを出すかどうか)。
- * 今日の・本人の・1日だけの「外出」で、始まっていて(開始時刻なしも含む)、まだ戻りの時刻が来ていないもの。
+ * 今日の・本人の・1日だけの「外出」で、開始時刻があって始まっていて、まだ戻りの時刻が来ていないもの。
+ * 開始時刻のない外出(前の日に入れておいた「客先」など)は、外出中にしない(会社にいる朝から「帰社しました」が出ないように)。
+ * 「ちょっと外出」は、いつも開始時刻を入れて登録する。
  * 複数あれば、いちばんあとに始まったもの。
  */
 export function findActiveOuting(entries: IScheduleEntry[], workerId: number, now: INow): IScheduleEntry | undefined {
@@ -107,7 +109,8 @@ export function findActiveOuting(entries: IScheduleEntry[], workerId: number, no
       e.entryType === 'single' &&
       e.category.trim() === QUICK_OUT_CATEGORY &&
       e.startDate === now.date &&
-      (!e.startTime || e.startTime <= now.time) &&
+      !!e.startTime &&
+      e.startTime <= now.time &&
       (!e.endTime || e.endTime > now.time)
     ) {
       if (!found || (e.startTime || '') > (found.startTime || '') || ((e.startTime || '') === (found.startTime || '') && e.id > found.id)) {

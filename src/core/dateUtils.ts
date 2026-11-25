@@ -107,6 +107,16 @@ export function overlapsRange(
   return startDate <= rangeEnd && normalizeEndDate(startDate, endDate) >= rangeStart;
 }
 
+/**
+ * 時刻の書き方をそろえる(全角→半角、「9:30」→「09:30」、「9時30分」は対象外でそのまま)。
+ * 時刻は文字のまま比べるため、リストに直接入力された「9:30」や「０９：３０」でも正しく比べられるようにする
+ */
+export function normalizeTime(value: string | undefined): string {
+  const t = (value || '').normalize('NFKC').trim();
+  const m = /^(\d{1,2}):(\d{2})$/.exec(t);
+  return m ? (m[1].length === 1 ? '0' : '') + m[1] + ':' + m[2] : t;
+}
+
 /** 時刻の表示(例 '08:00-17:30'、'09:00-'、'-15:00')。どちらもなければ空文字 */
 export function formatTimeRange(startTime?: string, endTime?: string): string {
   const s = (startTime || '').trim();

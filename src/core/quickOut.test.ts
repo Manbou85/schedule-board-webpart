@@ -68,6 +68,8 @@ describe('帰社しました', () => {
     expect(findActiveOuting([{ ...base, entryType: 'period' }], 3, now)).toBeUndefined(); // 期間の予定
     const noEnd = { ...base, id: 2, startTime: '10:20', endTime: undefined };
     expect(findActiveOuting([base, noEnd], 3, now)).toBe(noEnd); // あとに出かけたほう
+    // 開始時刻のない外出(前の日に入れておいた予定など)は、外出中にしない(朝から「帰社しました」が出ないように)
+    expect(findActiveOuting([{ ...base, startTime: undefined, endTime: undefined }], 3, now)).toBeUndefined();
   });
 
   it('戻りの時刻を今に直す。直帰の印は外す', () => {

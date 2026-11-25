@@ -100,7 +100,8 @@ describe('SharePoint から読む', () => {
     expect(r.holidays).toEqual([]);
     expect(r.warnings).toEqual([]);
     const entryCall = calls.filter((c) => c.url.indexOf("ScheduleEntries')/items") >= 0)[0];
-    expect(entryCall.url).toContain("StartDate le datetime'2026-11-23T12:00:00Z' and EndDate ge datetime'2026-11-15T12:00:00Z'");
+    // 5,000 件のしきい値のため、終了日の条件を先に書く(過去の予定がすべて当てはまる開始日の条件を先にしない)
+    expect(entryCall.url).toContain("EndDate ge datetime'2026-11-15T12:00:00Z' and StartDate le datetime'2026-11-23T12:00:00Z'");
   });
 
   it('総務のリストが読めなくても、予定は表示してお知らせを出す', async () => {
