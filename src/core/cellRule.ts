@@ -27,8 +27,8 @@ export const HOLIDAY_WORK_CATEGORY = '休日出勤';
 export interface ICellRuleOptions {
   /**
    * 総務の「1日」休暇と本人の単発予定が重なったとき、休暇を優先するか。
-   * 【要確認】開発者の回答待ち。デフォルトは休暇を優先(true)。
-   * false にすると、単発の予定 → 休暇 の順になる(休日出勤より下には下げない)。
+   * 休暇を優先(true)で決定(開発者回答)。WEBパーツの設定で切り替えられる。
+   * false にすると、単発の予定がある日だけ単発の予定を出す。単発の予定がなければ休暇(休日出勤より下には下げない)。
    */
   leaveBeforeSingle: boolean;
 }
@@ -168,12 +168,10 @@ export function resolveCell(
       : undefined;
   const leaveContent = fullDayLeave ? { kind: 'leave' as const, leave: fullDayLeave } : undefined;
 
-  if (options.leaveBeforeSingle) {
-    // 1. 休暇(1日)
-    if (leaveContent) {
-      cell.content = leaveContent;
-      return cell;
-    }
+  // 1. 休暇(1日)。設定で「単発の予定を優先」にしているときは、単発の予定がある日だけ単発の予定を出す
+  if (leaveContent) {
+    cell.content = !options.leaveBeforeSingle && singleContent ? singleContent : leaveContent;
+    return cell;
   }
 
   // 2. 休日出勤
@@ -186,11 +184,6 @@ export function resolveCell(
   // 3. 単発の予定
   if (singleContent) {
     cell.content = singleContent;
-    return cell;
-  }
-
-  if (!options.leaveBeforeSingle && leaveContent) {
-    cell.content = leaveContent;
     return cell;
   }
 

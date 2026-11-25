@@ -6,6 +6,7 @@ import {
   isDateInPeriod,
   isValidDateKey,
   normalizeEndDate,
+  normalizeTime,
   overlapsRange,
   startOfWeek,
   todayKey,
@@ -77,5 +78,14 @@ describe('期間判定', () => {
     expect(formatTimeRange('09:00', '')).toBe('09:00-');
     expect(formatTimeRange(undefined, '15:00')).toBe('-15:00');
     expect(formatTimeRange(' ', undefined)).toBe('');
+  });
+
+  it('リストに直接入力された時刻を「09:30」の形にそろえる(全角も)', () => {
+    expect(normalizeTime('9:30')).toBe('09:30');
+    expect(normalizeTime(' 10:05 ')).toBe('10:05');
+    expect(normalizeTime('０９：３０')).toBe('09:30');
+    expect(normalizeTime('')).toBe('');
+    expect(normalizeTime(undefined)).toBe('');
+    expect(normalizeTime('午後')).toBe('午後'); // 時刻の形でなければそのまま
   });
 });

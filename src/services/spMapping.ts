@@ -11,6 +11,7 @@ import {
   IScheduleEntry,
   IWorker,
   normalizeCategory,
+  normalizeTime,
   parseCompanyDayType,
   parseEntryType,
   parseLeaveKind
@@ -165,8 +166,9 @@ export function mapEntry(row: ISpRow, f: IEntryFields): IScheduleEntry | undefin
     startDate,
     endDate: spDateToKey(row[f.endDate]) || startDate
   };
-  const startTime = text(row[f.startTime]).trim();
-  const endTime = text(row[f.endTime]).trim();
+  // リストに直接「9:30」などと入力されても、比べたり並べたりできるように「09:30」にそろえる
+  const startTime = normalizeTime(text(row[f.startTime]));
+  const endTime = normalizeTime(text(row[f.endTime]));
   const note = text(row[f.note]).trim();
   if (startTime) {
     entry.startTime = startTime;
