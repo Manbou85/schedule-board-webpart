@@ -222,6 +222,8 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   const loading = !!loaded && loaded.key !== rangeKey;
   const [error, setError] = React.useState<string>('');
   const [errorInfo, setErrorInfo] = React.useState<string>('');
+  // 週・日を移ったときなどに、新しい範囲を読み込めなかった(画面は消さずにお知らせを出し、次の読み直しで戻る)
+  const [rangeError, setRangeError] = React.useState<{ message: string; info: string } | undefined>(undefined);
   const [criteria, setCriteria] = React.useState<IFilterCriteria>({});
   const [pinSelf, setPinSelf] = React.useState<boolean>(pinSelfByDefault);
   // 表示の大きさ(コンパクト/ふつう/大きめ。社員がそれぞれ選ぶ。初期値は「ふつう」。WEBパーツではブラウザに覚えておく)
@@ -274,13 +276,14 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
     };
   }, [reload]);
 
-  // 開きっぱなしで日付が変わったら、「今日」を見ていた人は新しい今日へ進める
+  // 開きっぱなしで日付が変わったら、「今日」を見ていた人は新しい今日へ進める。
+  // 週間表示は、今日のある週を見ていれば(ほかの日を押して選んだあとでも)新しい今日の週へ進める
   const prevTodayRef = React.useRef(today);
   React.useEffect(() => {
     const prev = prevTodayRef.current;
     if (prev !== today) {
       prevTodayRef.current = today;
-      setDate((d) => (d === prev ? today : d));
+      setDate((d) => (d === prev || (view === 'week' && startOfWeek(d) === startOfWeek(prev)) ? today : d));
     }
   }, [today]);
   const [helpOpen, setHelpOpen] = React.useState(false);
@@ -417,6 +420,7 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         setLoaded({ ...requested, data: r });
         setUpdatedAt(new Date());
         setRefreshFailed(false);
+        setRangeError(undefined);
       })
       .catch((e: unknown) => {
         if (!alive) {
@@ -427,8 +431,12 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
           setRefreshFailed(true);
           return;
         }
-        setError('予定を読み込めませんでした。少し時間をおいて、ページを開き直してください。');
-        setErrorInfo(errorDetail(e));
+        // 新しい範囲を読めなかったときも、画面は消さない(前の表を出したまま、お知らせと「もう一度読み込む」を出す)。
+        // 以前は、ページを開き直すまでエラーの画面のままだった(スリープから戻った直後など)。5分ごとの読み直しでも戻る
+        setRangeError({
+          message: '予定を読み込めませんでした。通信がつながっているか確かめて、「もう一度読み込む」を押してください。',
+          info: errorDetail(e)
+        });
       });
     return () => {
       alive = false;
@@ -559,12 +567,21 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   }
   const summaryDate = summaryIndex >= 0 ? days[summaryIndex].date : '';
   const summary = summaryIndex >= 0 ? summarizeCategories(filtered, rows, summaryIndex, base.categories) : [];
-  const activeStatus = statusFilter && statusFilter.date === summaryDate ? summary.filter((s) => s.status === statusFilter.status)[0] : undefined;
+  // 押した区分のボタン。検索などで、その区分の人がいなくなっても押したままにする
+  // (以前はボタンの印が消えて、検索を消すとしぼり込みがいきなり戻っていた)
+  const activeStatus =
+    statusFilter && summaryIndex >= 0 && statusFilter.date === summaryDate
+      ? summary.filter((s) => s.status === statusFilter.status)[0] || { status: statusFilter.status, workerIds: [] }
+      : undefined;
+  const chips = activeStatus && !summary.some((s) => s.status === activeStatus.status) ? summary.concat([activeStatus]) : summary;
   const shown = activeStatus ? filtered.filter((w) => activeStatus.workerIds.indexOf(w.id) >= 0) : filtered;
   const summaryLabel = summaryDate
     ? (summaryDate === today ? '今日 ' : '') + formatMonthDay(summaryDate) + '(' + formatWeekday(summaryDate) + ')'
     : '';
   const self = base.selfId !== undefined ? shown.filter((w) => w.id === base.selfId) : [];
+  // 絞り込み中は、見落とさないように部署をすべて開いて表示し、折りたたみもできないようにする
+  // (以前は見出しを押せて、絞り込みを外したあとに部署が閉じていて、人が消えたように見えた)
+  const filtering = shown.length !== base.workers.length;
   const usePin = pinSelf && self.length > 0;
   const groups: IGridGroup[] = [];
   if (usePin) {
@@ -574,9 +591,8 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
   // 指定した人(社長など)は、自分の部署の一番上に
   const ordered = promoteWithinDepartment(shown, props.frontWorkerNames || []);
   orderDepartments(groupByDepartment(usePin ? ordered.filter((w) => w.id !== base.selfId) : ordered), departmentOrder).forEach((g) => {
-    groups.push({ key: g.department, label: g.department || '(部署なし)', workers: g.workers, collapsible: true });
+    groups.push({ key: g.department, label: g.department || '(部署なし)', workers: g.workers, collapsible: !filtering });
   });
-  const filtering = shown.length !== base.workers.length;
 
   const departments = orderDepartments(groupByDepartment(base.workers), departmentOrder).map((g) => g.department);
   // 区分の選択肢に「休暇」があれば(ver 0.7.0 から)、総務の休暇とあわせて1つにする
@@ -842,10 +858,10 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
       )}
 
       {/* 区分のボタン:押すと、その日にその区分の予定がある人だけにしぼる(もう一度押すと元に戻る)。数は出さない(ver 0.9.0) */}
-      {summary.length > 0 && (
+      {chips.length > 0 && (
         <div className={styles.summaryRow} role="group" aria-label={'区分でしぼり込む(' + summaryLabel + ')'}>
           <span className={styles.summaryLabel}>{summaryLabel}</span>
-          {summary.map((s) => {
+          {chips.map((s) => {
             const st = statusStyle(s.status);
             const pressed = !!activeStatus && activeStatus.status === s.status;
             return (
@@ -906,9 +922,22 @@ export const ScheduleBoard: React.FC<IScheduleBoardProps> = (props) => {
         </div>
       )}
 
+      {rangeError && (
+        <div className={styles.warning} role="alert">
+          <div>
+            {rangeError.message}
+            {range ? '(下の表は、前に読み込んだ内容です)' : ''}
+          </div>
+          <button type="button" className={styles.linkButton} onClick={reload}>
+            もう一度読み込む
+          </button>
+          {base.isAdmin && rangeError.info && <div className={styles.warningDetail}>くわしい内容(管理者向け):{rangeError.info}</div>}
+        </div>
+      )}
+
       <div ref={tableAreaRef} className={styles.tableArea + (loading ? ' ' + styles.tableLoading : '')} aria-busy={loading}>
       {!range ? (
-        <p className={styles.message}>予定を読み込み中です…</p>
+        <p className={styles.message}>{rangeError ? '予定を表示できません。' : '予定を読み込み中です…'}</p>
       ) : shown.length === 0 ? (
         <p className={styles.message}>条件に合う人がいません。条件を変えてみてください。</p>
       ) : shownView === 'week' ? (
