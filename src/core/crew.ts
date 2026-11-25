@@ -116,15 +116,18 @@ export function nameKey(name: string): string {
  * 作業員の行き先 → 予定表の予定(読み取り専用の長期の予定)。
  * 名前が WorkerNameList の誰とも合わない行は使わない(unmatched に名前を返す)。
  * departments を指定すると、その部署の人の行だけを使う(ほかの部署の人の行は、知らせずに使わない)。空なら全員。
+ * names に書いた人は、部署に関係なく使う(現場作業に呼ばれることがある人など。どの部署でもよい。ver 0.9.4)。
  * ID は行動予定と重ならないよう、マイナスにする。
  */
 export function crewToEntries(
   list: ICrewAssignment[],
   workers: IWorker[],
   departments: string[] = [],
-  shown?: ICrewPeriod
+  shown?: ICrewPeriod,
+  names: string[] = []
 ): { entries: IScheduleEntry[]; leaves: ILeave[]; unmatched: string[] } {
   const targets = departments.map((d) => d.normalize('NFKC').trim()).filter((d) => !!d);
+  const extraKeys = names.map(nameKey).filter((k) => !!k);
   const byName = new Map<string, IWorker>();
   workers.forEach((w) => {
     const key = nameKey(w.name);
@@ -144,8 +147,12 @@ export function crewToEntries(
       }
       return;
     }
-    if (targets.length > 0 && targets.indexOf(worker.department.normalize('NFKC').trim()) < 0) {
-      return; // 反映しない部署の人(行動予定表の予定を使う)
+    if (
+      targets.length > 0 &&
+      targets.indexOf(worker.department.normalize('NFKC').trim()) < 0 &&
+      extraKeys.indexOf(nameKey(worker.name)) < 0
+    ) {
+      return; // 反映しない部署の人で、名前の指定もない(行動予定表の予定を使う)
     }
     const title = a.title.trim();
     const endDate = normalizeEndDate(a.startDate, a.endDate);

@@ -22,6 +22,7 @@ export interface IScheduleBoardWebPartProps extends Partial<ISpListSettings> {
   title?: string;
   /** 作業員の行き先リストを反映する部署(「、」や改行で区切る。一度も設定していなければ「作業員」) */
   crewDepartments?: string;
+  crewWorkerNames?: string;
   /** ヘルプの「困ったとき」に出す連絡先 */
   helpContact?: string;
   /** 部署の並び順(「、」や改行で区切る。空欄なら No. 順) */
@@ -110,7 +111,8 @@ export default class ScheduleBoardWebPart extends BaseClientSideWebPart<ISchedul
       frontWorkerNames: splitList(p.frontWorkerNames),
       prefsStore: browserPrefsStore,
       // 一度も設定していなければ「作業員」。空欄にしたら全員
-      crewDepartments: p.crewDepartments === undefined ? DEFAULT_CREW_DEPARTMENTS : splitList(p.crewDepartments)
+      crewDepartments: p.crewDepartments === undefined ? DEFAULT_CREW_DEPARTMENTS : splitList(p.crewDepartments),
+      crewWorkerNames: splitList(p.crewWorkerNames)
     });
 
     if (!this._root) {
@@ -231,6 +233,14 @@ export default class ScheduleBoardWebPart extends BaseClientSideWebPart<ISchedul
                   description:
                     'この部署の人だけ、作業員の行き先リストの内容を出します(「、」や改行で区切って複数)。空欄にすると全員に反映します',
                   placeholder: DEFAULT_CREW_DEPARTMENTS.join('、')
+                }),
+                PropertyPaneTextField('crewWorkerNames', {
+                  label: '作業員の行き先を反映する人(部署とは別に、名前で指定)',
+                  description:
+                    '部署に関係なく、ここに書いた人は作業員の行き先リストの内容を出します(現場作業に呼ばれることがある人など)。予定表に出ている名前を、1行に1人ずつ書きます。行き先リストに登録がある日は、本人の長期の予定より優先して出ます',
+                  placeholder: '例:\n山田 太郎',
+                  multiline: true,
+                  rows: 3
                 })
               ]
             },

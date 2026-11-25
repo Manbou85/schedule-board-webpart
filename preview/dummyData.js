@@ -227,6 +227,8 @@ function createDummyData(today) {
   single(crewWorkers[3], '本社(安全講習)', d(3), '研修');
   // 作業員以外の人もリストに入っているが、反映するのは「作業員」の部署だけ(建築部の人の行は使わない)
   crewSite(build[4], '(作業員以外の人の行:表示されない)', d(-5), d(10));
+  // 管理部の1人目は、設定「作業員の行き先を反映する人」に名前があるので、現場に呼ばれた水曜だけ現場が出る(ver 0.9.4)
+  crewSite(byDept('管理部')[0], SITES_CIVIL[0] + '(応援)', d(2), d(2));
   // WorkerNameList にいない名前(管理者には知らせが出る)
   crewAssignments.push({ id: crewId++, workerName: '名簿にない 作業員', title: SITES_CIVIL[0], startDate: d(0), endDate: d(5) });
 

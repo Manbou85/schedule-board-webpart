@@ -53,6 +53,14 @@ describe('作業員の行き先リスト', () => {
     expect(crewToEntries(list, workers, []).entries.map((e) => e.workerId)).toEqual([1, 3]);
     expect(crewToEntries(list, workers).entries.map((e) => e.workerId)).toEqual([1, 3]);
   });
+
+  it('名前で指定した人は、部署がちがっても使う(全角・半角・空白は気にしない。ver 0.9.4)', () => {
+    const list = [crew(1, '山田 太郎'), crew(2, '高橋 花子'), crew(3, '佐藤 次郎')];
+    const withName = crewToEntries(list, workers, ['作業員'], undefined, ['高橋　花子', '']);
+    expect(withName.entries.map((e) => e.workerId)).toEqual([1, 3, 2]);
+    // 名前の指定がなければ、今までどおり作業員だけ
+    expect(crewToEntries(list, workers, ['作業員'], undefined, []).entries.map((e) => e.workerId)).toEqual([1, 2]);
+  });
 });
 
 describe('作業員の行き先に「休暇」と書かれたとき(総務に申請する前)', () => {
