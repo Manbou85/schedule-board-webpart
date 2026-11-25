@@ -3,7 +3,7 @@
   "solution": {
     "name": "schedule-board-webpart-client-side-solution",
     "id": "140e03f0-6017-481c-a667-bd0aa3269455",
-    "version": "0.9.4.0",
+    "version": "0.9.5.0",
     "includeClientSideAssets": true,
     "skipFeatureDeployment": true,
     "developer": {
@@ -29,7 +29,7 @@
         "title": "行動予定表",
         "description": "The feature that activates elements of the schedule-board-webpart solution.",
         "id": "395ecf13-42a3-45ed-a0e3-7ce5f4d79fcb",
-        "version": "0.9.4.0"
+        "version": "0.9.5.0"
       }
     ]
   },
